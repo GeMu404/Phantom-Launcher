@@ -1,0 +1,19 @@
+{
+  "categories": [
+    {
+      "id": "all",
+      "name": "ALL GAMES",
+      "icon": "./res/templates/icon.png",
+      "color": "#ffffff",
+      "wallpaper": "",
+      "wallpaperMode": "cover",
+      "gridOpacity": 0.15,
+      "cardOpacity": 0.7,
+      "bgAnimationsEnabled": true,
+      "gridEnabled": true,
+      "scanlineEnabled": true,
+      "vignetteEnabled": true,
+      "games": []
+    }
+  ]
+}

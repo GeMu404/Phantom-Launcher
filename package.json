@@ -1,0 +1,47 @@
+{
+  "name": "phantom-launcher",
+  "version": "0.7.01",
+  "private": true,
+  "type": "module",
+  "bin": "phantom_app/server.js",
+  "pkg": {
+    "assets": "phantom_app/**/*",
+    "targets": [
+      "node18-win-x64"
+    ]
+  },
+  "scripts": {
+    "dev": "vite",
+    "server": "node --loader ts-node/esm server.ts",
+    "build:front": "vite build",
+    "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --outfile=phantom_app/server.js",
+    "exe": "pkg phantom_app/server.js --targets node18-win-x64 --output phantom_app/PhantomServer.exe --public",
+    "dist": "powershell -NoProfile -Command \"if (Test-Path phantom_app) { Get-ChildItem -Path phantom_app -Exclude .env | Remove-Item -Recurse -Force }; New-Item -ItemType Directory -Path phantom_app/system -Force; New-Item -ItemType Directory -Path phantom_app/system/front -Force\" && npm run build:front && npm run build:server && npm run exe && powershell -NoProfile -Command \"Copy-Item -Recurse -Force dist/* phantom_app/system/front/; Copy-Item -Force launcher.html phantom_app/system/launcher.html; Copy-Item -Force PhantomTray.ps1 phantom_app/system/PhantomTray.ps1; Copy-Item -Force Run.vbs phantom_app/system/Run.vbs; Copy-Item -Force phantom_app/PhantomServer.exe phantom_app/system/PhantomServer.exe; Copy-Item -Force PhantomSetup.ps1 phantom_app/PhantomSetup.ps1; if (Test-Path phantom.ico) { Copy-Item -Force phantom.ico phantom_app/system/phantom.ico }; if (Test-Path .env.local) { Copy-Item -Force .env.local phantom_app/system/.env }; if (Test-Path phantom_app/server.js) { Remove-Item phantom_app/server.js -Force }; if (Test-Path phantom_app/PhantomServer.exe) { Remove-Item phantom_app/PhantomServer.exe -Force }; ./Build-Wrapper.ps1\"",
+    "start": "concurrently \"npm run server\" \"npm run dev\""
+  },
+  "dependencies": {
+    "animejs": "3.2.2",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "jimp": "^1.6.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.24",
+    "concurrently": "^9.1.2",
+    "esbuild": "^0.25.0",
+    "pkg": "^5.8.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
