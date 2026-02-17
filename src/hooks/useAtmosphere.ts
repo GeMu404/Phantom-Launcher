@@ -8,6 +8,12 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
         if (!path) return '';
         if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) return path;
         if (path.startsWith('./res') || path.startsWith('res/') || path.startsWith('/res/')) return path;
+
+        // Only proxy if it looks like a file path (has extension or is absolute)
+        // This prevents internal IDs like 'clock' or 'steam' from hitting the proxy
+        const isLikelyPath = path.includes('.') || path.includes('/') || path.includes('\\') || path.match(/^[a-zA-Z]:/);
+        if (!isLikelyPath) return path;
+
         // Proxy local path via backend
         return `/api/proxy-image?path=${encodeURIComponent(path)}`;
     }, []);
@@ -35,6 +41,7 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
         const globalGridEnabled = allCat?.gridEnabled ?? true;
         const globalScanlineEnabled = allCat?.scanlineEnabled ?? true;
         const globalVignetteEnabled = allCat?.vignetteEnabled ?? true;
+        const globalPerformanceMode = allCat?.performanceMode || 'high';
 
         const catWallpaper = currentCategory?.wallpaper;
         const catWallpaperMode = currentCategory?.wallpaperMode;
@@ -53,7 +60,8 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
             bgAnimationsEnabled: globalBgAnim,
             gridEnabled: globalGridEnabled,
             scanlineEnabled: globalScanlineEnabled,
-            vignetteEnabled: globalVignetteEnabled
+            vignetteEnabled: globalVignetteEnabled,
+            performanceMode: globalPerformanceMode
         };
     }, [currentCategory, categories, resolveAsset, debouncedGameWallpaper]);
 

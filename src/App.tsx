@@ -6,8 +6,10 @@ import GameTrack from './components/GameTrack';
 import GameInfo from './components/GameInfo';
 import Notification from './components/Notification';
 import BackgroundEffect from './components/BackgroundEffect';
-import ManagementModal from './components/ManagementModal';
 import anime from 'animejs';
+
+// Lazy load ManagementModal to avoid circular dependency/initialization issues
+const ManagementModal = React.lazy(() => import('./components/ManagementModal'));
 
 // Hooks
 import { usePersistence } from './hooks/usePersistence';
@@ -56,16 +58,20 @@ const App: React.FC = () => {
       .sort((a, b) => new Date(b.lastPlayed).getTime() - new Date(a.lastPlayed).getTime())
       .slice(0, 10);
 
+    // 2. Find if 'recent' category exists in state, otherwise create default
+    const storedRecent = categories.find(c => c.id === 'recent');
+
     const recentCategory = {
       id: 'recent',
-      name: t('app.recent'),
-      icon: 'clock',
-      color: '#00ffcc',
+      name: storedRecent?.name || t('app.recent'),
+      icon: storedRecent?.icon || ASSETS.templates.icon,
+      color: storedRecent?.color || '#00ffcc',
       games: recentGames,
-      enabled: true,
-      wallpaperMode: 'cover',
-      gridOpacity: 0.15,
-      cardOpacity: 0.7
+      enabled: storedRecent?.enabled ?? true,
+      wallpaper: storedRecent?.wallpaper || '',
+      wallpaperMode: storedRecent?.wallpaperMode || 'cover',
+      gridOpacity: storedRecent?.gridOpacity ?? 0.15,
+      cardOpacity: storedRecent?.cardOpacity ?? 0.7
     };
 
     // Placeholder if empty
@@ -82,10 +88,7 @@ const App: React.FC = () => {
     }
 
     // Insert RECENT after ALL (index 1) if ALL exists at 0
-    const newCats = [...categories];
-    // Remove existing 'recent' if it somehow got in state
-    const existingRecentIdx = newCats.findIndex(c => c.id === 'recent');
-    if (existingRecentIdx !== -1) newCats.splice(existingRecentIdx, 1);
+    const newCats = categories.filter(c => c.id !== 'recent'); // Remove old recent from list to re-insert
 
     const allIndex = newCats.findIndex(c => c.id === 'all');
     if (allIndex !== -1) {
@@ -324,7 +327,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="relative w-full h-full flex select-none text-white overflow-hidden bg-transparent">
+    <div className={`relative w-full h-full flex select-none text-white overflow-hidden bg-transparent ${atmosphereSettings.performanceMode === 'low' ? 'low-perf' : ''}`}>
       <BackgroundEffect
         color={currentCategory?.color || '#fff'}
         wallpaper={atmosphereSettings.wallpaper}
@@ -334,6 +337,7 @@ const App: React.FC = () => {
         gridEnabled={atmosphereSettings.gridEnabled}
         vignetteEnabled={atmosphereSettings.vignetteEnabled}
         paused={isPaused || appState === 'launching'}
+        performanceMode={atmosphereSettings.performanceMode}
       />
 
       {atmosphereSettings.scanlineEnabled && <div className="scanline"></div>}
@@ -392,18 +396,20 @@ const App: React.FC = () => {
         onResolveAsset={resolveAsset}
       />
 
-      <ManagementModal
-        isOpen={isManagementOpen}
-        onClose={() => setIsManagementOpen(false)}
-        categories={categories}
-        currentCatIdx={currentCatIndex}
-        onUpdateCategories={setCategories}
-        accentColor={currentCategory?.color || '#fff'}
-        taskbarMargin={taskbarMargin}
-        onUpdateTaskbarMargin={setTaskbarMargin}
-        onResolveAsset={resolveAsset}
-        isSecretUnlocked={isSecretUnlocked}
-      />
+      <React.Suspense fallback={null}>
+        <ManagementModal
+          isOpen={isManagementOpen}
+          onClose={() => setIsManagementOpen(false)}
+          categories={categories}
+          currentCatIdx={currentCatIndex}
+          onUpdateCategories={setCategories}
+          accentColor={currentCategory?.color || '#fff'}
+          taskbarMargin={taskbarMargin}
+          onUpdateTaskbarMargin={setTaskbarMargin}
+          onResolveAsset={resolveAsset}
+          isSecretUnlocked={isSecretUnlocked}
+        />
+      </React.Suspense>
     </div >
   );
 };

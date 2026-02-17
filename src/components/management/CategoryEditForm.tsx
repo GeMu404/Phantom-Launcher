@@ -41,7 +41,7 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
 }) => {
     if (!isFormOpen) {
         return (
-            <button onClick={() => setIsFormOpen(true)} className="w-full py-10 border border-dashed border-white/10 bg-black/20 hover:bg-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-3 group/spawn">
+            <button onClick={() => setIsFormOpen(true)} className="w-full py-10 border-2 border-dashed border-white/10 bg-black/20 hover:bg-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-3 group/spawn">
                 <div className="font-['Press_Start_2P'] text-[10px] text-white/40 group-hover/spawn:text-white transition-colors" style={{ textShadow: `0 0 10px ${activeAccent}44` }}>[ NODE_SPAWN ]</div>
                 <span className="text-[7px] opacity-20 uppercase tracking-[0.4em]">Configure Neural Cluster</span>
             </button>
@@ -51,7 +51,7 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
     return (
         <div className="flex flex-col gap-10 lg:gap-14">
             {/* Unified Save Button */}
-            <div className="sticky top-0 z-50 flex justify-end pb-4 bg-[#020202]/90 backdrop-blur-md border-b border-white/5 mb-4">
+            <div className="sticky top-0 z-50 flex justify-end pb-4 bg-[#020202]/90 backdrop-blur-md border-b-2 border-white/5 mb-4">
                 <button onClick={handleSaveCategoryData}
                     className="px-6 py-3 font-bold text-[8px] lg:text-[9px] uppercase tracking-[0.2em] transition-all border-2 active:scale-95"
                     style={{ borderColor: activeAccent, color: activeAccent, backgroundColor: 'transparent' }}
@@ -77,10 +77,24 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
                 <AssetInput label="Icon" value={catForm.icon} onChange={v => setCatForm({ ...catForm, icon: v })} triggerFileBrowser={triggerFileBrowser} target="icon" previewType="icon" accentColor={activeAccent} onResolveAsset={onResolveAsset} />
                 <div className="flex flex-col gap-2">
                     <label className="text-[7px] lg:text-[8px] opacity-30 uppercase tracking-[0.2em] font-bold">Link_Status</label>
-                    <button onClick={() => setCatForm({ ...catForm, enabled: !catForm.enabled })} className={`h-10 px-6 text-[9px] font-bold uppercase border-2 transition-all active:scale-95 ${catForm.enabled ? 'bg-transparent text-white border-white' : 'bg-red-600 border-red-500 text-white'}`} style={{ color: catForm.enabled ? activeAccent : undefined, borderColor: catForm.enabled ? activeAccent : undefined }}
-                        onMouseEnter={(e) => { if (catForm.enabled) { e.currentTarget.style.backgroundColor = activeAccent; e.currentTarget.style.color = '#000'; } }}
-                        onMouseLeave={(e) => { if (catForm.enabled) { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = activeAccent; } }}
-                    >{catForm.enabled ? '[ ONLINE_PROTOCOL ]' : '[ OFFLINE_ISOLATION ]'}</button>
+                    <button
+                        onClick={() => editingId !== 'recent' && setCatForm({ ...catForm, enabled: !catForm.enabled })}
+                        disabled={editingId === 'recent'}
+                        className={`h-10 px-6 text-[9px] font-bold uppercase border-2 transition-all ${editingId === 'recent'
+                            ? 'bg-white/5 border-white/20 text-white/60 cursor-not-allowed'
+                            : catForm.enabled
+                                ? 'bg-transparent text-white border-white active:scale-95'
+                                : 'bg-red-600 border-red-500 text-white active:scale-95'
+                            }`}
+                        style={{
+                            color: catForm.enabled && editingId !== 'recent' ? activeAccent : undefined,
+                            borderColor: catForm.enabled && editingId !== 'recent' ? activeAccent : undefined
+                        }}
+                        onMouseEnter={(e) => { if (catForm.enabled && editingId !== 'recent') { e.currentTarget.style.backgroundColor = activeAccent; e.currentTarget.style.color = '#000'; } }}
+                        onMouseLeave={(e) => { if (catForm.enabled && editingId !== 'recent') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = activeAccent; } }}
+                    >
+                        {editingId === 'recent' ? '[ SYSTEM_LOCKED: ALWAYS_ONLINE ]' : (catForm.enabled ? '[ ONLINE_PROTOCOL ]' : '[ OFFLINE_ISOLATION ]')}
+                    </button>
                 </div>
             </Subsection>
             <Subsection title="Ambient_Protocol" accentColor={activeAccent}>
@@ -90,7 +104,7 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
                         <ModeSelector label="Render_Sequence" value={catForm.wallpaperMode} onChange={v => setCatForm({ ...catForm, wallpaperMode: v })} />
                         <div className="flex flex-col gap-3 lg:gap-4">
                             <div className="flex justify-between items-center"><label className="text-[7px] lg:text-[9px] opacity-30 uppercase tracking-[0.2em] font-bold">Mesh_Grid_Opacity</label><span className="text-[10px] lg:text-[11px] font-mono" style={{ color: activeAccent }}>{Math.round(catForm.gridOpacity * 100)}%</span></div>
-                            <input type="range" min="0" max="0.5" step="0.01" value={catForm.gridOpacity} onChange={e => setCatForm({ ...catForm, gridOpacity: parseFloat(e.target.value) })} className="w-full h-1 bg-white/10 rounded-full accent-white appearance-none cursor-pointer" />
+                            <input type="range" min="0" max="0.5" step="0.01" value={catForm.gridOpacity} onChange={e => setCatForm({ ...catForm, gridOpacity: parseFloat(e.target.value) })} className="w-full h-1 bg-white/10 accent-white appearance-none cursor-pointer" />
                         </div>
                     </div>
                 </div>

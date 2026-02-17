@@ -20,7 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
 
   return (
     <div
-      className="fixed left-0 top-0 h-full flex flex-col items-center z-50 bg-black/40 backdrop-blur-2xl border-r border-white/5 transition-all duration-500"
+      className="sidebar-glass fixed left-0 top-0 h-full flex flex-col items-center z-50 bg-black/40 backdrop-blur-2xl border-r border-white/5 transition-all duration-500"
       style={{
         width: 'calc(50px + 1.5vh)',
         paddingBottom: `${taskbarMargin + 20}px`
@@ -46,12 +46,19 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
                 onClick={() => onSelect(actualIdx)}
                 className={`
                   relative cursor-pointer flex-shrink-0 flex items-center justify-center transition-all duration-300 p-1
-                  ${isActive ? 'scale-110' : 'opacity-20 hover:opacity-100 hover:scale-105'}
+                  ${isActive ? 'scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}
                 `}
                 style={{ width: '40px', height: '40px' }}
               >
                 <img
-                  src={onResolveAsset(cat.icon) || ASSETS.templates.icon}
+                  src={(() => {
+                    const original = onResolveAsset(cat.icon) || ASSETS.templates.icon;
+                    // Optimize: request resized version if it's a proxied local file
+                    if (original.includes('/api/proxy-image')) {
+                      return `${original}&width=64`;
+                    }
+                    return original;
+                  })()}
                   alt={cat.name}
                   onError={(e) => {
                     const target = e.currentTarget;
@@ -63,8 +70,8 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
                   style={{
                     color: cat.color,
                     filter: isActive
-                      ? `brightness(0) invert(1) drop-shadow(0 0 2px ${cat.color}) drop-shadow(0 0 7px ${cat.color}88)`
-                      : 'brightness(0) invert(1)'
+                      ? `drop-shadow(0 0 1px ${cat.color}) drop-shadow(0 0 8px ${cat.color})`
+                      : `drop-shadow(0 0 1px rgba(255, 255, 255, 0.7))`
                   }}
                 />
                 {isActive && (
@@ -94,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
               <span
                 className="absolute bottom-0 left-1/2 whitespace-nowrap font-['Press_Start_2P'] font-bold uppercase tracking-[0.2em] text-white/40 select-none transition-all duration-700"
                 style={{
-                  fontSize: isLong ? `calc(${32 * (10 / name.length)}px)` : '32px',
+                  fontSize: isLong ? 'clamp(10px, 1.5vh, 20px)' : 'clamp(12px, 2.5vh, 32px)',
                   transform: 'rotate(-90deg)',
                   transformOrigin: '0 50%',
                   textShadow: `0 0 20px ${categories[activeIndex]?.color || '#fff'}88`,

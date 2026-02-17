@@ -4,12 +4,11 @@ import { ASSETS, APP_VERSION } from '../constants';
 import AssetInput from './AssetInput';
 import FileExplorerModal from './FileExplorerModal';
 import Subsection from './management/Subsection';
-import GameEditForm from './management/GameEditForm';
-import CategoryEditForm from './management/CategoryEditForm';
-import SystemTab from './management/SystemTab';
+// import GameEditForm from './management/GameEditForm'; // DEBUG: Commented
+// import CategoryEditForm from './management/CategoryEditForm'; // DEBUG: Commented
+// import SystemTab from './management/SystemTab'; // DEBUG: Commented
 import AssetSearchModal from './AssetSearchModal';
 import { useTranslation } from '../hooks/useTranslation';
-// const useTranslation = () => ({ t: (key: string) => key });
 
 interface ManagementModalProps {
   isOpen: boolean;
@@ -178,21 +177,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   useEffect(() => {
     if (tab === 'categories' && editingId) {
-      let cat = categories.find(c => c.id === editingId);
-      if (!cat && editingId === 'recent') {
-        cat = {
-          id: 'recent',
-          name: 'RECENT',
-          icon: (ASSETS as any).templates?.icon || '',
-          color: '#00ffcc',
-          games: [],
-          enabled: true,
-          wallpaper: '',
-          wallpaperMode: 'cover',
-          gridOpacity: 0.15
-        } as any;
-      }
-
+      const cat = categories.find(c => c.id === editingId);
       if (cat) {
         setCatForm({
           name: cat.name,
@@ -232,8 +217,6 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     }, 100);
   };
 
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-
   const sortedAndFilteredMasterGames = useMemo(() => {
     let games = [...allGamesCategory.games];
     if (filterCategory !== 'all') {
@@ -248,6 +231,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     }
     return games.sort((a, b) => a.title.localeCompare(b.title));
   }, [allGamesCategory.games, searchQuery, filterCategory, categories]);
+
+  const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const handleSyncSteamLibrary = async () => {
     try {
@@ -563,8 +548,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             {tab === 'games' && (
               <div className="flex flex-col gap-10">
                 <div ref={formRef}>
-                  <GameEditForm isFormOpen={isFormOpen} setIsFormOpen={setIsFormOpen} editingId={editingId} activeAccent={activeAccent} gameForm={gameForm} setGameForm={setGameForm} handleSaveGame={handleSaveGame} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} otherCategories={otherCategories} sgdbKey={sgdbKey} sgdbEnabled={sgdbEnabled} setSearchModal={setSearchModal} />
-                  {/* {isFormOpen && <div className="p-4 bg-red-500/20 text-white font-mono">GAME EDIT FORM TEMPORARILY DISABLED FOR DEBUGGING</div>} */}
+                  {/* <GameEditForm isFormOpen={isFormOpen} setIsFormOpen={setIsFormOpen} editingId={editingId} activeAccent={activeAccent} gameForm={gameForm} setGameForm={setGameForm} handleSaveGame={handleSaveGame} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} otherCategories={otherCategories} sgdbKey={sgdbKey} sgdbEnabled={sgdbEnabled} setSearchModal={setSearchModal} /> */}
+                  {isFormOpen && <div className="p-4 bg-red-500/20 text-white font-mono">GAME EDIT FORM TEMPORARILY DISABLED FOR DEBUGGING</div>}
                 </div>
                 <div className="flex flex-col gap-6 lg:gap-8">
                   <div className="flex justify-between items-center border-b-2 border-white/5 pb-4">
@@ -583,20 +568,17 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                     </div>
                     <div className="flex flex-col gap-2">
                       {sortedAndFilteredMasterGames.map(g => (
-                        <div key={g.id} className="relative group/row min-h-[80px]" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
-                          <div className="absolute inset-0 pointer-events-none transition-colors" style={{ backgroundColor: `${activeAccent}33` }} />
-                          <div className="absolute inset-[2px] bg-[#050505] flex items-center justify-between p-3 lg:p-5 hover:bg-white/5 transition-all" style={{ clipPath: 'polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px)' }}>
-                            <div className="flex items-center gap-4">
-                              <img src={onResolveAsset(g.cover)} className="w-8 h-12 lg:w-10 lg:h-14 object-cover opacity-80 border-2 border-white/10" alt="" />
-                              <div className="flex flex-col truncate">
-                                <span className="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.15em] text-white">{g.title}</span>
-                                <span className="text-[6px] opacity-40 uppercase font-mono">{`REF::${g.id.substring(0, 8)}`}</span>
-                              </div>
+                        <div key={g.id} className="flex items-center justify-between p-3 lg:p-5 bg-black/40 border-2 border-white/5 hover:border-white/20 group/row transition-all relative overflow-hidden">
+                          <div className="flex items-center gap-4">
+                            <img src={onResolveAsset(g.cover)} className="w-8 h-12 lg:w-10 lg:h-14 object-cover opacity-80 border-2 border-white/10" alt="" />
+                            <div className="flex flex-col truncate">
+                              <span className="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.15em] text-white">{g.title}</span>
+                              <span className="text-[6px] opacity-40 uppercase font-mono">{`REF::${g.id.substring(0, 8)}`}</span>
                             </div>
-                            <div className="flex gap-3 opacity-0 group-hover/row:opacity-100 transition-all">
-                              <button onClick={() => { setEditingId(g.id); setGameForm({ ...g, categoryIds: categories.filter(c => c.id !== 'all' && c.games.some(x => x.id === g.id)).map(c => c.id), wallpaper: g.wallpaper || '' }); scrollToForm(); }} className="px-5 py-2 text-[9px] font-bold uppercase border-2 hover:bg-white/10 transition-colors" style={{ borderColor: activeAccent, color: activeAccent }}>EDIT</button>
-                              <button onClick={() => handleDeleteGame(g.id)} className="px-5 py-2 text-[9px] font-bold border-2 border-red-500 text-red-500 hover:bg-red-500/10 transition-colors">PURGE</button>
-                            </div>
+                          </div>
+                          <div className="flex gap-3 opacity-0 group-hover/row:opacity-100 transition-all">
+                            <button onClick={() => { setEditingId(g.id); setGameForm({ ...g, categoryIds: categories.filter(c => c.id !== 'all' && c.games.some(x => x.id === g.id)).map(c => c.id), wallpaper: g.wallpaper || '' }); scrollToForm(); }} className="px-5 py-2 text-[9px] font-bold uppercase border-2" style={{ borderColor: activeAccent, color: activeAccent }}>EDIT</button>
+                            <button onClick={() => handleDeleteGame(g.id)} className="px-5 py-2 text-[9px] font-bold border-2 border-red-500 text-red-500">PURGE</button>
                           </div>
                         </div>
                       ))}
@@ -614,16 +596,16 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                       <div onClick={handleCreateCategory} className="relative group cursor-pointer min-h-[140px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
                         <div className="absolute inset-0 bg-white/10 group-hover:bg-white/30 transition-all" />
                         <div className="absolute inset-[2px] bg-black/40 flex flex-col items-center justify-center gap-3" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
-                          <div className="w-10 h-10 flex items-center justify-center border-2 border-white/10 text-white/20 group-hover:text-white group-hover:border-white transition-all text-2xl font-light">+</div>
+                          <div className="w-10 h-10 flex items-center justify-center border-2 border-white/10 rounded-full text-white/20 group-hover:text-white group-hover:border-white transition-all text-2xl font-light">+</div>
                           <span className="text-[9px] font-bold text-white uppercase tracking-[0.3em] opacity-40 group-hover:opacity-100">INITIALIZE_NODE</span>
                         </div>
                       </div>
-                      {categories.filter(c => c.id === 'all' || c.id === 'recent').concat(editableCategories.filter(c => c.id === 'recent' && !categories.some(x => x.id === 'recent'))).map(cat => (
+                      {editableCategories.filter(c => c.id === 'recent' || c.id === 'all').map(cat => (
                         <div key={cat.id} onClick={() => { setEditingId(cat.id); scrollToForm(); }} className="relative group cursor-pointer min-h-[140px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
-                          <div className="absolute inset-0 pointer-events-none transition-colors" style={{ backgroundColor: `${cat.color}33` }} />
-                          <div className="absolute inset-[2px] bg-[#080808] flex flex-col items-center justify-center gap-3 group/inner" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
-                            <div className="w-12 h-12 flex items-center justify-center transform group-hover/inner:scale-110 transition-transform">
-                              {cat.icon ? <img src={onResolveAsset(cat.icon)} className="w-full h-full object-contain brightness-0 invert opacity-60 group-hover/inner:opacity-100" /> : <div className="w-12 h-12 bg-white/10" />}
+                          <div className="absolute inset-0 bg-white/10 group-hover:bg-white/30 transition-all" />
+                          <div className="absolute inset-[2px] bg-black/40 flex flex-col items-center justify-center gap-3" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
+                            <div className="w-12 h-12 flex items-center justify-center transition-transform group-hover:scale-110">
+                              {cat.icon ? <img src={onResolveAsset(cat.icon)} className="w-full h-full object-contain brightness-0 invert opacity-60" /> : <div className="w-12 h-12 bg-white/10" />}
                             </div>
                             <div className="flex flex-col items-center gap-1">
                               <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">{cat.name}</span>
@@ -636,12 +618,12 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
                       {categories.filter(c => c.id !== 'recent' && c.id !== 'all' && c.id !== 'hidden').map((c, idx) => (
                         <div key={c.id} className="relative group min-h-[160px] lg:min-h-[200px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
-                          <div className="absolute inset-0 pointer-events-none transition-colors" style={{ backgroundColor: `${c.color}33` }} />
-                          <div className="absolute inset-[2px] bg-[#080808] flex flex-col overflow-hidden group/inner" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
+                          <div className="absolute inset-0 bg-white/10 pointer-events-none" />
+                          <div className="absolute inset-[2px] bg-[#080808] flex flex-col overflow-hidden" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
                             <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 cursor-pointer relative group/inner" onClick={() => { setEditingId(c.id); scrollToForm(); }}>
                               <div className="absolute top-0 right-0 p-3 opacity-30 font-mono text-[24px] font-bold" style={{ color: c.color }}>{String(idx + 1).padStart(2, '0')}</div>
                               <div className="w-12 h-12 flex items-center justify-center transform group-hover/inner:scale-110 transition-transform">
-                                {c.icon ? <img src={onResolveAsset(c.icon)} className="w-full h-full object-contain brightness-0 invert opacity-60 group-hover/inner:opacity-100" /> : <div className="w-10 h-10 border-2 border-white/10 flex items-center justify-center text-white/20">?</div>}
+                                {c.icon ? <img src={onResolveAsset(c.icon)} className="w-full h-full object-contain brightness-0 invert opacity-60 group-hover/inner:opacity-100" /> : <div className="w-10 h-10 border-2 border-white/10 rounded-full flex items-center justify-center text-white/20">?</div>}
                               </div>
                               <div className="flex flex-col items-center">
                                 <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">{c.name}</span>
@@ -664,8 +646,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                       <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">Node: {catForm.name}</h3>
                       <button onClick={() => { setEditingId(null); setIsFormOpen(false); }} className="text-[9px] opacity-40 hover:opacity-100 uppercase font-bold text-white">Back</button>
                     </div>
-                    <CategoryEditForm isFormOpen={isFormOpen} setIsFormOpen={setIsFormOpen} gameList={categories.find(c => c.id === editingId)?.games || []} editingId={editingId} catForm={catForm} setCatForm={setCatForm} handleSaveCategoryData={handleSaveCategoryData} handleMoveGameInCategory={handleMoveGameInCategory} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} activeAccent={activeAccent} />
-                    {/* {isFormOpen && <div className="p-4 bg-red-500/20 text-white font-mono">CATEGORY EDIT FORM TEMPORARILY DISABLED FOR DEBUGGING</div>} */}
+                    {/* <CategoryEditForm isFormOpen={isFormOpen} setIsFormOpen={setIsFormOpen} gameList={categories.find(c => c.id === editingId)?.games || []} editingId={editingId} catForm={catForm} setCatForm={setCatForm} handleSaveCategoryData={handleSaveCategoryData} handleMoveGameInCategory={handleMoveGameInCategory} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} activeAccent={activeAccent} /> */}
+                    {isFormOpen && <div className="p-4 bg-red-500/20 text-white font-mono">CATEGORY EDIT FORM TEMPORARILY DISABLED FOR DEBUGGING</div>}
                   </div>
                 )}
               </div>
@@ -685,36 +667,12 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                     <span className="text-[9px] font-bold text-white uppercase tracking-widest">Xbox_Game_Pass</span>
                   </div>
                 </Subsection>
-
-                <Subsection title="API_Link: SteamGridDB" accentColor={activeAccent}>
-                  <div className="flex flex-col gap-4 col-span-2">
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="text"
-                        value={sgdbKey}
-                        onChange={(e) => handleUpdateSgdbKey(e.target.value)}
-                        placeholder="ENTER_SGDB_API_KEY"
-                        className="flex-1 bg-black/20 border-2 border-white/10 p-3 text-[10px] font-mono text-white outline-none focus:border-white/40 transition-colors"
-                      />
-                      <button
-                        onClick={() => handleToggleSgdb(!sgdbEnabled)}
-                        className={`px-6 py-3 font-bold text-[9px] uppercase tracking-widest border-2 transition-all ${sgdbEnabled ? 'bg-white text-black border-white' : 'text-white/40 border-white/10 hover:border-white/40'}`}
-                      >
-                        {sgdbEnabled ? 'ACTIVE' : 'DISABLED'}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 text-[8px] text-white/40 font-mono">
-                      <span>STATUS:</span>
-                      <span style={{ color: sgdbEnabled ? '#00ff00' : '#ff0000' }}>{sgdbEnabled ? 'LINK_ESTABLISHED' : 'OFFLINE'}</span>
-                    </div>
-                  </div>
-                </Subsection>
               </div>
             )}
 
             {tab === 'system' && (
-              <SystemTab activeAccent={activeAccent} allGamesCategory={allGamesCategory} onUpdateCategories={onUpdateCategories} taskbarMargin={taskbarMargin} onUpdateTaskbarMargin={onUpdateTaskbarMargin} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} />
-              // <div className="p-4 bg-red-500/20 text-white font-mono">SYSTEM TAB TEMPORARILY DISABLED FOR DEBUGGING</div>
+              // <SystemTab activeAccent={activeAccent} allGamesCategory={allGamesCategory} onUpdateCategories={onUpdateCategories} taskbarMargin={taskbarMargin} onUpdateTaskbarMargin={onUpdateTaskbarMargin} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} handleSystemFormat={handleSystemFormat} />
+              <div className="p-4 bg-red-500/20 text-white font-mono">SYSTEM TAB TEMPORARILY DISABLED FOR DEBUGGING</div>
             )}
           </div>
         </div>

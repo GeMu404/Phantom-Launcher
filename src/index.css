@@ -13,6 +13,27 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* FAKE GLASS / LOW PERF OPTIMIZATIONS */
+.low-perf .liquid-glass,
+.low-perf .sidebar-glass,
+.low-perf .modal-glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    background: linear-gradient(135deg, #0a0a0a 0%, #050505 100%) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Special gradient for sidebar to look "anchored" */
+.low-perf .sidebar-glass {
+    background: linear-gradient(to right, #050505 0%, #111 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.low-perf .modal-glass {
+    background: linear-gradient(135deg, #111 0%, #050505 100%) !important;
+}
+
 .scanline {
     background: linear-gradient(to bottom, transparent 50%, rgba(255, 255, 255, 0.01) 50%);
     background-size: 100% 4px;

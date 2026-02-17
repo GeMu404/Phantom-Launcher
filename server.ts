@@ -4,7 +4,9 @@ import { exec, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
-import { Jimp } from 'jimp';
+import Link from 'react'; // Dummy import
+// standard jimp import for v0.x
+import Jimp from 'jimp';
 
 const __filename = '';
 const __dirname = path.resolve();
@@ -65,22 +67,22 @@ const processImage = async (input: string | Buffer, dest: string, type: string):
 
         if (type === 'cover') {
             // Vertical Grid: 600x900 (Fill/Cover)
-            image.cover({ w: 600, h: 900 });
+            image.cover(600, 900);
         } else if (type === 'banner') {
             // Horizontal Grid: 920x430 (Fill/Cover)
-            image.cover({ w: 920, h: 430 });
+            image.cover(920, 430);
         } else if (type === 'logo') {
             // Logo: Match contain logic - check dimensions
-            const w = image.width;
-            const h = image.height;
+            const w = image.bitmap.width;
+            const h = image.bitmap.height;
             const ratio = Math.min(800 / w, 800 / h, 1);
             if (ratio < 1) {
-                image.resize({ w: Math.round(w * ratio), h: Math.round(h * ratio) });
+                image.resize(Math.round(w * ratio), Math.round(h * ratio));
             }
         }
 
         // Quality optimization and save
-        await image.write(dest as any);
+        await image.writeAsync(dest);
         return dest;
     } catch (e: any) {
         console.error(`[Jimp] Final error on ${dest}:`, e.message);
@@ -498,52 +500,196 @@ $obj | ConvertTo-Json
                 res.status(500).json({ error: 'Failed to parse shortcut info' });
             }
         });
+    } else if (ext === '.url') {
+        try {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            const match = content.match(/URL=(.*)/);
+            if (match && match[1]) {
+                res.json({ TargetPath: match[1].trim(), Arguments: '' });
+            } else {
+                res.json({ TargetPath: filePath, Arguments: '' });
+            }
+        } catch (e) {
+            res.status(500).json({ error: 'Failed to read .url file' });
+        }
     } else {
         res.json({ TargetPath: filePath, Arguments: '' });
     }
 });
 
-// Proxy Local Image
-app.get('/api/proxy-image', (req, res) => {
+// Proxy Local Image with Resizing Support
+app.get('/api/proxy-image', async (req, res) => {
     const filePath = req.query.path as string;
+    // DEBUG: Log Raw Request
+    console.log(`[Proxy] Request: ${req.url}`);
+    console.log(`[Proxy] Query Path: "${filePath}"`);
+    const width = req.query.width ? parseInt(req.query.width as string) : undefined;
+    const height = req.query.height ? parseInt(req.query.height as string) : undefined;
+
     if (!filePath) return res.status(400).send('Path is required');
 
-    const decodedPath = path.resolve(decodeURIComponent(filePath));
-    console.log(`[Proxy] Requested: ${filePath} -> Resolved: ${decodedPath}`);
+    // Robust Resolution Strategy: Try multiple interpretations of the path
+    // 1. Resolved absolute path
+    // 2. Raw input (if it's already absolute)
+    // 3. Decoded input (if double encoded)
+    // EXHAUSTIVE RESOLUTION STRATEGY
+    let candidates: string[] = [];
 
-    if (fs.existsSync(decodedPath)) {
-        res.sendFile(decodedPath);
-    } else {
-        // Fallback: Check if the file exists with a different extension (.jpg vs .png)
-        const ext = path.extname(decodedPath).toLowerCase();
-        const altExt = ext === '.jpg' ? '.png' : (ext === '.png' ? '.jpg' : null);
+    // 1. As-is
+    candidates.push(filePath);
+    candidates.push(path.resolve(filePath));
+    candidates.push(path.normalize(filePath));
 
-        if (altExt) {
-            const altPath = decodedPath.slice(0, -ext.length) + altExt;
-            if (fs.existsSync(altPath)) {
-                console.log(`[Proxy] Fallback found: ${altPath}`);
-                return res.sendFile(altPath);
-            }
+    // 2. Single Decode
+    try {
+        const d1 = decodeURIComponent(filePath);
+        candidates.push(d1);
+        candidates.push(path.resolve(d1));
+    } catch (e) { }
+
+    // 3. Double Decode (in case of double encoding)
+    try {
+        const d2 = decodeURIComponent(decodeURIComponent(filePath));
+        candidates.push(d2);
+        candidates.push(path.resolve(d2));
+    } catch (e) { }
+
+    // 4. Fallback for potential legacy encoded chars
+    if (filePath.includes('%')) {
+        candidates.push(unescape(filePath));
+    }
+
+    // Clean and dedup
+    candidates = [...new Set(candidates.filter(Boolean))];
+
+    console.log(`[Proxy] Candidates: ${JSON.stringify(candidates)}`);
+    // Remove duplicates
+    candidates = [...new Set(candidates)];
+
+    let finalPath = '';
+
+    // 1. Search for exact match
+    for (const p of candidates) {
+        if (fs.existsSync(p)) {
+            finalPath = p;
+            break;
         }
+    }
 
-        // Final desperation: check directory if it's an asset
-        if (decodedPath.includes('storage\\assets')) {
-            const dir = path.dirname(decodedPath);
-            const base = path.basename(decodedPath, ext); // e.g. "cover"
-            if (fs.existsSync(dir)) {
-                const files = fs.readdirSync(dir);
-                const match = files.find(f => f.startsWith(base + '.'));
-                if (match) {
-                    const foundPath = path.join(dir, match);
-                    console.log(`[Proxy] Deep fallback found: ${foundPath}`);
-                    return res.sendFile(foundPath);
+    // 2. Fallback extensions (if exact match failed)
+    if (!finalPath) {
+        for (const p of candidates) {
+            const ext = path.extname(p).toLowerCase();
+            const altExt = ext === '.jpg' ? '.png' : (ext === '.png' ? '.jpg' : null);
+            if (altExt) {
+                const altPath = p.slice(0, -ext.length) + altExt;
+                if (fs.existsSync(altPath)) {
+                    finalPath = altPath;
+                    break;
                 }
             }
         }
-
-        console.warn(`[Proxy] NOT FOUND: ${decodedPath}`);
-        res.status(404).send('File not found');
     }
+
+    // 3. Deep fallback for assets (storage logic)
+    if (!finalPath) {
+        for (const p of candidates) {
+            // Try looking in CWD/system/storage/assets if path seems lost
+            if (p.includes('storage') && p.includes('assets') && !p.includes('PhantomLauncher')) {
+                try {
+                    const possiblePath = path.resolve(process.cwd(), 'system', 'storage', 'assets', path.basename(path.dirname(p)), path.basename(p));
+                    if (fs.existsSync(possiblePath)) {
+                        finalPath = possiblePath;
+                        console.log(`[Proxy] STORAGE RECOVERY MATCH: ${finalPath}`);
+                        break;
+                    }
+                } catch (e) { }
+            }
+
+            if (p.includes('storage\\assets')) {
+                const dir = path.dirname(p);
+                const ext = path.extname(p);
+                const base = path.basename(p, ext);
+                if (fs.existsSync(dir)) {
+                    const files = fs.readdirSync(dir);
+                    const match = files.find(f => f.startsWith(base + '.'));
+                    if (match) {
+                        finalPath = path.join(dir, match);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. HAIL MARY: If lookups fail, try the first reasonable candidate anyway
+    if (!finalPath) {
+        console.warn(`[Proxy] Lookup failed for: ${filePath}. Candidates: ${JSON.stringify(candidates)}`);
+        finalPath = candidates[0];
+        console.warn(`[Proxy] Attempting Blind Read on: ${finalPath}`);
+    }
+
+    // Serving Logic
+    if (width || height) {
+        const ext = path.extname(finalPath) || '.png';
+
+        // FIX: Use hash of full path + mtime + size to ensure uniqueness AND freshness
+        // This prevents collisions and ensures updates are reflected immediately
+        let stats;
+        try {
+            stats = fs.statSync(finalPath);
+        } catch (e) {
+            stats = { mtimeMs: 0, size: 0 };
+        }
+
+        let hash = 5381;
+        // Include mtime and size in the hash input
+        const str = `${finalPath}_${stats.mtimeMs}_${stats.size}`;
+
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
+        }
+        const safeHash = (hash >>> 0).toString(36);
+
+        const safeBase = path.basename(finalPath, ext).replace(/[^a-z0-9\-_]/gi, '_');
+        const cacheFilename = `${safeBase}_${safeHash}_${width || 'auto'}x${height || 'auto'}${ext}`;
+        const cacheDir = path.join(path.dirname(process.execPath), 'phantom_cache');
+        const cachePath = path.join(cacheDir, cacheFilename);
+
+        if (fs.existsSync(cachePath)) {
+            return res.sendFile(cachePath);
+        }
+
+        if (!fs.existsSync(cacheDir)) {
+            try { fs.mkdirSync(cacheDir, { recursive: true }); } catch (e) { }
+        }
+
+        try {
+            if (!Jimp) throw new Error("Jimp is undefined");
+
+            const image = await Jimp.read(finalPath);
+
+            if (width && height) image.cover(width, height);
+            else if (width) image.resize(width, Jimp.AUTO);
+            else if (height) image.resize(Jimp.AUTO, height);
+
+            await image.writeAsync(cachePath);
+            return res.sendFile(cachePath);
+        } catch (e: any) {
+            console.error(`[Proxy] Read/Resize Failed for ${finalPath}:`, e.message);
+            return res.sendFile(finalPath, (err) => {
+                if (err && !res.headersSent) res.status(404).send(`Not Found: ${finalPath}`);
+            });
+        }
+    } else {
+        return res.sendFile(finalPath, (err) => {
+            if (err && !res.headersSent) res.status(404).send(`Not Found: ${finalPath}`);
+        });
+    }
+
+
+
+    res.sendFile(finalPath);
 });
 
 // Helper to parse VDF simply using regex

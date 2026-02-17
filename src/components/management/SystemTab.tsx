@@ -48,10 +48,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         </div>
                     ))}
                 </div>
-                <div className="flex flex-col gap-2 mt-4">
-                    <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.neural_terminal_icon')}</label>
-                    <AssetInput label={t('system_tab.icon_src')} value={allGamesCategory.icon} onChange={v => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, icon: v } : c))} triggerFileBrowser={triggerFileBrowser} target="icon" previewType="icon" accentColor={activeAccent} onResolveAsset={onResolveAsset} />
-                </div>
+
                 <div className="flex flex-col gap-2 mt-4">
                     <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.taskbar_offset_buffer')}</label>
                     <div className="flex justify-between items-center mb-1"><span className="text-[11px] font-mono text-white/90 shadow-black drop-shadow-md" style={{ textShadow: `0 0 10px ${activeAccent}` }}>{taskbarMargin}PX</span></div>
@@ -70,6 +67,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         { key: 'vignetteEnabled', label: t('system_tab.vignette_shadow') },
                         { key: 'scanlineEnabled', label: t('system_tab.scanline_fx') },
                         { key: 'gridEnabled', label: t('system_tab.matrix_grid') },
+                        { key: 'gridEnabled', label: t('system_tab.matrix_grid') },
                         { key: 'bgAnimationsEnabled', label: t('system_tab.ambient_motion') }
                     ].map(toggle => (
                         <div key={toggle.key} className="flex items-center justify-between py-2 border-b border-white/5">
@@ -82,6 +80,45 @@ const SystemTab: React.FC<SystemTabProps> = ({
                             </button>
                         </div>
                     ))}
+                </div>
+
+                <div className="flex flex-col gap-4 mt-8 pt-4 border-t border-white/10">
+                    <div className="flex flex-col gap-1">
+                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.performance_protocol')}</label>
+                        <span className="text-[7px] text-white/40 font-mono">ADJUST_RENDER_FIDELITY</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                        {[
+                            { id: 'low', label: 'LOW [ECO]' },
+                            { id: 'balanced', label: 'BALANCED' },
+                            { id: 'high', label: 'HIGH [GPU]' }
+                        ].map(mode => {
+                            const currentMode = (allGamesCategory as any).performanceMode || 'high';
+                            const isActive = currentMode === mode.id;
+
+                            return (
+                                <button
+                                    key={mode.id}
+                                    onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, performanceMode: mode.id as any } : c))}
+                                    className={`
+                                        py-3 px-2 border-2 text-[8px] lg:text-[9px] font-bold uppercase tracking-widest transition-all
+                                        ${isActive
+                                            ? `bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-[1.02]`
+                                            : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white'
+                                        }
+                                    `}
+                                >
+                                    {mode.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {(allGamesCategory as any).performanceMode === 'low' && (
+                        <div className="text-[8px] text-emerald-400 font-mono mt-1 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                            OPTIMIZED_FOR_INTEGRATED_GRAPHICS :: BLUR_DISABLED
+                        </div>
+                    )}
                 </div>
             </Subsection>
 

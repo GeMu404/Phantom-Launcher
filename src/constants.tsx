@@ -1,7 +1,7 @@
 
 import { Category } from './types';
 
-export const APP_VERSION = '0.7.03';
+export const APP_VERSION = '0.7.04';
 
 // CONFIGURACIÓN DE ASSETS
 // Usamos rutas de texto directas.

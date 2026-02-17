@@ -30,6 +30,7 @@ export interface Category {
   gridEnabled?: boolean;
   scanlineEnabled?: boolean;
   vignetteEnabled?: boolean;
+  performanceMode?: 'high' | 'balanced' | 'low';
   // Chroma_Protocol Palette
   assetColor?: string;
   nodeColor?: string;

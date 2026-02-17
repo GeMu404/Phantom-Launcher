@@ -47,7 +47,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
 }) => {
     if (!isFormOpen) {
         return (
-            <button onClick={() => setIsFormOpen(true)} className="w-full py-10 border border-dashed border-white/10 bg-black/20 hover:bg-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-3 group/hatch">
+            <button onClick={() => setIsFormOpen(true)} className="w-full py-10 border-2 border-dashed border-white/10 bg-black/20 hover:bg-white/5 hover:border-white/20 transition-all flex flex-col items-center justify-center gap-3 group/hatch">
                 <div className="font-['Press_Start_2P'] text-[10px] text-white/40 group-hover/hatch:text-white transition-colors" style={{ textShadow: `0 0 10px ${activeAccent}44` }}>[ ASSET_HATCH ]</div>
                 <span className="text-[7px] opacity-20 uppercase tracking-[0.4em]">Initialize New Project Entry</span>
             </button>
@@ -55,7 +55,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
     }
 
     return (
-        <Subsection title={editingId ? 'MODIFY_UNIT_REGISTRY' : 'INITIALIZE_NEW_UNIT'} onSync={handleSaveGame} syncLabel="COMMIT_CHANGES" accentColor={activeAccent}>
+        <Subsection title={editingId ? 'MODIFY_UNIT_REGISTRY' : 'INITIALIZE_NEW_UNIT'} onSync={handleSaveGame} syncLabel="COMMIT_UNIT_DATA" accentColor={activeAccent}>
             <div className="col-span-full flex flex-col gap-6 w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                     <div className="flex flex-col gap-2">
@@ -182,7 +182,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                     </div>
                 </div>
 
-                <button onClick={() => setIsFormOpen(false)} className="w-full mt-10 py-4 text-[7px] opacity-20 hover:opacity-100 uppercase font-bold tracking-widest transition-all border-t-2 border-white/5 hover:bg-white/5">DISCONNECT_REGISTRY_INTERFACE</button>
+                <button onClick={() => setIsFormOpen(false)} className="w-full mt-10 py-4 text-[7px] opacity-20 hover:opacity-100 uppercase font-bold tracking-widest transition-all border-t-2 border-white/5 hover:bg-white/5">DISCONNECT_INTERFACE</button>
             </div>
         </Subsection>
     );

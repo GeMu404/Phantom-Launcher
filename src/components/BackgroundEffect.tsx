@@ -11,6 +11,7 @@ interface BackgroundEffectProps {
   gridEnabled?: boolean;
   vignetteEnabled?: boolean;
   paused?: boolean;
+  performanceMode?: 'high' | 'balanced' | 'low';
 }
 
 const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
@@ -21,7 +22,8 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
   animationsEnabled = true,
   gridEnabled = true,
   vignetteEnabled = true,
-  paused = false
+  paused = false,
+  performanceMode = 'high'
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [displayWallpaper, setDisplayWallpaper] = useState<{ current: string | undefined, prev: string | undefined }>({
@@ -67,27 +69,36 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
 
     cleanup();
 
+    // PERFORMANCE: Skip blobs entirely in LOW mode
+    if (performanceMode === 'low') return;
+
     if (!animationsEnabled || paused) return;
 
-    const numShapes = 6;
+    // PERFORMANCE: Reduce blobs in BALANCED mode
+    const numShapes = performanceMode === 'balanced' ? 3 : 6;
+
     for (let i = 0; i < numShapes; i++) {
       const shape = document.createElement('div');
       shape.className = 'blob-shape absolute opacity-[0.08] pointer-events-none transition-colors duration-1000';
       const size = Math.random() * 500 + 300;
       shape.style.width = `${size}px`;
       shape.style.height = `${size}px`;
-      shape.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
-      shape.style.backgroundColor = color;
+      // OPTIMIZATION: Use radial-gradient instead of heavy blur filter
+      // This is much faster for the GPU to compost
+      shape.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
       shape.style.left = `${Math.random() * 100}%`;
       shape.style.top = `${Math.random() * 100}%`;
-      shape.style.filter = 'blur(120px)';
+      // shape.style.filter = 'blur(120px)'; // REMOVED FOR PERFORMANCE
+
+      // OPTIMIZATION: Remove complex blending in balanced mode if needed, 
+      // but usually the count is the biggest factor.
+
       blobContainer.appendChild(shape);
 
       (anime as any)({
         targets: shape,
         translateX: () => (anime as any).random(-200, 200),
         translateY: () => (anime as any).random(-200, 200),
-        rotate: '360deg',
         duration: () => (anime as any).random(15000, 30000),
         direction: 'alternate',
         loop: true,
@@ -96,7 +107,7 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
     }
 
     return cleanup;
-  }, [color, animationsEnabled, paused]);
+  }, [color, animationsEnabled, paused, performanceMode]);
 
   const getObjectFitStyle = () => {
     switch (wallpaperMode) {

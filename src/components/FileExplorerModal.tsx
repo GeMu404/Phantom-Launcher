@@ -109,7 +109,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
     const isFiltered = (item: FileItem) => {
         if (item.isDir) return true;
         if (filter === 'any') return true;
-        if (filter === 'exe') return item.ext === '.exe' || item.ext === '.lnk' || item.ext === '.bat';
+        if (filter === 'exe') return item.ext === '.exe' || item.ext === '.lnk' || item.ext === '.bat' || item.ext === '.url';
         if (filter === 'image') return ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(item.ext);
         if (filter === 'video') return ['.mp4', '.webm', '.mov'].includes(item.ext);
         return true;
@@ -239,7 +239,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                     {contents.filter(isFiltered).map((item, i) => {
                                         const isMatch = !item.isDir && filter !== 'any' && (
-                                            (filter === 'exe' && (item.ext === '.exe' || item.ext === '.lnk' || item.ext === '.bat')) ||
+                                            (filter === 'exe' && (item.ext === '.exe' || item.ext === '.lnk' || item.ext === '.bat' || item.ext === '.url')) ||
                                             (filter === 'image' && ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(item.ext)) ||
                                             (filter === 'video' && ['.mp4', '.webm', '.mov'].includes(item.ext))
                                         );
