@@ -11,9 +11,10 @@ interface GameInfoProps {
   onLaunch: () => void;
   taskbarMargin?: number;
   onResolveAsset: (path: string | undefined) => string;
+  performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
 }
 
-const GameInfo: React.FC<GameInfoProps> = ({ game, color, isLaunching, onLaunch, taskbarMargin = 0, onResolveAsset }) => {
+const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color, isLaunching, onLaunch, taskbarMargin = 0, onResolveAsset, performanceMode = 'balanced' }) => {
   const logoRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -22,13 +23,19 @@ const GameInfo: React.FC<GameInfoProps> = ({ game, color, isLaunching, onLaunch,
     setImgStatus('loading');
     if (game?.logo) {
       const img = new Image();
-      img.src = onResolveAsset(game.logo);
+      const resolved = onResolveAsset(game.logo);
+      img.src = resolved;
       img.onload = () => setImgStatus('loaded');
       img.onerror = () => setImgStatus('error');
+      // Cleanup: release reference on unmount/change
+      return () => { img.onload = null; img.onerror = null; img.src = ''; };
     } else {
       setImgStatus('error');
     }
+  }, [game?.id, game?.logo]);
 
+  // Container entrance animation
+  useEffect(() => {
     if (containerRef.current) {
       (anime as any).remove(containerRef.current);
       (anime as any)({
@@ -39,7 +46,7 @@ const GameInfo: React.FC<GameInfoProps> = ({ game, color, isLaunching, onLaunch,
         easing: 'easeOutExpo'
       });
     }
-  }, [game?.id, game?.logo]);
+  }, [game?.id]);
 
   useEffect(() => {
     if (logoRef.current && (imgStatus === 'loaded' || imgStatus === 'error')) { // Animate for fallback too
@@ -72,8 +79,13 @@ const GameInfo: React.FC<GameInfoProps> = ({ game, color, isLaunching, onLaunch,
             ref={logoRef}
             src={onResolveAsset(game.logo)}
             alt={game.title}
-            className="max-h-full w-auto max-w-full object-contain object-right-bottom will-change-transform"
-            style={{ filter: `drop-shadow(0 0 4px ${color}) drop-shadow(0 0 8px ${color}77)` }}
+            className="max-h-full w-auto max-w-full object-contain object-right-bottom"
+            style={performanceMode === 'high'
+              ? { filter: `drop-shadow(0 0 2px #fff) drop-shadow(0 0 12px ${color}) drop-shadow(0 0 30px ${color})` }
+              : performanceMode === 'balanced'
+                ? { filter: `drop-shadow(0 0 10px ${color})` }
+                : {}
+            }
           />
         ) : (
           /* Fallback: Template Logo + Text Overlay or just Template Logo if it's generic */
@@ -84,7 +96,7 @@ const GameInfo: React.FC<GameInfoProps> = ({ game, color, isLaunching, onLaunch,
               alt="Logo"
               onError={(e) => e.currentTarget.style.display = 'none'}
               className="max-h-[80px] w-auto object-contain mb-2 opacity-80"
-              style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+              style={{ opacity: 0.8 }}
             />
             <h3 className="text-white font-['Press_Start_2P'] uppercase text-right leading-tight" style={{ fontSize: 'calc(10px + 0.8vh)', textShadow: `0 0 15px ${color}` }}>
               {game.title}
@@ -94,6 +106,6 @@ const GameInfo: React.FC<GameInfoProps> = ({ game, color, isLaunching, onLaunch,
       </div>
     </div>
   );
-};
+});
 
 export default GameInfo;

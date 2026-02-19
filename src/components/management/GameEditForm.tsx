@@ -56,8 +56,8 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
 
     return (
         <Subsection title={editingId ? 'MODIFY_UNIT_REGISTRY' : 'INITIALIZE_NEW_UNIT'} onSync={handleSaveGame} syncLabel="COMMIT_UNIT_DATA" accentColor={activeAccent}>
-            <div className="col-span-full flex flex-col gap-6 w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
+            <div className="col-span-full flex flex-col gap-4 w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                     <div className="flex flex-col gap-2">
                         <label className="text-[7px] lg:text-[8px] opacity-30 uppercase tracking-[0.2em] font-bold">Unit_Identifier</label>
                         <div className="flex gap-2">

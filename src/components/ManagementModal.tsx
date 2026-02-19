@@ -8,6 +8,9 @@ import GameEditForm from './management/GameEditForm';
 import CategoryEditForm from './management/CategoryEditForm';
 import SystemTab from './management/SystemTab';
 import AssetSearchModal from './AssetSearchModal';
+import GamesTab from './management/GamesTab';
+import CategoriesTab from './management/CategoriesTab';
+import IntegrationsTab from './management/IntegrationsTab';
 import { useTranslation } from '../hooks/useTranslation';
 // const useTranslation = () => ({ t: (key: string) => key });
 
@@ -153,6 +156,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
       setEditingId(null);
       setSearchQuery('');
       setConfirmData(null);
+      setIsFormOpen(false);
       resetForms();
     }
   }, [isOpen]);
@@ -201,7 +205,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           wallpaper: cat.wallpaper || '',
           wallpaperMode: cat.wallpaperMode || 'cover',
           gridOpacity: cat.gridOpacity ?? 0.15,
-          enabled: cat.enabled ?? true
+          enabled: cat.enabled ?? true,
+          ...cat // Spread everything else to be safe
         });
       }
     }
@@ -228,7 +233,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
   const scrollToForm = () => {
     setIsFormOpen(true);
     setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
   };
 
@@ -338,7 +343,11 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
       }
       newId = candidateId;
     }
+    // Preserve existing game metadata (e.g., lastPlayed, playTime)
+    const existingGame = categories.flatMap(c => c.games).find(g => g.id === newId);
+
     const gameObj: Game = {
+      ...existingGame!, // Spread existing props first
       id: newId!,
       title: gameForm.title,
       cover: gameForm.cover,
@@ -346,7 +355,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
       logo: gameForm.logo,
       execPath: gameForm.execPath,
       execArgs: gameForm.execArgs,
-      source: 'manual',
+      source: existingGame?.source || 'manual', // Keep source or default to manual
       wallpaper: gameForm.wallpaper
     };
     onUpdateCategories(prev => prev.map(cat => {
@@ -380,25 +389,64 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     if (tab === 'categories') {
       const catId = editingId;
       if (!catId) return;
-      setCatForm(prev => ({ ...prev, [target]: path }));
-      onUpdateCategories(prev => prev.map(c => c.id === catId ? { ...c, [target]: path } : c));
+      // Import the file to local storage so it persists
+      try {
+        const importRes = await fetch('/api/assets/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourcePath: path, gameId: `_cat_${catId}`, assetType: target })
+        });
+        const importData = await importRes.json();
+        const storedPath = importData.path || path;
+        setCatForm(prev => ({ ...prev, [target]: storedPath }));
+        const exists = categories.some(c => c.id === catId);
+        if (exists) {
+          onUpdateCategories(prev => prev.map(c => c.id === catId ? { ...c, [target]: storedPath } : c));
+        } else {
+          onUpdateCategories(prev => [...prev, { id: catId, ...catForm, [target]: storedPath, games: [] } as any]);
+        }
+      } catch (e) {
+        // Fallback to raw path if import fails
+        setCatForm(prev => ({ ...prev, [target]: path }));
+        const exists = categories.some(c => c.id === catId);
+        if (exists) {
+          onUpdateCategories(prev => prev.map(c => c.id === catId ? { ...c, [target]: path } : c));
+        } else {
+          onUpdateCategories(prev => [...prev, { id: catId, ...catForm, [target]: path, games: [] } as any]);
+        }
+      }
       return;
     }
     if (target === 'execPath') {
+      const gameId = editingId || activeTempId;
+      if (!gameId) return;
+
       try {
+        // 1. Create Internal Portable Shortcut
+        const importRes = await fetch('/api/assets/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourcePath: path, gameId, assetType: 'launch' })
+        });
+        const importData = await importRes.json();
+        const internalPath = importData.path || path;
+
+        // 2. Fetch original info for metadata (args, resolved title)
         const infoRes = await fetch('/api/files/info', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filePath: path })
         });
         const info = await infoRes.json();
+
         setGameForm(prev => ({
           ...prev,
-          execPath: info.TargetPath || path,
-          execArgs: info.Arguments || '',
-          title: prev.title || path.split('\\').pop()?.split('/').pop()?.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ').toUpperCase() || ''
+          execPath: internalPath,
+          execArgs: info.Arguments || prev.execArgs || '',
+          title: prev.title || info.TargetPath?.split('\\').pop()?.split('/').pop()?.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ').toUpperCase() || path.split('\\').pop()?.split('/').pop()?.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ').toUpperCase() || ''
         }));
       } catch (e) {
+        console.error("Internal shortcut creation failed", e);
         setGameForm(prev => ({ ...prev, execPath: path }));
       }
       return;
@@ -442,7 +490,23 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const handleSaveCategoryData = async () => {
     if (!catForm.name || !editingId) return;
-    onUpdateCategories(prev => prev.map(c => c.id === editingId ? { ...c, ...catForm } : c));
+
+    onUpdateCategories(prev => {
+      const exists = prev.some(c => c.id === editingId);
+
+      // If editing 'recent' or 'all' and it's not in the state yet (virtual), add it
+      if (!exists && (editingId === 'recent' || editingId === 'all')) {
+        const newCatPart = {
+          id: editingId,
+          ...catForm,
+          games: [] // Games are managed dynamically for these, only style persists
+        };
+        return [...prev, newCatPart as any];
+      }
+
+      return prev.map(c => c.id === editingId ? { ...c, ...catForm } : c);
+    });
+
     setIsFormOpen(false);
     setEditingId(null);
     resetForms();
@@ -559,157 +623,69 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             ))}
           </div>
 
-          <div className="flex-1 p-5 lg:p-10 overflow-y-auto custom-scrollbar font-['Space_Mono'] pb-24 lg:pb-32 backdrop-blur-xl">
+          <div ref={scrollContainerRef} className="flex-1 p-5 lg:p-10 overflow-y-auto custom-scrollbar font-['Space_Mono'] pb-24 lg:pb-32">
             {tab === 'games' && (
-              <div className="flex flex-col gap-10">
-                <div ref={formRef}>
-                  <GameEditForm isFormOpen={isFormOpen} setIsFormOpen={setIsFormOpen} editingId={editingId} activeAccent={activeAccent} gameForm={gameForm} setGameForm={setGameForm} handleSaveGame={handleSaveGame} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} otherCategories={otherCategories} sgdbKey={sgdbKey} sgdbEnabled={sgdbEnabled} setSearchModal={setSearchModal} />
-                  {/* {isFormOpen && <div className="p-4 bg-red-500/20 text-white font-mono">GAME EDIT FORM TEMPORARILY DISABLED FOR DEBUGGING</div>} */}
-                </div>
-                <div className="flex flex-col gap-6 lg:gap-8">
-                  <div className="flex justify-between items-center border-b-2 border-white/5 pb-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-60 text-white">{t('registry.storage_inventory')}</h4>
-                    <div className="flex gap-4">
-                      <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('registry.query_placeholder')} className="bg-black/40 text-[10px] border-2 border-white/10 p-2 outline-none uppercase font-mono w-40 lg:w-64" />
-                      <button onClick={handleWipeMasterRegistry} className="px-5 py-2 border-2 border-red-500 text-red-500 font-bold text-[8px] uppercase">{t('registry.erase_registry')}</button>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                      <button onClick={() => setFilterCategory('all')} className={`px-3 py-1 text-[8px] font-bold uppercase border ${filterCategory === 'all' ? 'bg-white text-black border-white' : 'text-white/40 border-white/10'}`}>{t('nav.all_units')}</button>
-                      {categories.filter(c => c.id !== 'all' && c.id !== 'hidden').map(cat => (
-                        <button key={cat.id} onClick={() => setFilterCategory(cat.id)} className={`px-3 py-1 text-[8px] font-bold uppercase border`} style={{ backgroundColor: filterCategory === cat.id ? cat.color : 'transparent', color: filterCategory === cat.id ? '#000' : '#fff', borderColor: cat.color }}>{cat.name}</button>
-                      ))}
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      {sortedAndFilteredMasterGames.map(g => (
-                        <div key={g.id} className="relative group/row min-h-[80px]" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
-                          <div className="absolute inset-0 pointer-events-none transition-colors" style={{ backgroundColor: `${activeAccent}33` }} />
-                          <div className="absolute inset-[2px] bg-[#050505] flex items-center justify-between p-3 lg:p-5 hover:bg-white/5 transition-all" style={{ clipPath: 'polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px)' }}>
-                            <div className="flex items-center gap-4">
-                              <img src={onResolveAsset(g.cover)} className="w-8 h-12 lg:w-10 lg:h-14 object-cover opacity-80 border-2 border-white/10" alt="" />
-                              <div className="flex flex-col truncate">
-                                <span className="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.15em] text-white">{g.title}</span>
-                                <span className="text-[6px] opacity-40 uppercase font-mono">{`REF::${g.id.substring(0, 8)}`}</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-3 opacity-0 group-hover/row:opacity-100 transition-all">
-                              <button onClick={() => { setEditingId(g.id); setGameForm({ ...g, categoryIds: categories.filter(c => c.id !== 'all' && c.games.some(x => x.id === g.id)).map(c => c.id), wallpaper: g.wallpaper || '' }); scrollToForm(); }} className="px-5 py-2 text-[9px] font-bold uppercase border-2 hover:bg-white/10 transition-colors" style={{ borderColor: activeAccent, color: activeAccent }}>EDIT</button>
-                              <button onClick={() => handleDeleteGame(g.id)} className="px-5 py-2 text-[9px] font-bold border-2 border-red-500 text-red-500 hover:bg-red-500/10 transition-colors">PURGE</button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <GamesTab
+                isFormOpen={isFormOpen}
+                setIsFormOpen={setIsFormOpen}
+                editingId={editingId}
+                setEditingId={setEditingId}
+                activeAccent={activeAccent}
+                gameForm={gameForm}
+                setGameForm={setGameForm}
+                handleSaveGame={handleSaveGame}
+                triggerFileBrowser={triggerFileBrowser}
+                onResolveAsset={onResolveAsset}
+                otherCategories={otherCategories}
+                sgdbKey={sgdbKey}
+                sgdbEnabled={sgdbEnabled}
+                setSearchModal={setSearchModal}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleWipeMasterRegistry={handleWipeMasterRegistry}
+                filterCategory={filterCategory}
+                setFilterCategory={setFilterCategory}
+                categories={categories}
+                sortedGames={sortedAndFilteredMasterGames}
+                handleDeleteGame={handleDeleteGame}
+                scrollToForm={scrollToForm}
+              />
             )}
 
             {tab === 'categories' && (
-              <div className="flex flex-col gap-10">
-                {!editingId ? (
-                  <div className="flex flex-col gap-10">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-8">
-                      <div onClick={handleCreateCategory} className="relative group cursor-pointer min-h-[140px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
-                        <div className="absolute inset-0 bg-white/10 group-hover:bg-white/30 transition-all" />
-                        <div className="absolute inset-[2px] bg-black/40 flex flex-col items-center justify-center gap-3" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
-                          <div className="w-10 h-10 flex items-center justify-center border-2 border-white/10 text-white/20 group-hover:text-white group-hover:border-white transition-all text-2xl font-light">+</div>
-                          <span className="text-[9px] font-bold text-white uppercase tracking-[0.3em] opacity-40 group-hover:opacity-100">INITIALIZE_NODE</span>
-                        </div>
-                      </div>
-                      {categories.filter(c => c.id === 'all' || c.id === 'recent').concat(editableCategories.filter(c => c.id === 'recent' && !categories.some(x => x.id === 'recent'))).map(cat => (
-                        <div key={cat.id} onClick={() => { setEditingId(cat.id); scrollToForm(); }} className="relative group cursor-pointer min-h-[140px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
-                          <div className="absolute inset-0 pointer-events-none transition-colors" style={{ backgroundColor: `${cat.color}33` }} />
-                          <div className="absolute inset-[2px] bg-[#080808] flex flex-col items-center justify-center gap-3 group/inner" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
-                            <div className="w-12 h-12 flex items-center justify-center transform group-hover/inner:scale-110 transition-transform">
-                              {cat.icon ? <img src={onResolveAsset(cat.icon)} className="w-full h-full object-contain brightness-0 invert opacity-60 group-hover/inner:opacity-100" /> : <div className="w-12 h-12 bg-white/10" />}
-                            </div>
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">{cat.name}</span>
-                              <span className="text-[7px] font-bold uppercase tracking-tighter" style={{ color: cat.color }}>{cat.games.length} UNITS</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:gap-6">
-                      {categories.filter(c => c.id !== 'recent' && c.id !== 'all' && c.id !== 'hidden').map((c, idx) => (
-                        <div key={c.id} className="relative group min-h-[160px] lg:min-h-[200px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
-                          <div className="absolute inset-0 pointer-events-none transition-colors" style={{ backgroundColor: `${c.color}33` }} />
-                          <div className="absolute inset-[2px] bg-[#080808] flex flex-col overflow-hidden group/inner" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
-                            <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 cursor-pointer relative group/inner" onClick={() => { setEditingId(c.id); scrollToForm(); }}>
-                              <div className="absolute top-0 right-0 p-3 opacity-30 font-mono text-[24px] font-bold" style={{ color: c.color }}>{String(idx + 1).padStart(2, '0')}</div>
-                              <div className="w-12 h-12 flex items-center justify-center transform group-hover/inner:scale-110 transition-transform">
-                                {c.icon ? <img src={onResolveAsset(c.icon)} className="w-full h-full object-contain brightness-0 invert opacity-60 group-hover/inner:opacity-100" /> : <div className="w-10 h-10 border-2 border-white/10 flex items-center justify-center text-white/20">?</div>}
-                              </div>
-                              <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">{c.name}</span>
-                                <span className="text-[7px] font-bold uppercase" style={{ color: c.color }}>{c.games.length} UNITS</span>
-                              </div>
-                            </div>
-                            <div className="h-10 border-t-2 border-white/5 bg-white/[0.02] flex divide-x-2 divide-white/5 opacity-60 group-hover:opacity-100 transition-all">
-                              <button onClick={(e) => { e.stopPropagation(); idx > 0 && handleMoveCategory(c.id, 'up'); }} disabled={idx <= 0} className="flex-1 hover:bg-white/10 text-white/60 text-[10px]">▲</button>
-                              <button onClick={(e) => { e.stopPropagation(); idx < categories.filter(x => x.id !== 'recent' && x.id !== 'all' && x.id !== 'hidden').length - 1 && handleMoveCategory(c.id, 'down'); }} disabled={idx >= categories.filter(x => x.id !== 'recent' && x.id !== 'all' && x.id !== 'hidden').length - 1} className="flex-1 hover:bg-white/10 text-white/60 text-[10px]">▼</button>
-                              <button onClick={(e) => { e.stopPropagation(); handleDeleteCategory(c.id); }} className="flex-[1.5] bg-red-900/10 hover:bg-red-600 text-red-500 hover:text-white text-[8px] font-bold uppercase tracking-widest">PURGE</button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-10">
-                    <div className="flex justify-between items-center border-b-2 border-white/5 pb-4">
-                      <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">Node: {catForm.name}</h3>
-                      <button onClick={() => { setEditingId(null); setIsFormOpen(false); }} className="text-[9px] opacity-40 hover:opacity-100 uppercase font-bold text-white">Back</button>
-                    </div>
-                    <CategoryEditForm isFormOpen={isFormOpen} setIsFormOpen={setIsFormOpen} gameList={categories.find(c => c.id === editingId)?.games || []} editingId={editingId} catForm={catForm} setCatForm={setCatForm} handleSaveCategoryData={handleSaveCategoryData} handleMoveGameInCategory={handleMoveGameInCategory} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} activeAccent={activeAccent} />
-                    {/* {isFormOpen && <div className="p-4 bg-red-500/20 text-white font-mono">CATEGORY EDIT FORM TEMPORARILY DISABLED FOR DEBUGGING</div>} */}
-                  </div>
-                )}
-              </div>
+              <CategoriesTab
+                editingId={editingId}
+                setEditingId={setEditingId}
+                handleCreateCategory={handleCreateCategory}
+                categories={categories}
+                editableCategories={editableCategories}
+                onResolveAsset={onResolveAsset}
+                handleMoveCategory={handleMoveCategory}
+                handleDeleteCategory={handleDeleteCategory}
+                isFormOpen={isFormOpen}
+                setIsFormOpen={setIsFormOpen}
+                catForm={catForm}
+                setCatForm={setCatForm}
+                handleSaveCategoryData={handleSaveCategoryData}
+                handleMoveGameInCategory={handleMoveGameInCategory}
+                triggerFileBrowser={triggerFileBrowser}
+                activeAccent={activeAccent}
+                scrollToForm={scrollToForm}
+              />
             )}
 
             {tab === 'integrations' && (
-              <div className="flex flex-col gap-10">
-                <Subsection title="Sync_Protocol: Steam" onSync={handleSyncSteamLibrary} syncLabel="INIT_SYNC" accentColor={activeAccent}>
-                  <div className="flex items-center gap-4 p-4 bg-white/[0.01] border-2 border-white/5 col-span-2">
-                    <img src="./res/external/steam_icon.png" className="w-8 h-8 opacity-80" alt="Steam" />
-                    <span className="text-[9px] font-bold text-white uppercase tracking-widest">Valve_Master_System</span>
-                  </div>
-                </Subsection>
-                <Subsection title="Xbox" onSync={handleSyncXboxLibrary} syncLabel="INIT_SYNC" accentColor={activeAccent}>
-                  <div className="flex items-center gap-4 p-4 bg-white/[0.01] border-2 border-white/5 col-span-2">
-                    <img src="./res/external/xbox.png" className="w-8 h-8 opacity-80" alt="Xbox" />
-                    <span className="text-[9px] font-bold text-white uppercase tracking-widest">Xbox_Game_Pass</span>
-                  </div>
-                </Subsection>
-
-                <Subsection title="API_Link: SteamGridDB" accentColor={activeAccent}>
-                  <div className="flex flex-col gap-4 col-span-2">
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="text"
-                        value={sgdbKey}
-                        onChange={(e) => handleUpdateSgdbKey(e.target.value)}
-                        placeholder="ENTER_SGDB_API_KEY"
-                        className="flex-1 bg-black/20 border-2 border-white/10 p-3 text-[10px] font-mono text-white outline-none focus:border-white/40 transition-colors"
-                      />
-                      <button
-                        onClick={() => handleToggleSgdb(!sgdbEnabled)}
-                        className={`px-6 py-3 font-bold text-[9px] uppercase tracking-widest border-2 transition-all ${sgdbEnabled ? 'bg-white text-black border-white' : 'text-white/40 border-white/10 hover:border-white/40'}`}
-                      >
-                        {sgdbEnabled ? 'ACTIVE' : 'DISABLED'}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 text-[8px] text-white/40 font-mono">
-                      <span>STATUS:</span>
-                      <span style={{ color: sgdbEnabled ? '#00ff00' : '#ff0000' }}>{sgdbEnabled ? 'LINK_ESTABLISHED' : 'OFFLINE'}</span>
-                    </div>
-                  </div>
-                </Subsection>
-              </div>
+              <IntegrationsTab
+                activeAccent={activeAccent}
+                handleSyncSteamLibrary={handleSyncSteamLibrary}
+                handleSyncXboxLibrary={handleSyncXboxLibrary}
+                sgdbKey={sgdbKey}
+                handleUpdateSgdbKey={handleUpdateSgdbKey}
+                sgdbEnabled={sgdbEnabled}
+                handleToggleSgdb={handleToggleSgdb}
+                steamOptions={steamOptions}
+                setSteamOptions={setSteamOptions}
+              />
             )}
 
             {tab === 'system' && (

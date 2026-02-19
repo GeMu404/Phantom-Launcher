@@ -22,6 +22,11 @@ export interface Category {
   wallpaperMode?: 'fill' | 'contain' | 'cover' | 'center';
   gridOpacity?: number;
   cardOpacity?: number; // Global transparency of cards
+  cardBlurEnabled?: boolean;
+  cardTransparencyEnabled?: boolean;
+  lowResWallpaper?: boolean;
+  wallpaperAAEnabled?: boolean;
+  highQualityBlobs?: boolean;
   configIcon?: string;
   games: Game[];
   enabled?: boolean;
@@ -30,7 +35,7 @@ export interface Category {
   gridEnabled?: boolean;
   scanlineEnabled?: boolean;
   vignetteEnabled?: boolean;
-  performanceMode?: 'high' | 'balanced' | 'low';
+  performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
   // Chroma_Protocol Palette
   assetColor?: string;
   nodeColor?: string;

@@ -1,8 +1,18 @@
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Game, AppState } from '../types';
 import { ASSETS } from '../constants';
 import anime from 'animejs';
+
+/** Returns '#000' or '#fff' for best contrast against the given hex color */
+function getContrastColor(hex: string): string {
+  const c = hex.replace('#', '');
+  const r = parseInt(c.substring(0, 2), 16) / 255;
+  const g = parseInt(c.substring(2, 4), 16) / 255;
+  const b = parseInt(c.substring(4, 6), 16) / 255;
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 0.5 ? '#000' : '#fff';
+}
 
 interface GameTrackProps {
   games: Game[];
@@ -10,12 +20,15 @@ interface GameTrackProps {
   color: string;
   appState: AppState;
   cardOpacity?: number;
+  cardBlurEnabled?: boolean;
+  cardTransparencyEnabled?: boolean;
   onSelect: (index: number) => void;
   onLaunch: () => void;
   onResolveAsset: (path: string | undefined) => string;
+  performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
 }
 
-const GameTrack: React.FC<GameTrackProps> = ({ games, activeIdx, color, appState, cardOpacity = 0.7, onSelect, onLaunch, onResolveAsset }) => {
+const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, color, appState, cardOpacity = 0.7, cardBlurEnabled = true, cardTransparencyEnabled = true, onSelect, onLaunch, onResolveAsset, performanceMode = 'balanced' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({
@@ -47,6 +60,7 @@ const GameTrack: React.FC<GameTrackProps> = ({ games, activeIdx, color, appState
 
 
   const { height, widthActive, widthInactive, gap } = dimensions;
+  const BAR_H_VAL = Math.max(24, height * 0.16);
 
   // VIRTUALIZATION LOGIC
   const BUFFER = 10;
@@ -55,64 +69,49 @@ const GameTrack: React.FC<GameTrackProps> = ({ games, activeIdx, color, appState
   const visibleGames = games.slice(startIndex, renderEnd);
   const leftPadding = startIndex * (widthInactive + gap);
 
-  const CUT_SIZE = Math.max(15, height * 0.12);
-  const CLIP_PATH = `polygon(${CUT_SIZE}px 0, 100% 0, 100% calc(100% - ${CUT_SIZE}px), calc(100% - ${CUT_SIZE}px) 100%, 0 100%, 0 ${CUT_SIZE}px)`;
+  const CUT_SIZE = useMemo(() => Math.max(15, height * 0.12), [height]);
+  const extClip = `polygon(${CUT_SIZE}px 0, 100% 0, 100% calc(100% - ${CUT_SIZE}px), calc(100% - ${CUT_SIZE}px) 100%, 0 100%, 0 ${CUT_SIZE}px)`;
+
+  const lastVisibilityRun = useRef(0);
 
   const calculateVisibility = useCallback(() => {
     if (!trackRef.current) return;
+
+    // Throttle: skip if called too rapidly (anime.js calls this every tick)
+    const now = performance.now();
+    if (now - lastVisibilityRun.current < 16) return; // Cap at ~60fps
+    lastVisibilityRun.current = now;
+
     const items = Array.from(trackRef.current.children) as HTMLElement[];
     const screenWidth = window.innerWidth;
     const blurStart = screenWidth - 100;
     const fadeEnd = screenWidth + 200;
 
-    // PERFORMANCE: Skip dynamic blur in LOW/BALANCED modes
-    // Just handle opacity for basic fade out
-    const isHighPerf = onResolveAsset.name !== 'mock' && (!window.matchMedia('(prefers-reduced-motion: reduce)').matches); // Simple check, but we need the prop
+    // PHASE 1: BATCH ALL READS (no style writes here!)
+    const readings = items.map((item, loopIdx) => {
+      const rect = item.getBoundingClientRect();
+      const realIdx = loopIdx + startIndex;
+      const isActive = realIdx === activeIdx;
+      return { item, rect, isActive, cardRight: rect.right, cardLeft: rect.left };
+    });
 
-    items.forEach((item, loopIdx) => {
+    // PHASE 2: BATCH ALL WRITES (no layout reads here!)
+    readings.forEach(({ item, isActive, cardRight, cardLeft }) => {
       const cardBody = item.querySelector('.card-body') as HTMLElement;
       const infoArea = item.querySelector('.info-area') as HTMLElement;
       if (!cardBody || !infoArea) return;
 
-      const rect = item.getBoundingClientRect();
-      const realIdx = loopIdx + startIndex;
-      const isActive = realIdx === activeIdx;
-
-      const finalCardBodyOpacity = isActive ? 1 : cardOpacity;
-
-      // In low/active mode, we might want to skip this expensive calculation entirely if possible...
-      // But we need the fade out. 
-      // Simplified Logic:
-      const cardRight = rect.right;
-
       if (cardRight > blurStart) {
         const factor = Math.min(Math.max((cardRight - blurStart) / (fadeEnd - blurStart), 0), 1);
-
-        // Only apply BLUR if High Performance checks pass (implicit)
-        // Since we don't have the prop here yet, let's just do it.
-        // ACTUALLY, I missed adding the prop to the interface in the Plan.
-        // I will add it now to use it.
-
-        if (cardRight > fadeEnd) {
-          item.style.opacity = '0';
-        } else {
-          item.style.opacity = (1 - factor).toString();
-        }
-
-        // HEAVY OPERATION: Filter
-        // We will default to NO BLUR unless we are sure.
-        // Actually, let's just use opacity for now as it's the biggest saver.
-        // If I want to correctly use the prop I need to update the interface first.
-        // I will proceed with just opacity optimization for now.
-        // item.style.filter = `blur(${factor * 8}px)`; 
+        item.style.opacity = cardRight > fadeEnd ? '0' : (1 - factor).toString();
       } else {
         item.style.filter = 'none';
         item.style.opacity = '1';
       }
 
-      cardBody.style.opacity = finalCardBodyOpacity.toString();
+      cardBody.style.opacity = isActive ? '1' : cardOpacity.toString();
       infoArea.style.opacity = isActive ? '1' : '0';
-      item.style.visibility = rect.left > screenWidth + 400 ? 'hidden' : 'visible';
+      item.style.visibility = cardLeft > screenWidth + 400 ? 'hidden' : 'visible';
     });
   }, [activeIdx, cardOpacity, startIndex]);
 
@@ -154,44 +153,72 @@ const GameTrack: React.FC<GameTrackProps> = ({ games, activeIdx, color, appState
       });
     } else {
       (anime as any).remove('#active-border');
+      // Reset to SOLID border (offset 0) on cancel/idle
+      const path = document.getElementById('active-border');
+      if (path) {
+        (path as any).style.strokeDashoffset = '0';
+      }
     }
   }, [appState]);
 
   return (
-    <div ref={containerRef} className="w-full relative overflow-visible" style={{ height: `${height + 50}px` }}>
+    <div ref={containerRef} className="w-full relative overflow-visible" style={{ height: `${height + 110}px` }}>
       <div
         ref={trackRef}
-        className="flex items-start will-change-transform"
+        className="flex items-start will-change-transform relative"
         style={{
           height: `${height}px`,
           gap: `${gap}px`,
           paddingLeft: `${leftPadding}px` // VIRTUALIZATION OFFSET
         }}
       >
+        {/* RADIANT NEON DEFINITION */}
+        <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+          <defs>
+            <filter id="neon-shadow" x="-50%" y="-50%" width="200%" height="200%">
+              {/* Expand the shape slightly to create a clean 'halo' edge */}
+              <feMorphology in="SourceAlpha" result="expanded" operator="dilate" radius="1.5" />
+              <feGaussianBlur in="expanded" result="blur" stdDeviation="3.5" />
+              <feFlood flood-color={color} result="glowColor" />
+              <feComposite in="glowColor" in2="blur" operator="in" result="softGlow" />
+              <feMerge>
+                <feMergeNode in="softGlow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+        </svg>
+
         {visibleGames.map((game, i) => {
-          // IMPORTANT: map index 'i' is 0-based for the slice. 
-          // Real index is startIndex + i
           const realIdx = startIndex + i;
           const isActive = realIdx === activeIdx;
           const cardWidth = isActive ? widthActive : widthInactive;
           const isPriming = isActive && appState === 'priming';
+          const totalHeight = isActive ? height + BAR_H_VAL : height;
 
-          const points = [
-            `${CUT_SIZE},0`,
-            `${cardWidth},0`,
-            `${cardWidth},${height - CUT_SIZE}`,
-            `${cardWidth - CUT_SIZE},${height}`,
-            `0,${height}`,
-            `0,${CUT_SIZE}`
-          ].join(' ');
+          // SVG border points for the full shape
+          const points = isActive
+            ? [
+              `${CUT_SIZE},0`,
+              `${cardWidth},0`,
+              `${cardWidth},${totalHeight - CUT_SIZE}`,
+              `${cardWidth - CUT_SIZE},${totalHeight}`,
+              `0,${totalHeight}`,
+              `0,${CUT_SIZE}`
+            ].join(' ')
+            : [
+              `${CUT_SIZE},0`,
+              `${cardWidth},0`,
+              `${cardWidth},${height - CUT_SIZE}`,
+              `${cardWidth - CUT_SIZE},${height}`,
+              `0,${height}`,
+              `0,${CUT_SIZE}`
+            ].join(' ');
 
           const rawImg = isActive ? (game.banner || ASSETS.templates.banner) : (game.cover || ASSETS.templates.cover);
           const imgSrc = (() => {
             const original = onResolveAsset(rawImg);
-            // Optimize: request resized version if it's a proxied local file
             if (original.includes('/api/proxy-image')) {
-              // Active (Banner): ~800px width is enough for most screens
-              // Inactive (Cover): ~300px is plenty
               const targetWidth = isActive ? 800 : 300;
               return `${original}&width=${targetWidth}`;
             }
@@ -200,68 +227,114 @@ const GameTrack: React.FC<GameTrackProps> = ({ games, activeIdx, color, appState
 
           return (
             <div
-              key={game.id}
-              onClick={() => {
+              key={`${game.id}-${realIdx}`}
+              onClick={(e) => {
+                e.stopPropagation();
                 if (isActive) onLaunch();
                 else onSelect(realIdx);
               }}
-              className={`flex-shrink-0 relative transition-all duration-500 ${isPriming ? 'scale-[1.02]' : isActive ? 'scale-100' : 'scale-[0.96]'} cursor-pointer`}
+              className={`game-card relative overflow-visible flex-shrink-0 cursor-pointer transition-all duration-500 will-change-transform ${isActive ? 'active' : ''}`}
               style={{
                 width: `${cardWidth}px`,
-                height: `${height}px`,
+                height: `${totalHeight}px`,
                 zIndex: isActive ? 30 : 10,
               }}
             >
-              {isActive && (
-                <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none overflow-visible" viewBox={`0 0 ${cardWidth} ${height}`} preserveAspectRatio="none">
-                  <polygon
-                    id={isPriming ? 'active-border' : ''}
-                    points={points}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={isPriming ? "4" : "2.5"}
-                    strokeDasharray={isPriming ? "1000" : "0"}
-                    style={{ filter: `drop-shadow(0 0 ${isPriming ? '20px' : '10px'} ${color})` }}
-                  />
-                </svg>
-              )}
-
-              <div className="card-body w-full h-full relative overflow-hidden transition-opacity duration-300" style={{ clipPath: CLIP_PATH }}>
-                <div className="relative w-full h-full bg-[#050505]">
+              {/* INTEGRATED DESIGN CONTAINER */}
+              <div
+                className="card-body w-full h-full relative overflow-hidden"
+                style={{
+                  clipPath: extClip,
+                  WebkitClipPath: extClip,
+                  backgroundColor: '#050505'
+                }}
+              >
+                {/* Image area */}
+                <div
+                  className="absolute top-0 left-0 right-0 bg-black"
+                  style={{ height: isActive ? `${height}px` : '100%' }}
+                >
                   <img
                     src={imgSrc}
                     alt={game.title}
                     onError={(e) => {
                       const target = e.currentTarget;
-                      // Prevent infinite loop if fallback also fails
                       if (target.getAttribute('data-fallback') === 'true') return;
-
                       target.setAttribute('data-fallback', 'true');
                       target.src = isActive ? ASSETS.templates.banner : ASSETS.templates.cover;
                     }}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700"
-                    style={{ transform: isPriming ? 'scale(1.1)' : 'scale(1)' }}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500"
+                    style={{
+                      transform: isPriming ? 'scale(1.1)' : 'scale(1)',
+                      opacity: isActive ? 1 : cardOpacity,
+                    }}
                   />
-                  {!isActive && <div className="absolute inset-0 bg-black/50" />}
+                  {!isActive && <div className="absolute inset-0 bg-black/15" />}
                 </div>
+
+                {/* Title bar (Nests the patch triangle for sync) */}
+                {isActive && (
+                  <div
+                    className="absolute bottom-0 left-0 right-0 flex items-center px-4"
+                    style={{
+                      height: `${BAR_H_VAL}px`,
+                      backgroundColor: color || '#fff'
+                    }}
+                  >
+                    {/* PATCH TRIANGLE - Synced with bar animation */}
+                    <div
+                      className="absolute right-0 pointer-events-none"
+                      style={{
+                        top: `-${CUT_SIZE}px`,
+                        width: `${CUT_SIZE + 2}px`,
+                        height: `${CUT_SIZE + 2}px`,
+                        backgroundColor: color || '#fff',
+                        transform: 'translate(1.5px, 1.5px)',
+                        clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
+                        WebkitClipPath: 'polygon(100% 0, 100% 100%, 0 100%)'
+                      }}
+                    />
+
+                    <span
+                      className="uppercase font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full"
+                      style={{
+                        fontFamily: "'Space Mono', Consolas, monospace",
+                        fontSize: `${Math.min(14, Math.max(10, height * 0.065))}px`,
+                        letterSpacing: '0.15em',
+                        color: getContrastColor(color || '#fff'),
+                      }}
+                    >
+                      {game.title}
+                    </span>
+                  </div>
+                )}
               </div>
 
+              {isActive && (
+                <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none overflow-visible" viewBox={`0 0 ${cardWidth} ${totalHeight}`} preserveAspectRatio="none">
+                  <polygon
+                    id="active-border"
+                    points={points}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={isPriming ? "4" : "2.5"}
+                    style={{
+                      filter: performanceMode !== 'low' ? 'url(#neon-shadow)' : 'none'
+                    }}
+                  />
+                </svg>
+              )}
+
               <div
-                className="info-area absolute top-full left-0 mt-2 flex flex-col gap-1 w-full pointer-events-none transition-all duration-400"
-                style={{ transform: isActive ? 'translateY(0)' : 'translateY(6px)' }}
-              >
-                <div className="flex justify-between items-baseline pr-4">
-                  <h2 className="uppercase leading-none font-['Press_Start_2P'] tracking-[0.2em]" style={{ color: color, fontSize: 'clamp(5px, 0.4vh + 4px, 12px)', textShadow: `0 0 10px ${color}aa` }}>
-                    {game.title}
-                  </h2>
-                </div>
-              </div>
+                className="info-area absolute top-full left-0 mt-2 w-full pointer-events-none transition-all duration-400"
+                style={{ opacity: 0 }}
+              />
             </div>
           );
         })}
       </div>
-    </div>
+    </div >
   );
-};
+});
 
 export default GameTrack;

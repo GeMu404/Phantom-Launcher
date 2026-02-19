@@ -1,34 +1,21 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { Category, Game, AppState } from '../types';
 import { ASSETS } from '../constants';
 
-export const useAtmosphere = (categories: Category[], currentCategory: Category | undefined, activeGame: Game | undefined) => {
+export const useAtmosphere = (categories: Category[], currentCategory: Category | undefined, activeGame: Game | undefined, isManagementOpen: boolean = false) => {
     // Helper: Resource Resolution
-    const resolveAsset = useCallback((path: string | undefined): string => {
+    const resolveAsset = useCallback((path: string | undefined, width?: number): string => {
         if (!path) return '';
         if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) return path;
         if (path.startsWith('./res') || path.startsWith('res/') || path.startsWith('/res/')) return path;
 
-        // Only proxy if it looks like a file path (has extension or is absolute)
-        // This prevents internal IDs like 'clock' or 'steam' from hitting the proxy
         const isLikelyPath = path.includes('.') || path.includes('/') || path.includes('\\') || path.match(/^[a-zA-Z]:/);
         if (!isLikelyPath) return path;
 
-        // Proxy local path via backend
-        return `/api/proxy-image?path=${encodeURIComponent(path)}`;
+        let url = `/api/proxy-image?path=${encodeURIComponent(path)}`;
+        if (width) url += `&width=${width}`;
+        return url;
     }, []);
-
-    // DEBOUNCE LOGIC: Only apply game wallpaper if user lingers for 600ms
-    const [debouncedGameWallpaper, setDebouncedGameWallpaper] = useState<string | undefined>(undefined);
-
-    useEffect(() => {
-        // Wait for the banner animation (starts fast, visually ready around 300ms) to finish.
-        const timer = setTimeout(() => {
-            setDebouncedGameWallpaper(activeGame?.wallpaper);
-        }, 300);
-
-        return () => clearTimeout(timer);
-    }, [activeGame?.id, activeGame?.wallpaper]);
 
     const atmosphereSettings = useMemo(() => {
         if (categories.length === 0) return { wallpaper: ASSETS.ui.wallpaper };
@@ -38,32 +25,46 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
         const globalGridOpacity = allCat?.gridOpacity ?? 0.15;
         const globalCardOpacity = allCat?.cardOpacity ?? 1.0;
         const globalBgAnim = allCat?.bgAnimationsEnabled ?? true;
+        const globalCardBlur = allCat?.cardBlurEnabled ?? true;
         const globalGridEnabled = allCat?.gridEnabled ?? true;
+        const globalLowRes = allCat?.lowResWallpaper ?? (allCat?.performanceMode === 'low');
+        const globalAA = allCat?.wallpaperAAEnabled ?? (allCat?.performanceMode === 'low');
+        const globalHighQualityBlobs = allCat?.highQualityBlobs ?? (allCat?.performanceMode === 'high');
+        const globalCardTransparency = allCat?.cardTransparencyEnabled ?? true;
         const globalScanlineEnabled = allCat?.scanlineEnabled ?? true;
         const globalVignetteEnabled = allCat?.vignetteEnabled ?? true;
         const globalPerformanceMode = allCat?.performanceMode || 'high';
+        const finalWidth = globalLowRes ? 960 : 1920;
 
         const catWallpaper = currentCategory?.wallpaper;
         const catWallpaperMode = currentCategory?.wallpaperMode;
         const catGridOpacity = currentCategory?.gridOpacity;
 
-        // Priority: Debounced Game > Category > Global
-        const finalWallpaper = debouncedGameWallpaper || catWallpaper || globalWallpaper;
-        const finalMode = (debouncedGameWallpaper || catWallpaper) ? (catWallpaperMode || 'cover') : globalWallpaperMode;
+        // DIRECT SYNC: Use game wallpaper immediately with no debounce logic
+        const gameWallpaper = activeGame?.wallpaper;
+
+        // Priority logic: Modal > GameSync > Category > Global
+        const finalWallpaper = (isManagementOpen ? (catWallpaper || globalWallpaper) : (gameWallpaper || catWallpaper || globalWallpaper));
+        const finalMode = (gameWallpaper || catWallpaper) ? (catWallpaperMode || 'cover') : globalWallpaperMode;
         const finalGrid = catGridOpacity !== undefined ? catGridOpacity : globalGridOpacity;
 
         return {
-            wallpaper: resolveAsset(finalWallpaper),
+            wallpaper: resolveAsset(finalWallpaper, finalWidth),
             mode: finalMode as any,
             gridOpacity: finalGrid,
             cardOpacity: globalCardOpacity,
+            cardBlurEnabled: globalCardBlur,
+            cardTransparencyEnabled: globalCardTransparency,
+            lowResWallpaper: globalLowRes,
+            wallpaperAAEnabled: globalAA,
+            highQualityBlobs: globalHighQualityBlobs,
             bgAnimationsEnabled: globalBgAnim,
             gridEnabled: globalGridEnabled,
             scanlineEnabled: globalScanlineEnabled,
             vignetteEnabled: globalVignetteEnabled,
             performanceMode: globalPerformanceMode
         };
-    }, [currentCategory, categories, resolveAsset, debouncedGameWallpaper]);
+    }, [currentCategory, categories, resolveAsset, activeGame?.wallpaper, isManagementOpen]);
 
     return { atmosphereSettings, resolveAsset };
 };

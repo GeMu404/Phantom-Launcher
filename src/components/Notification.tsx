@@ -50,7 +50,7 @@ const Notification: React.FC<NotificationProps> = ({ message, color }) => {
         >
           {/* CONTENT LAYER */}
           <div
-            className="bg-[#0c0c0c]/95 backdrop-blur-3xl"
+            className="bg-[#0c0c0c]/98"
             style={{
               clipPath: CLIP_PATH, // Must same clip-path to follow the outline
               padding: '18px 24px'

@@ -311,6 +311,41 @@ app.post('/api/assets/import', async (req, res) => {
         const targetPath = path.join(gameDir, `${assetType}${processedExt}`);
         const tempPath = path.join(gameDir, `_temp_${assetType}${processedExt}`);
 
+        if (assetType === 'launch') {
+            console.log(`[Assets] Creating Internal Launch Shortcut for: ${sourcePath}`);
+            const internalLnk = path.join(gameDir, 'launch.lnk');
+
+            // Resolve the real target first (in case source is already a .lnk or .url)
+            const resolveScript = `
+$source = '${sourcePath.replace(/'/g, "''")}';
+$target = $source;
+if ($source -like '*.lnk') { 
+    $s = (New-Object -ComObject WScript.Shell).CreateShortcut($source);
+    $target = $s.TargetPath;
+} elseif ($source -like '*.url') {
+    $target = (Select-String -Path $source -Pattern '^URL=(.*)' | ForEach-Object { $_.Matches.Groups[1].Value }).Trim();
+}
+$target | Write-Output
+`;
+            exec(`powershell -NoProfile -Command "${resolveScript}"`, (err, stdout) => {
+                if (err) return res.status(500).json({ error: 'Failed to resolve shortcut target' });
+                const resolvedTarget = stdout.trim();
+
+                // Now create the internal .lnk pointing to the REAL target
+                const createScript = `
+$WScript = New-Object -ComObject WScript.Shell;
+$s = $WScript.CreateShortcut('${internalLnk.replace(/'/g, "''")}');
+$s.TargetPath = '${resolvedTarget.replace(/'/g, "''")}';
+$s.Save();
+`;
+                exec(`powershell -NoProfile -Command "${createScript}"`, (createErr) => {
+                    if (createErr) return res.status(500).json({ error: 'Internal shortcut creation failed' });
+                    res.json({ path: path.resolve(internalLnk) });
+                });
+            });
+            return;
+        }
+
         if (sourcePath.startsWith('http')) {
             console.log(`[Assets] Downloading & Resizing URL: ${sourcePath}`);
             await downloadImage(sourcePath, tempPath);
@@ -318,7 +353,7 @@ app.post('/api/assets/import', async (req, res) => {
             if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
             res.json({ path: path.resolve(targetPath) });
         } else if (['.exe', '.lnk', '.bat', '.url'].includes(path.extname(sourcePath).toLowerCase())) {
-            // Handle shortcuts
+            // Legacy/Direct shortcut handling (keeping for compatibility, though 'launch' type is preferred now)
             const lnkPath = path.join(gameDir, `launch${path.extname(sourcePath).toLowerCase() === '.lnk' ? '' : '.lnk'}`);
             const psCommand = `$s=(New-Object -COM WScript.Shell).CreateShortcut('${lnkPath}');$s.TargetPath='${sourcePath}';$s.Save()`;
             exec(`powershell -Command "${psCommand}"`, (err) => {
@@ -345,8 +380,19 @@ app.post('/api/games/delete', (req, res) => {
     try {
         // 1. Update data.json
         const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-        const newData = data.filter((g: any) => g.id !== gameId);
-        fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2));
+        // Correctly handle the categories structure
+        if (data.categories) {
+            data.categories = data.categories.map((cat: any) => ({
+                ...cat,
+                games: cat.games.filter((g: any) => g.id !== gameId)
+            }));
+        } else if (Array.isArray(data)) {
+            // Legacy support
+            const newData = data.filter((g: any) => g.id !== gameId);
+            fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2));
+            return res.json({ success: true });
+        }
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 
         // 2. Delete Assets Folder
         const gameDir = path.join(ASSETS_DIR, gameId);
@@ -358,6 +404,46 @@ app.post('/api/games/delete', (req, res) => {
         res.json({ success: true });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
+    }
+});
+
+// Verify Integrity of Game Shortcuts
+app.post('/api/games/verify-integrity', (req, res) => {
+    console.log('[Integrity] Verifying game shortcut paths...');
+    try {
+        if (!fs.existsSync(DATA_FILE)) return res.json({ brokenIds: [] });
+        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+        const brokenIds: string[] = [];
+
+        // Collect all unique games across categories
+        const gamesMap = new Map();
+        const categories = Array.isArray(data) ? [{ games: data }] : (data.categories || []);
+
+        categories.forEach((cat: any) => {
+            cat.games?.forEach((g: any) => {
+                if (!gamesMap.has(g.id)) gamesMap.set(g.id, g);
+            });
+        });
+
+        gamesMap.forEach((game, id) => {
+            if (game.execPath) {
+                // If it's a URL (http/steam/discord), consider it valid
+                if (game.execPath.startsWith('http') || game.execPath.startsWith('steam:') || game.execPath.startsWith('com.epicgames')) {
+                    return;
+                }
+
+                // Check physical existence
+                if (!fs.existsSync(game.execPath)) {
+                    console.log(`[Integrity] Broken Path: ${game.title} -> ${game.execPath}`);
+                    brokenIds.push(id);
+                }
+            }
+        });
+
+        res.json({ brokenIds });
+    } catch (e: any) {
+        console.error('[Integrity] Error:', e);
+        res.status(500).json({ error: 'Integrity check failed' });
     }
 });
 
@@ -793,18 +879,31 @@ app.all('/api/steam/scan', async (req, res) => {
             if (fs.existsSync(userdataRoot)) {
                 const users = fs.readdirSync(userdataRoot);
                 for (const user of users) {
-                    const sharedConfigPath = path.join(userdataRoot, user, '7', 'remote', 'sharedconfig.vdf');
-                    if (fs.existsSync(sharedConfigPath)) {
-                        const content = fs.readFileSync(sharedConfigPath, 'utf-8');
-                        const appsBlockRegex = /"apps"\s*\{([\s\S]*?)\}\s*\}/;
-                        const appsMatch = content.match(appsBlockRegex);
-                        if (appsMatch) {
-                            const appSectionRegex = /"(\d+)"\s*\{([\s\S]*?)\}/g;
-                            let appMatch;
-                            while ((appMatch = appSectionRegex.exec(appsMatch[1])) !== null) {
-                                if (appMatch[2].toLowerCase().includes('"hidden"')) {
-                                    hiddenAppIds.add(appMatch[1]);
-                                }
+                    // Modern Steam stores hidden apps in localconfig.vdf OR sharedconfig.vdf
+                    const configPaths = [
+                        path.join(userdataRoot, user, '7', 'remote', 'sharedconfig.vdf'),
+                        path.join(userdataRoot, user, 'config', 'localconfig.vdf')
+                    ];
+
+                    for (const configPath of configPaths) {
+                        if (fs.existsSync(configPath)) {
+                            const content = fs.readFileSync(configPath, 'utf-8');
+
+                            // Robust way: Find "hidden" and look for the AppID above it
+                            // VDF structure for hidden is usually: "APPID" { ... "tags" { "0" "hidden" } }
+                            // or "Apps" { "APPID" { "Hidden" "1" } }
+
+                            // 1. Check for "tags" { "0" "hidden" } pattern
+                            const hiddenTagRegex = /"(\d+)"\s*\{[^}]*"tags"\s*\{[^}]*"hidden"/gi;
+                            let match;
+                            while ((match = hiddenTagRegex.exec(content)) !== null) {
+                                hiddenAppIds.add(match[1]);
+                            }
+
+                            // 2. Check for "Hidden" "1" pattern (sometimes in localconfig)
+                            const hiddenKeyRegex = /"(\d+)"\s*\{[^}]*"Hidden"\s*"1"/gi;
+                            while ((match = hiddenKeyRegex.exec(content)) !== null) {
+                                hiddenAppIds.add(match[1]);
                             }
                         }
                     }
@@ -1055,6 +1154,28 @@ app.post('/api/launch', (req, res) => {
     } catch (e) {
         console.error('[Server] Launch error', e);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// 5. Shortcut Integrity Verification
+app.post('/api/games/verify-integrity', (req, res) => {
+    try {
+        if (!fs.existsSync(DATA_FILE)) return res.json({ brokenIds: [] });
+        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+        const brokenIds: string[] = [];
+
+        for (const cat of data.categories) {
+            for (const game of cat.games) {
+                if (game.execPath && !game.execPath.startsWith('http') && !game.execPath.startsWith('steam://')) {
+                    if (!fs.existsSync(game.execPath)) {
+                        brokenIds.push(game.id);
+                    }
+                }
+            }
+        }
+        res.json({ brokenIds: Array.from(new Set(brokenIds)) });
+    } catch (e) {
+        res.status(500).json({ error: 'Integrity check failed' });
     }
 });
 

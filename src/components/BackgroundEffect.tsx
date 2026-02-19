@@ -1,195 +1,171 @@
+import React, { useMemo } from 'react';
 
-import React, { useEffect, useRef, useState } from 'react';
-import anime from 'animejs';
+const AmbientNebula: React.FC<{ color: string, size?: string, opacity?: number, duration?: string }> = React.memo(({
+  color,
+  size = '800px',
+  opacity = 0.04,
+  duration = '120s'
+}) => {
+  const style = useMemo(() => ({
+    left: Math.random() * 70 + 5 + '%',
+    top: Math.random() * 70 + 5 + '%',
+    animationDelay: -(Math.random() * 100) + 's',
+    duration
+  }), []);
+
+  return (
+    <div
+      className="absolute pointer-events-none animate-nebula"
+      style={{
+        width: size,
+        height: size,
+        left: style.left,
+        top: style.top,
+        background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+        opacity: opacity,
+        animationDuration: style.duration,
+        animationDelay: style.animationDelay
+      }}
+    />
+  );
+});
+
+const AtmosphericDust: React.FC<{ color: string }> = React.memo(({ color }) => {
+  const particles = useMemo(() =>
+    Array.from({ length: 6 }).map(() => ({
+      left: Math.random() * 100 + '%',
+      top: Math.random() * 100 + '%',
+      animationDelay: -(Math.random() * 20) + 's',
+      animationDuration: (Math.random() * 10 + 15) + 's'
+    })), []);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden opacity-40">
+      {particles.map((p, i) => (
+        <div
+          key={i}
+          className="absolute w-1 h-1 rounded-full animate-particle"
+          style={{
+            left: p.left,
+            top: p.top,
+            backgroundColor: color,
+            boxShadow: `0 0 4px ${color}`,
+            animationDelay: p.animationDelay,
+            animationDuration: p.animationDuration
+          }}
+        />
+      ))}
+    </div>
+  );
+});
 
 interface BackgroundEffectProps {
   color: string;
-  wallpaper?: string;
+  gameWallpaper?: string;
+  categoryWallpaper?: string;
+  globalWallpaper?: string;
   wallpaperMode?: 'fill' | 'contain' | 'cover' | 'center';
   gridOpacity?: number;
-  animationsEnabled?: boolean;
+  bgAnimationsEnabled?: boolean;
   gridEnabled?: boolean;
   vignetteEnabled?: boolean;
   paused?: boolean;
-  performanceMode?: 'high' | 'balanced' | 'low';
+  wallpaperAAEnabled?: boolean;
+  highQualityBlobs?: boolean;
+  isLowRes?: boolean;
+  performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
 }
 
 const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
   color,
-  wallpaper,
+  gameWallpaper,
+  categoryWallpaper,
+  globalWallpaper,
   wallpaperMode = 'cover',
   gridOpacity = 0.15,
-  animationsEnabled = true,
+  bgAnimationsEnabled = true,
   gridEnabled = true,
   vignetteEnabled = true,
   paused = false,
-  performanceMode = 'high'
+  wallpaperAAEnabled = false,
+  highQualityBlobs = false,
+  isLowRes = false,
+  performanceMode = 'balanced'
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [displayWallpaper, setDisplayWallpaper] = useState<{ current: string | undefined, prev: string | undefined }>({
-    current: wallpaper,
-    prev: undefined
-  });
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const isHigh = performanceMode === 'high';
+  const isLow = performanceMode === 'low';
 
-  // Handle smooth cross-fade when wallpaper changes
-  useEffect(() => {
-    if (wallpaper !== displayWallpaper.current) {
-      setIsTransitioning(true);
-      setDisplayWallpaper(prev => ({
-        prev: prev.current,
-        current: wallpaper
-      }));
+  const resolveAsset = (path: string | undefined): string => {
+    if (!path) return '';
+    if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) return path;
+    if (path.startsWith('./res') || path.startsWith('res/') || path.startsWith('/res/')) return path;
+    const isLikelyPath = path.includes('.') || path.includes('/') || path.includes('\\') || path.match(/^[a-zA-Z]:/);
+    if (!isLikelyPath) return path;
 
-      // Cleanup previous wallpaper after transition completes
-      const timer = setTimeout(() => {
-        setIsTransitioning(false);
-        setDisplayWallpaper(prev => ({
-          ...prev,
-          prev: undefined
-        }));
-      }, 700); // Slightly longer than transition for safety
+    const width = isLowRes ? 960 : 1920;
+    return `/api/proxy-image?path=${encodeURIComponent(path)}&width=${width}`;
+  };
 
-      return () => clearTimeout(timer);
-    }
-  }, [wallpaper]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const blobContainer = container.querySelector('.blob-container');
-    if (!blobContainer) return;
-
-    // Cleanup function to remove shapes and stop animations
-    const cleanup = () => {
-      anime.remove('.blob-shape'); // Remove anime instances for these targets
-      blobContainer.innerHTML = '';
-    };
-
-    cleanup();
-
-    // PERFORMANCE: Skip blobs entirely in LOW mode
-    if (performanceMode === 'low') return;
-
-    if (!animationsEnabled || paused) return;
-
-    // PERFORMANCE: Reduce blobs in BALANCED mode
-    const numShapes = performanceMode === 'balanced' ? 3 : 6;
-
-    for (let i = 0; i < numShapes; i++) {
-      const shape = document.createElement('div');
-      shape.className = 'blob-shape absolute opacity-[0.08] pointer-events-none transition-colors duration-1000';
-      const size = Math.random() * 500 + 300;
-      shape.style.width = `${size}px`;
-      shape.style.height = `${size}px`;
-      // OPTIMIZATION: Use radial-gradient instead of heavy blur filter
-      // This is much faster for the GPU to compost
-      shape.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
-      shape.style.left = `${Math.random() * 100}%`;
-      shape.style.top = `${Math.random() * 100}%`;
-      // shape.style.filter = 'blur(120px)'; // REMOVED FOR PERFORMANCE
-
-      // OPTIMIZATION: Remove complex blending in balanced mode if needed, 
-      // but usually the count is the biggest factor.
-
-      blobContainer.appendChild(shape);
-
-      (anime as any)({
-        targets: shape,
-        translateX: () => (anime as any).random(-200, 200),
-        translateY: () => (anime as any).random(-200, 200),
-        duration: () => (anime as any).random(15000, 30000),
-        direction: 'alternate',
-        loop: true,
-        easing: 'linear'
-      });
-    }
-
-    return cleanup;
-  }, [color, animationsEnabled, paused, performanceMode]);
+  const finalWallpaperPath = gameWallpaper || categoryWallpaper || globalWallpaper;
+  const resolvedUrl = useMemo(() => resolveAsset(finalWallpaperPath), [finalWallpaperPath, isLowRes]);
 
   const getObjectFitStyle = () => {
     switch (wallpaperMode) {
       case 'fill': return { objectFit: 'fill' as const };
       case 'contain': return { objectFit: 'contain' as const };
       case 'center': return { objectFit: 'none' as const, objectPosition: 'center' };
-      case 'cover':
       default: return { objectFit: 'cover' as const };
     }
   };
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]"
-    >
-      {/* 1. Wallpaper Layers (Stacked for Cross-fade) */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-
-        {/* Previous Wallpaper (Stays visible behind new one for smooth cross-fade) */}
-        {displayWallpaper.prev && (
-          <div className="absolute inset-0">
-            <img
-              src={displayWallpaper.prev}
-              alt=""
-              className="w-full h-full block"
-              style={{
-                ...getObjectFitStyle(),
-                filter: 'grayscale(0.1) contrast(1.1) brightness(0.55)',
-              }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          </div>
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]">
+      {/* 1. Wallpaper Layer */}
+      <div className="absolute inset-0 z-0 bg-black">
+        {resolvedUrl && (
+          <img
+            key={resolvedUrl}
+            src={resolvedUrl}
+            className="w-full h-full block animate-wallpaper-in"
+            style={{
+              ...getObjectFitStyle(),
+              // HIGH: real CSS filter for premium look. BALANCED/LOW: overlays only (free)
+              ...(isHigh ? { filter: 'brightness(0.65) saturate(1.1)' } : {})
+            }}
+            alt=""
+          />
         )}
-
-        {/* Current Wallpaper (Fades In over previous) */}
-        {displayWallpaper.current && (
-          <div className="absolute inset-0">
-            <img
-              key={displayWallpaper.current}
-              src={displayWallpaper.current}
-              alt="Background"
-              className={`w-full h-full block ${isTransitioning ? 'animate-wallpaper-in' : ''}`}
-              style={{
-                ...getObjectFitStyle(),
-                filter: 'grayscale(0.1) contrast(1.1) brightness(0.55)',
-              }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          </div>
-        )}
-
-        {/* Consistent Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 opacity-90" />
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20 opacity-90" />
+        <div className="absolute inset-0 bg-black/50" />
       </div>
 
-      {/* 2. Persistent Grid Overlay */}
+      {/* 2. Grid Layer */}
       {gridEnabled && (
-        <div
-          className="absolute inset-0 z-10 transition-opacity duration-1000"
-          style={{
-            opacity: gridOpacity,
-            backgroundImage: `
-              linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px)
-            `,
-            backgroundSize: '40px 40px'
-          }}
-        />
+        <div className="absolute inset-0 z-10" style={{ opacity: gridOpacity, backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
       )}
 
-      {/* 3. Dynamic Blobs */}
-      <div className="blob-container absolute inset-0 mix-blend-screen z-20" />
+      {/* 3. Atmosphere — tiered by performance mode */}
+      {bgAnimationsEnabled && !paused && !isLow && (
+        <div className="absolute inset-0 overflow-hidden z-20" style={{ contain: 'strict' }}>
+          {isHigh && <AtmosphericDust color={color} />}
+          <AmbientNebula
+            color={color}
+            size={isHigh ? '900px' : '600px'}
+            opacity={isHigh ? 0.035 : 0.015}
+            duration={'150s'}
+          />
+        </div>
+      )}
 
-      {/* 4. Edge Glow Vignette */}
+      {/* 4. Cinematic Vignette — tiered */}
       {vignetteEnabled && (
         <div
-          className="absolute inset-0 transition-colors duration-1000 z-30"
+          className="absolute inset-0 z-30"
           style={{
-            boxShadow: `inset 0 0 450px ${color}1a`,
-            background: `radial-gradient(circle at center, transparent 30%, #000000aa 100%)`
+            // High intensity neon glow vignette (Stronger Light Bleed)
+            boxShadow: isLow
+              ? 'inset 0 0 150px rgba(0,0,0,0.8)'
+              : `inset 0 0 300px rgba(0,0,0,0.95), inset 0 0 150px ${color}66, inset 0 0 80px ${color}99, inset 0 0 40px ${color}`
           }}
         />
       )}

@@ -13,14 +13,14 @@ interface SidebarProps {
   isSecretUnlocked?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false }) => {
+const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false }) => {
   const visibleCategories = categories.filter(c => c.enabled !== false && (c.id !== 'hidden' || isSecretUnlocked));
   const systemCategory = categories.find(c => c.id === 'all');
   const customConfigIcon = systemCategory?.configIcon || ASSETS.ui.config;
 
   return (
     <div
-      className="sidebar-glass fixed left-0 top-0 h-full flex flex-col items-center z-50 bg-black/40 backdrop-blur-2xl border-r border-white/5 transition-all duration-500"
+      className="sidebar-glass fixed left-0 top-0 h-full flex flex-col items-center z-50 bg-[#080808]/75 border-r border-white/5"
       style={{
         width: 'calc(50px + 1.5vh)',
         paddingBottom: `${taskbarMargin + 20}px`
@@ -31,7 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
         style={{ paddingTop: 'calc(10px + 1vh)' }}
       >
         <div
-          className="flex flex-col items-center gap-6 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          className="flex flex-col items-center gap-6 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
             transform: `translateY(${(1 - visibleCategories.findIndex(c => categories.findIndex(orig => orig.id === c.id) === activeIndex)) * 64}px)`
           }}
@@ -45,20 +45,13 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
                 key={cat.id}
                 onClick={() => onSelect(actualIdx)}
                 className={`
-                  relative cursor-pointer flex-shrink-0 flex items-center justify-center transition-all duration-300 p-1
+                  relative cursor-pointer flex-shrink-0 flex items-center justify-center transition-[transform,opacity] duration-300 p-1
                   ${isActive ? 'scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}
                 `}
                 style={{ width: '40px', height: '40px' }}
               >
                 <img
-                  src={(() => {
-                    const original = onResolveAsset(cat.icon) || ASSETS.templates.icon;
-                    // Optimize: request resized version if it's a proxied local file
-                    if (original.includes('/api/proxy-image')) {
-                      return `${original}&width=64`;
-                    }
-                    return original;
-                  })()}
+                  src={onResolveAsset(cat.icon || ASSETS.templates.icon, 64)}
                   alt={cat.name}
                   onError={(e) => {
                     const target = e.currentTarget;
@@ -66,12 +59,12 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
                     target.setAttribute('data-fallback', 'true');
                     target.src = ASSETS.templates.icon;
                   }}
-                  className="w-full h-full object-contain transition-all duration-300"
+                  className="w-full h-full object-contain transition-[filter] duration-300"
                   style={{
                     color: cat.color,
                     filter: isActive
-                      ? `drop-shadow(0 0 1px ${cat.color}) drop-shadow(0 0 8px ${cat.color})`
-                      : `drop-shadow(0 0 1px rgba(255, 255, 255, 0.7))`
+                      ? `drop-shadow(0 0 1px ${cat.color})`
+                      : `none`
                   }}
                 />
                 {isActive && (
@@ -99,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
             const isLong = name.length > 10;
             return (
               <span
-                className="absolute bottom-0 left-1/2 whitespace-nowrap font-['Press_Start_2P'] font-bold uppercase tracking-[0.2em] text-white/40 select-none transition-all duration-700"
+                className="absolute bottom-0 left-1/2 whitespace-nowrap font-['Press_Start_2P'] font-bold uppercase tracking-[0.2em] text-white/40 select-none"
                 style={{
                   fontSize: isLong ? 'clamp(10px, 1.5vh, 20px)' : 'clamp(12px, 2.5vh, 32px)',
                   transform: 'rotate(-90deg)',
@@ -120,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
         className="w-full border-t border-white/5 pt-2 flex flex-col items-center cursor-pointer group"
       >
         <div
-          className="relative flex items-center justify-center transition-all duration-300 p-1 opacity-40 group-hover:opacity-100"
+          className="relative flex items-center justify-center p-1 opacity-40 group-hover:opacity-100 transition-opacity duration-300"
           style={{ width: 'calc(28px + 1vh)', height: 'calc(28px + 1vh)' }}
         >
           <img
@@ -138,6 +131,6 @@ const Sidebar: React.FC<SidebarProps> = ({ categories, activeIndex, onSelect, on
       </div>
     </div>
   );
-};
+});
 
 export default Sidebar;

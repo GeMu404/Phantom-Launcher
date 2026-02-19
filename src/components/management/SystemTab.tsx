@@ -21,7 +21,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
 }) => {
     const { t, language, setLanguage } = useTranslation();
     return (
-        <div className="flex flex-col gap-10 lg:gap-16">
+        <div className="flex flex-col gap-6 lg:gap-8">
             <Subsection title={t('system_tab.language_settings')} accentColor={activeAccent}>
                 <div className="flex items-center justify-between py-2 border-b border-white/5">
                     <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.system_language')}</label>
@@ -67,14 +67,26 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         { key: 'vignetteEnabled', label: t('system_tab.vignette_shadow') },
                         { key: 'scanlineEnabled', label: t('system_tab.scanline_fx') },
                         { key: 'gridEnabled', label: t('system_tab.matrix_grid') },
-                        { key: 'gridEnabled', label: t('system_tab.matrix_grid') },
-                        { key: 'bgAnimationsEnabled', label: t('system_tab.ambient_motion') }
+                        { key: 'bgAnimationsEnabled', label: t('system_tab.ambient_motion') },
+                        { key: 'highQualityBlobs', label: 'AMBIENT_QUALITY [HIGH]' },
+                        { key: 'lowResWallpaper', label: 'WALLPAPER_RES [960P]' },
+                        { key: 'wallpaperAAEnabled', label: 'WALLPAPER_SMOOTH [AA]' },
+                        { key: 'cardTransparencyEnabled', label: 'CARD_TRANSPARENCY' },
+                        { key: 'cardBlurEnabled', label: 'CARD_GLASS [BLUR]' }
                     ].map(toggle => (
                         <div key={toggle.key} className="flex items-center justify-between py-2 border-b border-white/5">
                             <label className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-white/60">{toggle.label}</label>
                             <button
-                                onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, [toggle.key]: !(c as any)[toggle.key] } : c))}
-                                className={`w-12 h-6 relative transition-all duration-300 border-2 ${(allGamesCategory as any)[toggle.key] !== false ? `bg-[${activeAccent}] border-[${activeAccent}] shadow-lg` : 'bg-black border-white/20'}`}
+                                onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? {
+                                    ...c,
+                                    [toggle.key]: !(c as any)[toggle.key],
+                                    performanceMode: 'custom' // Switch to custom when manually toggled
+                                } : c))}
+                                className={`w-12 h-6 relative transition-all duration-300 border-2 ${(allGamesCategory as any)[toggle.key] !== false ? `bg-[localAccent] border-[localAccent] shadow-lg` : 'bg-black border-white/20'}`}
+                                style={{
+                                    backgroundColor: (allGamesCategory as any)[toggle.key] !== false ? activeAccent : undefined,
+                                    borderColor: (allGamesCategory as any)[toggle.key] !== false ? activeAccent : undefined
+                                }}
                             >
                                 <div className={`absolute top-0.5 bottom-0.5 w-4 transition-all duration-300 ${(allGamesCategory as any)[toggle.key] !== false ? 'right-0.5 bg-black' : 'left-0.5 bg-white/20'}`}></div>
                             </button>
@@ -87,11 +99,36 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.performance_protocol')}</label>
                         <span className="text-[7px] text-white/40 font-mono">ADJUST_RENDER_FIDELITY</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                         {[
-                            { id: 'low', label: 'LOW [ECO]' },
-                            { id: 'balanced', label: 'BALANCED' },
-                            { id: 'high', label: 'HIGH [GPU]' }
+                            {
+                                id: 'low',
+                                label: 'LOW [ECO]',
+                                config: {
+                                    vignetteEnabled: false, scanlineEnabled: false, gridEnabled: false, bgAnimationsEnabled: false,
+                                    lowResWallpaper: true, wallpaperAAEnabled: true, highQualityBlobs: false,
+                                    cardTransparencyEnabled: false, cardBlurEnabled: false, cardOpacity: 1.0
+                                }
+                            },
+                            {
+                                id: 'balanced',
+                                label: 'BALANCED',
+                                config: {
+                                    vignetteEnabled: true, scanlineEnabled: false, gridEnabled: true, bgAnimationsEnabled: true,
+                                    lowResWallpaper: false, wallpaperAAEnabled: false, highQualityBlobs: false,
+                                    cardTransparencyEnabled: true, cardBlurEnabled: false, cardOpacity: 0.7
+                                }
+                            },
+                            {
+                                id: 'high',
+                                label: 'HIGH [GPU]',
+                                config: {
+                                    vignetteEnabled: true, scanlineEnabled: true, gridEnabled: true, bgAnimationsEnabled: true,
+                                    lowResWallpaper: false, wallpaperAAEnabled: false, highQualityBlobs: true,
+                                    cardTransparencyEnabled: true, cardBlurEnabled: true, cardOpacity: 0.7
+                                }
+                            },
+                            { id: 'custom', label: 'CUSTOM', config: null }
                         ].map(mode => {
                             const currentMode = (allGamesCategory as any).performanceMode || 'high';
                             const isActive = currentMode === mode.id;
@@ -99,11 +136,17 @@ const SystemTab: React.FC<SystemTabProps> = ({
                             return (
                                 <button
                                     key={mode.id}
-                                    onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, performanceMode: mode.id as any } : c))}
+                                    onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? {
+                                        ...c,
+                                        performanceMode: mode.id as any,
+                                        ...(mode.config || {}) // Apply preset config if not custom
+                                    } : c))}
                                     className={`
                                         py-3 px-2 border-2 text-[8px] lg:text-[9px] font-bold uppercase tracking-widest transition-all
                                         ${isActive
-                                            ? `bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-[1.02]`
+                                            ? mode.id === 'custom'
+                                                ? `bg-amber-400 text-black border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] scale-[1.02]`
+                                                : `bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-[1.02]`
                                             : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white'
                                         }
                                     `}
@@ -116,7 +159,13 @@ const SystemTab: React.FC<SystemTabProps> = ({
                     {(allGamesCategory as any).performanceMode === 'low' && (
                         <div className="text-[8px] text-emerald-400 font-mono mt-1 flex items-center gap-2">
                             <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                            OPTIMIZED_FOR_INTEGRATED_GRAPHICS :: BLUR_DISABLED
+                            OPTIMIZED_FOR_INTEGRATED_GRAPHICS :: BLUR_ENABLED (960P)
+                        </div>
+                    )}
+                    {(allGamesCategory as any).performanceMode === 'custom' && (
+                        <div className="text-[8px] text-amber-400 font-mono mt-1 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
+                            USER_DEFINED_PARAMETER_OVERRIDE
                         </div>
                     )}
                 </div>
