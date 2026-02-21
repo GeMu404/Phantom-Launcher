@@ -5,8 +5,21 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import Link from 'react'; // Dummy import
-// standard jimp import for v0.x
-import Jimp from 'jimp';
+// Dynamic Sharp import to bypass Node SEA static analysis
+const requireFunc = typeof require !== 'undefined' ? require : eval('require');
+let sharp: any = null;
+try {
+    const isExe = process.execPath.toLowerCase().endsWith('phantomserver.exe');
+    const exeDir = isExe ? requireFunc('path').dirname(process.execPath) : process.cwd();
+    const sharpPath = requireFunc('path').join(exeDir, 'node_modules', 'sharp');
+    sharp = requireFunc(sharpPath);
+} catch (e) {
+    try {
+        sharp = requireFunc('sharp');
+    } catch (e2) {
+        console.error("FATAL: Could not load sharp module.", e2);
+    }
+}
 
 const __filename = '';
 const __dirname = path.resolve();
@@ -114,36 +127,41 @@ const getStoreTags = async (appId: string): Promise<string[]> => {
 
 // Image Processor for standardizing dimensions
 const processImage = async (input: string | Buffer, dest: string, type: string): Promise<string> => {
-    console.log(`[Jimp] Processing ${type} -> ${dest}`);
+    console.log(`[Sharp] Processing ${type} -> ${dest}`);
     try {
-        let image = await Jimp.read(input as any);
+        let sharpInstance = sharp(input);
 
         if (type === 'cover') {
             // Vertical Grid: 600x900 (Fill/Cover)
-            image.cover(600, 900);
+            sharpInstance = sharpInstance.resize(600, 900, { fit: 'cover' });
         } else if (type === 'banner') {
             // Horizontal Grid: 920x430 (Fill/Cover)
-            image.cover(920, 430);
+            sharpInstance = sharpInstance.resize(920, 430, { fit: 'cover' });
         } else if (type === 'icon') {
             // Category Icons: Standardized 256x246 (mostly square/vertical-ish)
-            image.contain(256, 246);
+            sharpInstance = sharpInstance.resize(256, 246, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } });
         } else if (type === 'logo') {
-            // Robust centering: autocrop -> scaleToFit -> composite on 800x320 canvas
-            image.autocrop();
-            image.scaleToFit(800, 320);
+            // Trim and center on 800x320 canvas
+            sharpInstance = sharpInstance
+                .trim()
+                .resize(800, 320, { fit: 'inside' });
 
-            const canvas = new Jimp(800, 320, 0x00000000);
-            const x = (800 - image.bitmap.width) / 2;
-            const y = (320 - image.bitmap.height) / 2;
-            canvas.composite(image, x, y);
-            image = canvas;
+            const buffer = await sharpInstance.png().toBuffer();
+            sharpInstance = sharp({
+                create: {
+                    width: 800,
+                    height: 320,
+                    channels: 4,
+                    background: { r: 0, g: 0, b: 0, alpha: 0 }
+                }
+            }).composite([{ input: buffer, gravity: 'center' }]);
         }
 
         // Quality optimization and save
-        await image.writeAsync(dest);
+        await sharpInstance.toFile(dest);
         return dest;
     } catch (e: any) {
-        console.error(`[Jimp] Final error on ${dest}:`, e.message);
+        console.error(`[Sharp] Final error on ${dest}:`, e.message);
         // Fallback: if jimp fails but we have the file, just move it
         if (typeof input === 'string' && fs.existsSync(input) && input !== dest) {
             fs.copyFileSync(input, dest);
@@ -875,15 +893,19 @@ app.get('/api/proxy-image', async (req, res) => {
         }
 
         try {
-            if (!Jimp) throw new Error("Jimp is undefined");
+            if (!sharp) throw new Error("sharp is undefined");
 
-            const image = await Jimp.read(finalPath);
+            let sharpInstance = sharp(finalPath);
 
-            if (width && height) image.cover(width, height);
-            else if (width) image.resize(width, Jimp.AUTO);
-            else if (height) image.resize(Jimp.AUTO, height);
+            if (width && height) {
+                sharpInstance = sharpInstance.resize(width, height, { fit: 'cover' });
+            } else if (width) {
+                sharpInstance = sharpInstance.resize(width, null);
+            } else if (height) {
+                sharpInstance = sharpInstance.resize(null, height);
+            }
 
-            await image.writeAsync(cachePath);
+            await sharpInstance.toFile(cachePath);
             return res.sendFile(cachePath);
         } catch (e: any) {
             console.error(`[Proxy] Read/Resize Failed for ${finalPath}:`, e.message);

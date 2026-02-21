@@ -43,6 +43,11 @@ Write-Host "[5/5] Assembling final distribution package..." -ForegroundColor Yel
 # Copy Frontend
 Copy-Item -Path "dist/*" -Destination "phantom_app/system/front/" -Recurse -Force
 
+# Copy Native Modules for Node SEA
+New-Item -ItemType Directory -Path "phantom_app/system/node_modules" -Force | Out-Null
+if (Test-Path "node_modules/sharp") { Copy-Item -Path "node_modules/sharp" -Destination "phantom_app/system/node_modules/sharp" -Recurse -Force }
+if (Test-Path "node_modules/@img") { Copy-Item -Path "node_modules/@img" -Destination "phantom_app/system/node_modules/@img" -Recurse -Force }
+
 # Copy Core Assets
 $coreFiles = @(
     "launcher.html",

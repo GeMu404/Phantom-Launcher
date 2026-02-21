@@ -14,8 +14,8 @@
     "dev": "vite",
     "server": "node --loader ts-node/esm server.ts",
     "build:front": "vite build",
-    "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --outfile=phantom_app/server.js",
-    "build:exe": "pkg phantom_app/server.js --targets node18-win-x64 --output phantom_app/PhantomServer.exe --public",
+    "build:server": "esbuild server.ts --bundle --platform=node --format=cjs --external:sharp --outfile=phantom_app/server.js",
+    "build:exe": "node --experimental-sea-config sea-config.json && node -e \"require('fs').copyFileSync(process.execPath, 'phantom_app/PhantomServer.exe')\" && npx postject phantom_app/PhantomServer.exe NODE_SEA_BLOB phantom_app/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
     "clean": "powershell -NoProfile -Command \"if (Test-Path dist) { Remove-Item dist -Recurse -Force }; if (Test-Path phantom_app) { Get-ChildItem -Path phantom_app -Exclude .env | Remove-Item -Recurse -Force }\"",
     "build": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1",
     "start": "concurrently \"npm run server\" \"npm run dev\""
@@ -24,8 +24,8 @@
     "animejs": "3.2.2",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "jimp": "^0.22.10",
-    "preact": "^10.26.2"
+    "preact": "^10.26.2",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.3",
@@ -36,8 +36,8 @@
     "autoprefixer": "^10.4.24",
     "concurrently": "^9.1.2",
     "esbuild": "^0.25.0",
-    "pkg": "^5.8.1",
     "postcss": "^8.5.6",
+    "postject": "^1.0.0-alpha.6",
     "tailwindcss": "^4.1.18",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
