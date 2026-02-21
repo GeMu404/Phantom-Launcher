@@ -10,8 +10,8 @@ interface IntegrationsTabProps {
     handleUpdateSgdbKey: (key: string) => void;
     sgdbEnabled: boolean;
     handleToggleSgdb: (enabled: boolean) => void;
-    steamOptions: { includeHidden: boolean; includeSoftware: boolean };
-    setSteamOptions: React.Dispatch<React.SetStateAction<{ includeHidden: boolean; includeSoftware: boolean }>>;
+    steamOptions: { includeSoftware: boolean; includeAdultOnly: boolean };
+    setSteamOptions: React.Dispatch<React.SetStateAction<{ includeSoftware: boolean; includeAdultOnly: boolean }>>;
 }
 
 const IntegrationsTab: React.FC<IntegrationsTabProps> = ({
@@ -28,19 +28,20 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = ({
                     <img src="./res/external/steam_icon.png" className="w-8 h-8 opacity-80" alt="Steam" />
                     <span className="text-[9px] font-bold text-white uppercase tracking-widest">Valve_Master_System</span>
                     <div className="ml-auto flex flex-col gap-2">
-                        <button
-                            onClick={() => setSteamOptions(prev => ({ ...prev, includeHidden: !prev.includeHidden }))}
-                            className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border-2 transition-all active:scale-95 ${steamOptions.includeHidden ? 'text-black' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white/80'}`}
-                            style={steamOptions.includeHidden ? { backgroundColor: activeAccent, borderColor: activeAccent } : {}}
-                        >
-                            INCLUDE_HIDDEN_ASSETS
-                        </button>
+
                         <button
                             onClick={() => setSteamOptions(prev => ({ ...prev, includeSoftware: !prev.includeSoftware }))}
                             className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border-2 transition-all active:scale-95 ${steamOptions.includeSoftware ? 'text-black' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white/80'}`}
                             style={steamOptions.includeSoftware ? { backgroundColor: activeAccent, borderColor: activeAccent } : {}}
                         >
                             INCLUDE_SOFTWARE
+                        </button>
+                        <button
+                            onClick={() => setSteamOptions(prev => ({ ...prev, includeAdultOnly: !prev.includeAdultOnly }))}
+                            className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border-2 transition-all active:scale-95 ${steamOptions.includeAdultOnly ? 'text-black' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white/80'}`}
+                            style={steamOptions.includeAdultOnly ? { backgroundColor: activeAccent, borderColor: activeAccent } : {}}
+                        >
+                            INCLUDE_ADULT_ONLY
                         </button>
                     </div>
                 </div>

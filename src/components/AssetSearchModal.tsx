@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import CyberScrollbar from './CyberScrollbar';
 
 interface AssetSearchModalProps {
     isOpen: boolean;
@@ -15,6 +16,8 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState<'search' | 'results'>('search');
     const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
+    const resultsRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -146,7 +149,7 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                                     EXECUTE_QUERY
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar custom-scrollbar">
+                            <div ref={searchRef} className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar relative">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {results.map((game: any) => (
                                         <div
@@ -186,7 +189,7 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                                 </button>
                                 <span className="text-[8px] opacity-40 uppercase tracking-[0.4em] font-mono">SELECT_UNIT_FOR_DEPLOYMENT</span>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-8 lg:p-10 no-scrollbar custom-scrollbar">
+                            <div ref={resultsRef} className="flex-1 overflow-y-auto p-8 lg:p-10 no-scrollbar relative">
                                 <div className={`grid gap-6 ${type === 'hero' ? 'grid-cols-1 md:grid-cols-2' :
                                     type === 'logo' ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5' :
                                         'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
@@ -235,6 +238,8 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                         </div>
                     )}
                 </div>
+                {step === 'search' && <CyberScrollbar containerRef={searchRef} accentColor={accentColor} top="190px" bottom="20px" right="2px" />}
+                {step === 'results' && <CyberScrollbar containerRef={resultsRef} accentColor={accentColor} top="140px" bottom="20px" right="2px" />}
             </div>
         </div>
     );

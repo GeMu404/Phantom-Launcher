@@ -10,16 +10,77 @@ interface SystemTabProps {
     onUpdateCategories: React.Dispatch<React.SetStateAction<Category[]>>;
     taskbarMargin: number;
     onUpdateTaskbarMargin: (val: number) => void;
+    uiScale: number;
+    onUpdateUIScale: (val: number) => void;
     triggerFileBrowser: (target: string, type: 'exe' | 'image' | 'any') => void;
     onResolveAsset: (path: string | undefined) => string;
     handleSystemFormat: () => void;
 }
 
+const PanicResetButton: React.FC<{ handleAction: () => void; t: any }> = ({ handleAction, t }) => {
+    const [clicks, setClicks] = React.useState(0);
+    const [isBreaking, setIsBreaking] = React.useState(false);
+
+    const handleClick = () => {
+        if (clicks < 3) {
+            setClicks(prev => prev + 1);
+            setIsBreaking(true);
+            setTimeout(() => setIsBreaking(false), 200);
+        } else {
+            handleAction();
+            // Reset state so it's not "stuck" in breaking mode
+            setClicks(0);
+            setIsBreaking(false);
+        }
+    };
+
+    const glitchStyle = isBreaking ? {
+        transform: `translate(${Math.random() * 10 - 5}px, ${Math.random() * 10 - 5}px)`,
+        filter: 'hue-rotate(90deg) contrast(150%)',
+    } : {};
+
+    const damageLevels = [
+        'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]',
+        'shadow-[0_0_30px_rgba(239,68,68,0.5)] border-red-500/80 scale-[0.99] text-red-400',
+        'shadow-[0_0_50px_rgba(239,68,68,0.7)] border-red-400 scale-[0.98] rotate-[0.5deg] text-red-300 animate-pulse',
+        'shadow-[0_0_80px_rgba(255,0,0,0.9)] border-red-300 scale-[0.95] -rotate-[1deg] text-white bg-red-600 animate-[ping_0.2s_infinite]'
+    ];
+
+    const messages = [
+        t('system_tab.panic_factory_reset'),
+        '[ ! CAUTION_SYSTEM_INTERRUPT ! ]',
+        '[ !! KERNEL_PANIC_IMMUTABLE !! ]',
+        '[ !!! VOID_PROTOCOL_ACTIVE !!! ]'
+    ];
+
+    return (
+        <button
+            onClick={handleClick}
+            style={glitchStyle}
+            className={`
+                w-full py-4 bg-transparent font-bold text-[10px] uppercase tracking-[0.5em] border-2 transition-all active:scale-90 relative overflow-hidden
+                ${damageLevels[clicks] || damageLevels[0]}
+            `}
+        >
+            {messages[clicks] || messages[0]}
+            {isBreaking && (
+                <div className="absolute inset-0 bg-white/20 animate-pulse pointer-events-none"></div>
+            )}
+        </button>
+    );
+};
+
 const SystemTab: React.FC<SystemTabProps> = ({
     activeAccent, allGamesCategory, onUpdateCategories,
-    taskbarMargin, onUpdateTaskbarMargin, triggerFileBrowser, onResolveAsset, handleSystemFormat
+    taskbarMargin, onUpdateTaskbarMargin, uiScale, onUpdateUIScale, triggerFileBrowser, onResolveAsset, handleSystemFormat
 }) => {
     const { t, language, setLanguage } = useTranslation();
+    const [localScale, setLocalScale] = React.useState(uiScale);
+
+    // Sync local state if prop changes externally
+    React.useEffect(() => {
+        setLocalScale(uiScale);
+    }, [uiScale]);
     return (
         <div className="flex flex-col gap-6 lg:gap-8">
             <Subsection title={t('system_tab.language_settings')} accentColor={activeAccent}>
@@ -33,46 +94,102 @@ const SystemTab: React.FC<SystemTabProps> = ({
             </Subsection>
 
             <Subsection title={t('system_tab.interface_control_matrix')} accentColor={activeAccent}>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="flex flex-wrap gap-4 col-span-full">
                     {[
-                        { key: 'assetColor', label: t('system_tab.assets_hex') },
-                        { key: 'nodeColor', label: t('system_tab.nodes_hex') },
-                        { key: 'syncColor', label: t('system_tab.sync_hex') },
-                        { key: 'coreColor', label: t('system_tab.core_hex') }
-                    ].map(cp => (
-                        <div key={cp.key} className="flex flex-col gap-2">
-                            <label className="text-[8px] opacity-60 uppercase tracking-widest">{cp.label}</label>
-                            <div className="relative group/picker overflow-hidden border-2 border-white/20 hover:border-white transition-all" style={{ clipPath: 'polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))' }}>
-                                <input type="color" value={(allGamesCategory as any)[cp.key] || activeAccent} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, [cp.key]: e.target.value } : c))} className="h-10 w-full bg-transparent border-none cursor-pointer scale-110" />
+                        { key: 'assetColor', label: t('system_tab.assets_hex'), default: '#a855f7' },
+                        { key: 'nodeColor', label: t('system_tab.nodes_hex'), default: '#06b6d4' },
+                        { key: 'syncColor', label: t('system_tab.sync_hex'), default: '#22c55e' },
+                        { key: 'coreColor', label: t('system_tab.core_hex'), default: '#9acd32' }
+                    ].map(cp => {
+                        const currentColor = (allGamesCategory as any)[cp.key] || cp.default;
+                        return (
+                            <div key={cp.key} className="flex flex-col gap-1.5">
+                                <label className="text-[7px] opacity-40 uppercase tracking-widest font-bold">{cp.label}</label>
+                                <div className="relative group/picker overflow-hidden border-2 transition-all p-[1.5px]"
+                                    style={{
+                                        width: '44px',
+                                        height: '20px',
+                                        borderColor: currentColor,
+                                        clipPath: 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)',
+                                        WebkitClipPath: 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)'
+                                    }}>
+                                    <div className="absolute inset-0" style={{ backgroundColor: currentColor }}></div>
+                                    <input type="color" value={currentColor} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, [cp.key]: e.target.value } : c))} className="absolute inset-0 w-[150%] h-[150%] bg-transparent border-none cursor-pointer -translate-x-1/4 -translate-y-1/4 opacity-0" />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
-                <div className="flex flex-col gap-2 mt-4">
-                    <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.taskbar_offset_buffer')}</label>
+                <div className="flex flex-col gap-2 mt-2 col-span-full">
+                    <div className="flex justify-between items-center">
+                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.taskbar_offset_buffer')}</label>
+                        <button
+                            onClick={() => onUpdateTaskbarMargin(0)}
+                            className="text-[7px] font-bold opacity-30 hover:opacity-100 border border-white/10 px-1.5 py-0.5"
+                        >
+                            {t('system_tab.reset_btn')}
+                        </button>
+                    </div>
                     <div className="flex justify-between items-center mb-1"><span className="text-[11px] font-mono text-white/90 shadow-black drop-shadow-md" style={{ textShadow: `0 0 10px ${activeAccent}` }}>{taskbarMargin}PX</span></div>
-                    <input type="range" min="0" max="120" value={taskbarMargin} onChange={e => onUpdateTaskbarMargin(parseInt(e.target.value))} className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer hover:bg-white/20 transition-all" style={{ outline: 'none', accentColor: activeAccent }} />
+                    <input type="range" min="0" max="120" value={taskbarMargin} onChange={e => onUpdateTaskbarMargin(parseInt(e.target.value))} className="w-full h-1 bg-white/10 appearance-none cursor-pointer hover:bg-white/20 transition-all" style={{ outline: 'none', accentColor: activeAccent }} />
                 </div>
-                <div className="flex flex-col gap-2 mt-4">
-                    <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.chroma_mesh_transparency')}</label>
+                <div className="flex flex-col gap-2 mt-3 col-span-full">
+                    <div className="flex justify-between items-center">
+                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.chroma_mesh_transparency')}</label>
+                        <button
+                            onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, cardOpacity: 0.7 } : c))}
+                            className="text-[7px] font-bold opacity-30 hover:opacity-100 border border-white/10 px-1.5 py-0.5"
+                        >
+                            {t('system_tab.reset_btn')}
+                        </button>
+                    </div>
                     <div className="flex justify-between items-center mb-1"><span className="text-[11px] font-mono text-white/90 shadow-black drop-shadow-md" style={{ textShadow: `0 0 10px ${activeAccent}` }}>{Math.round((allGamesCategory.cardOpacity ?? 0.7) * 100)}%</span></div>
-                    <input type="range" min="0.1" max="1.0" step="0.01" value={allGamesCategory.cardOpacity ?? 0.7} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, cardOpacity: parseFloat(e.target.value) } : c))} className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer hover:bg-white/20 transition-all" style={{ outline: 'none', accentColor: activeAccent }} />
+                    <input type="range" min="0.1" max="1.0" step="0.01" value={allGamesCategory.cardOpacity ?? 0.7} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, cardOpacity: parseFloat(e.target.value) } : c))} className="w-full h-1 bg-white/10 appearance-none cursor-pointer hover:bg-white/20 transition-all" style={{ outline: 'none', accentColor: activeAccent }} />
+                </div>
+                <div className="flex flex-col gap-2 mt-3 col-span-full">
+                    <div className="flex justify-between items-center">
+                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.terminal_dpi_scaling')}</label>
+                        <button
+                            onClick={() => {
+                                setLocalScale(1.0);
+                                onUpdateUIScale(1.0);
+                            }}
+                            className="text-[7px] font-bold opacity-30 hover:opacity-100 border border-white/10 px-1.5 py-0.5"
+                        >
+                            {t('system_tab.reset_btn')}
+                        </button>
+                    </div>
+                    <div className="flex justify-between items-center mb-1"><span className="text-[11px] font-mono text-white/90 shadow-black drop-shadow-md" style={{ textShadow: `0 0 10px ${activeAccent}` }}>{Math.round(localScale * 100)}%</span></div>
+                    <input
+                        type="range"
+                        min="0.5"
+                        max="1.5"
+                        step="0.1"
+                        value={localScale}
+                        onChange={e => {
+                            const val = parseFloat(e.target.value);
+                            setLocalScale(val);
+                            onUpdateUIScale(val);
+                        }}
+                        className="w-full h-1 bg-white/10 appearance-none cursor-pointer hover:bg-white/20 transition-all font-bold"
+                        style={{ outline: 'none', accentColor: activeAccent }}
+                    />
                 </div>
             </Subsection>
 
             <Subsection title={t('system_tab.ambience_protocol')} accentColor={activeAccent}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 col-span-full">
                     {[
                         { key: 'vignetteEnabled', label: t('system_tab.vignette_shadow') },
                         { key: 'scanlineEnabled', label: t('system_tab.scanline_fx') },
                         { key: 'gridEnabled', label: t('system_tab.matrix_grid') },
                         { key: 'bgAnimationsEnabled', label: t('system_tab.ambient_motion') },
-                        { key: 'highQualityBlobs', label: 'AMBIENT_QUALITY [HIGH]' },
-                        { key: 'lowResWallpaper', label: 'WALLPAPER_RES [960P]' },
-                        { key: 'wallpaperAAEnabled', label: 'WALLPAPER_SMOOTH [AA]' },
-                        { key: 'cardTransparencyEnabled', label: 'CARD_TRANSPARENCY' },
-                        { key: 'cardBlurEnabled', label: 'CARD_GLASS [BLUR]' }
+                        { key: 'highQualityBlobs', label: t('system_tab.ambient_quality') },
+                        { key: 'lowResWallpaper', label: t('system_tab.wallpaper_res') },
+                        { key: 'wallpaperAAEnabled', label: t('system_tab.wallpaper_smooth') },
+                        { key: 'cardTransparencyEnabled', label: t('system_tab.card_transparency') },
+                        { key: 'cardBlurEnabled', label: t('system_tab.card_blur') }
                     ].map(toggle => (
                         <div key={toggle.key} className="flex items-center justify-between py-2 border-b border-white/5">
                             <label className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-white/60">{toggle.label}</label>
@@ -94,16 +211,15 @@ const SystemTab: React.FC<SystemTabProps> = ({
                     ))}
                 </div>
 
-                <div className="flex flex-col gap-4 mt-8 pt-4 border-t border-white/10">
+                <div className="flex flex-col gap-4 mt-8 pt-4 border-t border-white/10 col-span-full">
                     <div className="flex flex-col gap-1">
-                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.performance_protocol')}</label>
                         <span className="text-[7px] text-white/40 font-mono">ADJUST_RENDER_FIDELITY</span>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 w-full">
                         {[
                             {
                                 id: 'low',
-                                label: 'LOW [ECO]',
+                                label: t('system_tab.performance_low'),
                                 config: {
                                     vignetteEnabled: false, scanlineEnabled: false, gridEnabled: false, bgAnimationsEnabled: false,
                                     lowResWallpaper: true, wallpaperAAEnabled: true, highQualityBlobs: false,
@@ -112,7 +228,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                             },
                             {
                                 id: 'balanced',
-                                label: 'BALANCED',
+                                label: t('system_tab.performance_balanced'),
                                 config: {
                                     vignetteEnabled: true, scanlineEnabled: false, gridEnabled: true, bgAnimationsEnabled: true,
                                     lowResWallpaper: false, wallpaperAAEnabled: false, highQualityBlobs: false,
@@ -121,14 +237,14 @@ const SystemTab: React.FC<SystemTabProps> = ({
                             },
                             {
                                 id: 'high',
-                                label: 'HIGH [GPU]',
+                                label: t('system_tab.performance_high'),
                                 config: {
                                     vignetteEnabled: true, scanlineEnabled: true, gridEnabled: true, bgAnimationsEnabled: true,
                                     lowResWallpaper: false, wallpaperAAEnabled: false, highQualityBlobs: true,
                                     cardTransparencyEnabled: true, cardBlurEnabled: true, cardOpacity: 0.7
                                 }
                             },
-                            { id: 'custom', label: 'CUSTOM', config: null }
+                            { id: 'custom', label: t('system_tab.performance_custom'), config: null }
                         ].map(mode => {
                             const currentMode = (allGamesCategory as any).performanceMode || 'high';
                             const isActive = currentMode === mode.id;
@@ -142,14 +258,16 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                         ...(mode.config || {}) // Apply preset config if not custom
                                     } : c))}
                                     className={`
-                                        py-3 px-2 border-2 text-[8px] lg:text-[9px] font-bold uppercase tracking-widest transition-all
+                                        w-full py-3 px-2 border-2 text-[8px] lg:text-[9px] font-bold uppercase tracking-widest transition-all
                                         ${isActive
-                                            ? mode.id === 'custom'
-                                                ? `bg-amber-400 text-black border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] scale-[1.02]`
-                                                : `bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-[1.02]`
+                                            ? 'text-black'
                                             : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white'
                                         }
                                     `}
+                                    style={{
+                                        backgroundColor: isActive ? activeAccent : undefined,
+                                        borderColor: isActive ? activeAccent : undefined
+                                    }}
                                 >
                                     {mode.label}
                                 </button>
@@ -159,22 +277,22 @@ const SystemTab: React.FC<SystemTabProps> = ({
                     {(allGamesCategory as any).performanceMode === 'low' && (
                         <div className="text-[8px] text-emerald-400 font-mono mt-1 flex items-center gap-2">
                             <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-                            OPTIMIZED_FOR_INTEGRATED_GRAPHICS :: BLUR_ENABLED (960P)
+                            {t('system_tab.performance_low_desc')}
                         </div>
                     )}
                     {(allGamesCategory as any).performanceMode === 'custom' && (
                         <div className="text-[8px] text-amber-400 font-mono mt-1 flex items-center gap-2">
                             <div className="w-1.5 h-1.5 bg-amber-400 rounded-full"></div>
-                            USER_DEFINED_PARAMETER_OVERRIDE
+                            {t('system_tab.performance_custom_desc')}
                         </div>
                     )}
                 </div>
             </Subsection>
 
             <Subsection title={t('system_tab.system_maintenance')} accentColor={activeAccent}>
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between py-2 border-b border-white/5">
-                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.interface_refresh')}</label>
+                <div className="flex flex-col gap-4 col-span-full">
+                    <div className="flex items-center justify-between py-2 border-b border-white/5 w-full">
+                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold whitespace-nowrap">{t('system_tab.interface_refresh')}</label>
                         <button onClick={() => window.location.reload()} className="px-6 py-2 bg-transparent text-cyan-400 font-bold text-[8px] uppercase tracking-[0.2em] border-2 border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all active:scale-95 shadow-[0_0_10px_rgba(34,211,238,0.1)]">
                             {t('system_tab.reload_ui_btn')}
                         </button>
@@ -205,9 +323,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                     </p>
 
                     <div className="flex gap-4 mt-4 relative z-10">
-                        <button onClick={handleSystemFormat} className="w-full py-4 bg-transparent text-red-500 font-bold text-[10px] uppercase tracking-[0.5em] border-2 border-red-500 hover:bg-red-600 hover:text-white transition-all active:scale-95 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
-                            {t('system_tab.panic_factory_reset')}
-                        </button>
+                        <PanicResetButton handleAction={handleSystemFormat} t={t} />
                     </div>
 
                     {/* Danger Scanline */}

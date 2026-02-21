@@ -119,7 +119,12 @@ const AssetImagePreview: React.FC<{ src: string, alt: string, type: string }> = 
         const timer = setTimeout(() => {
             // Append timestamp to force refresh if it's a local file re-write
             const isLocal = !src.startsWith('http');
-            setDisplaySrc(isLocal ? `${src}?t=${Date.now()}` : src);
+            if (isLocal) {
+                const separator = src.includes('?') ? '&' : '?';
+                setDisplaySrc(`${src}${separator}t=${Date.now()}`);
+            } else {
+                setDisplaySrc(src);
+            }
         }, 50);
         return () => clearTimeout(timer);
     }, [src]);

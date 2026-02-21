@@ -4,14 +4,23 @@ import { ASSETS } from '../constants';
 
 export function useLibrary(categories: Category[], isSecretUnlocked: boolean, t: (key: string) => string) {
     const displayCategories = useMemo(() => {
-        // 1. Get all unique games that have been played
+        // 1. Get all hidden game IDs to exclude them from recent
+        const hiddenGameIds = new Set(
+            categories
+                .filter(c => c.id === 'hidden')
+                .flatMap(c => c.games.map(g => g.id))
+        );
+
+        // 2. Get all unique games that have been played (excluding hidden)
         const allGamesMap = new Map();
         categories.forEach(c => {
             if ((c.id === 'hidden' || c.id === 'secret') && !isSecretUnlocked) return;
             if (c.id === 'recent') return;
 
             c.games.forEach(g => {
-                if (g.lastPlayed) allGamesMap.set(g.id, g);
+                if (g.lastPlayed && !hiddenGameIds.has(g.id)) {
+                    allGamesMap.set(g.id, g);
+                }
             });
         });
 

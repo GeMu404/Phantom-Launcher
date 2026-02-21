@@ -77,26 +77,29 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, colo
   const calculateVisibility = useCallback(() => {
     if (!trackRef.current) return;
 
-    // Throttle: skip if called too rapidly (anime.js calls this every tick)
-    const now = performance.now();
-    if (now - lastVisibilityRun.current < 16) return; // Cap at ~60fps
-    lastVisibilityRun.current = now;
-
-    const items = Array.from(trackRef.current.children) as HTMLElement[];
     const screenWidth = window.innerWidth;
     const blurStart = screenWidth - 100;
     const fadeEnd = screenWidth + 200;
 
-    // PHASE 1: BATCH ALL READS (no style writes here!)
-    const readings = items.map((item, loopIdx) => {
-      const rect = item.getBoundingClientRect();
+    // Use current anime value or fallback to computed target
+    const currentTranslateX = anime.get(trackRef.current, 'translateX') as number;
+
+    const items = Array.from(trackRef.current.children) as HTMLElement[];
+    items.forEach((item, loopIdx) => {
       const realIdx = loopIdx + startIndex;
       const isActive = realIdx === activeIdx;
-      return { item, rect, isActive, cardRight: rect.right, cardLeft: rect.left };
-    });
 
-    // PHASE 2: BATCH ALL WRITES (no layout reads here!)
-    readings.forEach(({ item, isActive, cardRight, cardLeft }) => {
+      // MATH BASED POSITION (No Layout Reads!)
+      // cardLeft = padding + offset from previous cards + current container transform
+      let offsetFromStart = 0;
+      for (let j = 0; j < loopIdx; j++) {
+        const itemIdx = startIndex + j;
+        offsetFromStart += (itemIdx === activeIdx ? widthActive : widthInactive) + gap;
+      }
+      const cardLeft = leftPadding + offsetFromStart + currentTranslateX;
+      const currentWidth = isActive ? widthActive : widthInactive;
+      const cardRight = cardLeft + currentWidth;
+
       const cardBody = item.querySelector('.card-body') as HTMLElement;
       const infoArea = item.querySelector('.info-area') as HTMLElement;
       if (!cardBody || !infoArea) return;
@@ -111,9 +114,9 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, colo
 
       cardBody.style.opacity = isActive ? '1' : cardOpacity.toString();
       infoArea.style.opacity = isActive ? '1' : '0';
-      item.style.visibility = cardLeft > screenWidth + 400 ? 'hidden' : 'visible';
+      item.style.visibility = cardLeft > screenWidth + 200 ? 'hidden' : 'visible';
     });
-  }, [activeIdx, cardOpacity, startIndex]);
+  }, [activeIdx, cardOpacity, startIndex, widthActive, widthInactive, gap, leftPadding]);
 
   // Duplicate block removed
 
@@ -240,23 +243,47 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, colo
                 zIndex: isActive ? 30 : 10,
               }}
             >
+              {/* BACK GLOW (OUTER GLOW ONLY) - Placed under the opaque card body so inward bleed is hidden */}
+              {isActive && (
+                <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none overflow-visible" viewBox={`0 0 ${cardWidth} ${totalHeight}`} preserveAspectRatio="none">
+                  <polygon
+                    points={points}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth={isPriming ? "8" : "6"}
+                    style={{
+                      filter: performanceMode !== 'low' ? 'url(#neon-shadow)' : 'none',
+                      opacity: 0.8
+                    }}
+                  />
+                </svg>
+              )}
+
               {/* INTEGRATED DESIGN CONTAINER */}
               <div
-                className="card-body w-full h-full relative overflow-hidden"
+                className="card-body w-full h-full relative overflow-hidden z-10"
                 style={{
                   clipPath: extClip,
                   WebkitClipPath: extClip,
                   backgroundColor: '#050505'
                 }}
               >
-                {/* Image area */}
+                {/* Image area - RESTORED with 1px overflow to avoid sub-pixel gaps at edges */}
                 <div
-                  className="absolute top-0 left-0 right-0 bg-black"
-                  style={{ height: isActive ? `${height}px` : '100%' }}
+                  className="absolute left-0 right-0 bg-black"
+                  style={{
+                    top: '-1px',
+                    height: isActive ? `${height + 2}px` : 'calc(100% + 2px)',
+                    zIndex: 1,
+                    // Interface clip: Only needs to handle the notch where it meets the title bar
+                    clipPath: isActive ? `polygon(0 0, 100% 0, 100% calc(100% - ${CUT_SIZE}px), calc(100% - ${CUT_SIZE}px) 100%, 0 100%)` : 'none'
+                  }}
                 >
                   <img
                     src={imgSrc}
                     alt={game.title}
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       const target = e.currentTarget;
                       if (target.getAttribute('data-fallback') === 'true') return;
@@ -270,31 +297,82 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, colo
                     }}
                   />
                   {!isActive && <div className="absolute inset-0 bg-black/15" />}
+
+                  {/* LOCALIZED INNER GLOW OVERLAY - Strictly for the image area art */}
+                  {isActive && performanceMode !== 'low' && (
+                    <svg
+                      className="absolute pointer-events-none"
+                      style={{
+                        top: '1px',
+                        left: 0,
+                        width: '100%',
+                        height: `${height}px`,
+                        zIndex: 2,
+                      }}
+                    >
+                      <defs>
+                        <clipPath id={`inner-glow-clip-${game.id}`}>
+                          <polygon
+                            points={[
+                              `${CUT_SIZE},0`,
+                              `${cardWidth},0`,
+                              `${cardWidth},${height - CUT_SIZE}`,
+                              `${cardWidth - CUT_SIZE},${height}`,
+                              `0,${height}`,
+                              `0,${CUT_SIZE}`
+                            ].join(' ')}
+                          />
+                        </clipPath>
+                      </defs>
+                      <polygon
+                        points={[
+                          `${CUT_SIZE},0`,
+                          `${cardWidth},0`,
+                          `${cardWidth},${height - CUT_SIZE}`,
+                          `${cardWidth - CUT_SIZE},${height}`,
+                          `0,${height}`,
+                          `0,${CUT_SIZE}`
+                        ].join(' ')}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="30"
+                        filter="blur(15px)"
+                        clipPath={`url(#inner-glow-clip-${game.id})`}
+                        opacity="0.5"
+                      />
+                      {/* Crisp inner neon core */}
+                      <polygon
+                        points={[
+                          `${CUT_SIZE},0`,
+                          `${cardWidth},0`,
+                          `${cardWidth},${height - CUT_SIZE}`,
+                          `${cardWidth - CUT_SIZE},${height}`,
+                          `0,${height}`,
+                          `0,${CUT_SIZE}`
+                        ].join(' ')}
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="3"
+                        clipPath={`url(#inner-glow-clip-${game.id})`}
+                        opacity="0.3"
+                      />
+                    </svg>
+                  )}
                 </div>
 
-                {/* Title bar (Nests the patch triangle for sync) */}
+                {/* Title bar - Single element with integrated notch to avoid overlap/glow bugs */}
                 {isActive && (
                   <div
                     className="absolute bottom-0 left-0 right-0 flex items-center px-4"
                     style={{
-                      height: `${BAR_H_VAL}px`,
-                      backgroundColor: color || '#fff'
+                      height: `${BAR_H_VAL + CUT_SIZE}px`,
+                      backgroundColor: color || '#fff',
+                      // Simplificamos: El padre ya recorta el exterior. Solo recortamos la "mordida" superior.
+                      clipPath: `polygon(0 ${CUT_SIZE}px, calc(100% - ${CUT_SIZE}px) ${CUT_SIZE}px, 100% 0, 100% 100%, 0 100%)`,
+                      WebkitClipPath: `polygon(0 ${CUT_SIZE}px, calc(100% - ${CUT_SIZE}px) ${CUT_SIZE}px, 100% 0, 100% 100%, 0 100%)`,
+                      zIndex: 3
                     }}
                   >
-                    {/* PATCH TRIANGLE - Synced with bar animation */}
-                    <div
-                      className="absolute right-0 pointer-events-none"
-                      style={{
-                        top: `-${CUT_SIZE}px`,
-                        width: `${CUT_SIZE + 2}px`,
-                        height: `${CUT_SIZE + 2}px`,
-                        backgroundColor: color || '#fff',
-                        transform: 'translate(1.5px, 1.5px)',
-                        clipPath: 'polygon(100% 0, 100% 100%, 0 100%)',
-                        WebkitClipPath: 'polygon(100% 0, 100% 100%, 0 100%)'
-                      }}
-                    />
-
                     <span
                       className="uppercase font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full"
                       style={{
@@ -302,6 +380,9 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, colo
                         fontSize: `${Math.min(14, Math.max(10, height * 0.065))}px`,
                         letterSpacing: '0.15em',
                         color: getContrastColor(color || '#fff'),
+                        textShadow: '0 0 10px rgba(0,0,0,0.5)',
+                        // Accurate vertical positioning in the solid bar area
+                        marginTop: `${CUT_SIZE}px`
                       }}
                     >
                       {game.title}
@@ -318,9 +399,6 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({ games, activeIdx, colo
                     fill="none"
                     stroke={color}
                     strokeWidth={isPriming ? "4" : "2.5"}
-                    style={{
-                      filter: performanceMode !== 'low' ? 'url(#neon-shadow)' : 'none'
-                    }}
                   />
                 </svg>
               )}

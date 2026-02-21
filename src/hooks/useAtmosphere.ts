@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Category, Game, AppState } from '../types';
 import { ASSETS } from '../constants';
 
-export const useAtmosphere = (categories: Category[], currentCategory: Category | undefined, activeGame: Game | undefined, isManagementOpen: boolean = false) => {
+export const useAtmosphere = (categories: Category[], currentCategory: Category | undefined, activeGame: Game | undefined, isManagementOpen: boolean = false, assetVersion: number = 0) => {
     // Helper: Resource Resolution
     const resolveAsset = useCallback((path: string | undefined, width?: number): string => {
         if (!path) return '';
@@ -14,8 +14,9 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
 
         let url = `/api/proxy-image?path=${encodeURIComponent(path)}`;
         if (width) url += `&width=${width}`;
+        if (assetVersion > 0) url += `&v=${assetVersion}`;
         return url;
-    }, []);
+    }, [assetVersion]);
 
     const atmosphereSettings = useMemo(() => {
         if (categories.length === 0) return { wallpaper: ASSETS.ui.wallpaper };

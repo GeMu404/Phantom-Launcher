@@ -12,6 +12,7 @@ import GamesTab from './management/GamesTab';
 import CategoriesTab from './management/CategoriesTab';
 import IntegrationsTab from './management/IntegrationsTab';
 import { useTranslation } from '../hooks/useTranslation';
+import CyberScrollbar from './CyberScrollbar';
 // const useTranslation = () => ({ t: (key: string) => key });
 
 interface ManagementModalProps {
@@ -23,7 +24,10 @@ interface ManagementModalProps {
   accentColor: string;
   taskbarMargin: number;
   onUpdateTaskbarMargin: (val: number) => void;
+  uiScale: number;
+  onUpdateUIScale: (val: number) => void;
   onResolveAsset: (path: string | undefined) => string;
+  bumpAssetVersion: () => void;
   isSecretUnlocked?: boolean;
 }
 
@@ -33,9 +37,10 @@ interface ConfirmState {
   isDanger?: boolean;
 }
 
+
 const ManagementModal: React.FC<ManagementModalProps> = ({
   isOpen, onClose, categories, currentCatIdx, onUpdateCategories, accentColor,
-  taskbarMargin, onUpdateTaskbarMargin, onResolveAsset,
+  taskbarMargin, onUpdateTaskbarMargin, uiScale, onUpdateUIScale, onResolveAsset, bumpAssetVersion,
   isSecretUnlocked = false
 }) => {
   const { t } = useTranslation();
@@ -85,7 +90,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const [gameForm, setGameForm] = useState({ title: '', cover: '', banner: '', logo: '', execPath: '', execArgs: '', categoryIds: [] as string[], wallpaper: '' });
   const [catForm, setCatForm] = useState({ name: '', icon: '', color: '#ffffff', wallpaper: '', wallpaperMode: 'cover' as any, gridOpacity: 0.15, enabled: true });
-  const [steamOptions, setSteamOptions] = useState({ includeHidden: false, includeSoftware: false });
+  const [steamOptions, setSteamOptions] = useState({ includeSoftware: false, includeAdultOnly: false });
   const [sgdbKey, setSgdbKey] = useState('');
   const [sgdbEnabled, setSgdbEnabled] = useState(false);
   const [searchModal, setSearchModal] = useState({ isOpen: false, type: 'grid' as 'grid' | 'hero' | 'logo', targetField: 'cover' as 'cover' | 'banner' | 'logo' | 'icon' });
@@ -118,6 +123,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             games: cat.games.map(g => g.id === editingId ? { ...g, [searchModal.targetField]: newPath } : g)
           })));
         }
+        bumpAssetVersion();
       }
     } catch (e) {
       console.error("Cloud import failed", e);
@@ -208,9 +214,61 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           enabled: cat.enabled ?? true,
           ...cat // Spread everything else to be safe
         });
+        setIsFormOpen(true); // Ensure form opens when category is selected
+      }
+    } else if (tab === 'secret') {
+      const hiddenCat = categories.find(c => c.id === 'hidden');
+      if (hiddenCat) {
+        setEditingId('hidden');
+        setCatForm({
+          name: hiddenCat.name,
+          icon: hiddenCat.icon,
+          color: hiddenCat.color,
+          wallpaper: hiddenCat.wallpaper || '',
+          wallpaperMode: hiddenCat.wallpaperMode || 'cover',
+          gridOpacity: hiddenCat.gridOpacity ?? 0.15,
+          enabled: hiddenCat.enabled ?? true
+        });
+        setIsFormOpen(true); // Force open for secret tab
       }
     }
   }, [editingId, tab, categories]);
+
+  // Handle game editing within secret tab context
+  const [currentSecretGameId, setCurrentSecretGameId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Reset secret game editing when tab changes
+    if (tab !== 'secret') setCurrentSecretGameId(null);
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'secret' && currentSecretGameId) {
+      if (currentSecretGameId === 'new_secret') {
+        setGameForm({
+          title: '', cover: '', banner: '', logo: '', execPath: '', execArgs: '',
+          categoryIds: ['hidden'],
+          wallpaper: ''
+        });
+        setIsFormOpen(true);
+      } else {
+        const g = categories.flatMap(c => c.games).find(x => x.id === currentSecretGameId);
+        if (g) {
+          setGameForm({
+            title: g.title,
+            cover: g.cover,
+            banner: g.banner,
+            logo: g.logo,
+            execPath: g.execPath,
+            execArgs: g.execArgs || '',
+            categoryIds: categories.filter(c => c.id !== 'all' && c.games.some(x => x.id === g.id)).map(c => c.id),
+            wallpaper: g.wallpaper || ''
+          });
+          setIsFormOpen(true);
+        }
+      }
+    }
+  }, [tab, currentSecretGameId, allGamesCategory.games]);
 
   const resetForms = () => {
     setGameForm({ title: '', cover: '', banner: '', logo: '', execPath: '', execArgs: '', categoryIds: [], wallpaper: '' });
@@ -256,6 +314,9 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const handleSyncSteamLibrary = async () => {
     try {
+      // Clear existing steam list to "restart"
+      onUpdateCategories(prev => prev.map(cat => (cat.id === 'steam' || cat.id === 'all') ? { ...cat, games: cat.games.filter(g => g.source !== 'steam') } : cat));
+
       const response = await fetch('/api/steam/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -287,6 +348,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           return cat;
         });
       });
+      bumpAssetVersion();
     } catch (e) {
       console.error("Steam sync failed", e);
     }
@@ -294,6 +356,9 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const handleSyncXboxLibrary = async () => {
     try {
+      // Clear existing xbox list to "restart"
+      onUpdateCategories(prev => prev.map(cat => (cat.id === 'xbox' || cat.id === 'all') ? { ...cat, games: cat.games.filter(g => g.source !== 'xbox') } : cat));
+
       const response = await fetch('/api/xbox/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -324,6 +389,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           return cat;
         });
       });
+      bumpAssetVersion();
     } catch (e: any) {
       console.error("Xbox sync failed", e);
     }
@@ -331,8 +397,18 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const handleSaveGame = async () => {
     if (!gameForm.title.trim()) return;
-    const slug = slugify(gameForm.title);
-    let newId = editingId;
+
+    // Force secret isolation if editing from the secret tab
+    const finalForm = (tab === 'secret' && currentSecretGameId)
+      ? { ...gameForm, categoryIds: ['hidden'] }
+      : gameForm;
+
+    const slug = slugify(finalForm.title);
+    const targetId = (tab === 'secret' && currentSecretGameId)
+      ? (currentSecretGameId === 'new_secret' ? null : currentSecretGameId)
+      : editingId;
+    let newId = targetId;
+
     if (!newId) {
       let candidateId = `manual_${slug}`;
       let counter = 0;
@@ -349,24 +425,26 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     const gameObj: Game = {
       ...existingGame!, // Spread existing props first
       id: newId!,
-      title: gameForm.title,
-      cover: gameForm.cover,
-      banner: gameForm.banner,
-      logo: gameForm.logo,
-      execPath: gameForm.execPath,
-      execArgs: gameForm.execArgs,
+      title: finalForm.title,
+      cover: finalForm.cover,
+      banner: finalForm.banner,
+      logo: finalForm.logo,
+      execPath: finalForm.execPath,
+      execArgs: finalForm.execArgs,
       source: existingGame?.source || 'manual', // Keep source or default to manual
-      wallpaper: gameForm.wallpaper
+      wallpaper: finalForm.wallpaper
     };
     onUpdateCategories(prev => prev.map(cat => {
-      let isTarget = cat.id === 'all' || gameForm.categoryIds.includes(cat.id);
-      if (cat.id === 'all' && gameForm.categoryIds.includes('hidden')) isTarget = false;
+      let isTarget = cat.id === 'all' || finalForm.categoryIds.includes(cat.id);
+      if (cat.id === 'all' && finalForm.categoryIds.includes('hidden')) isTarget = false;
       const exists = cat.games.some(g => g.id === newId);
       if (isTarget) return exists ? { ...cat, games: cat.games.map(g => g.id === newId ? gameObj : g) } : { ...cat, games: [...cat.games, gameObj] };
       return { ...cat, games: cat.games.filter(g => g.id !== newId) };
     }));
+    bumpAssetVersion();
     setIsFormOpen(false);
     setEditingId(null);
+    if (tab === 'secret') setCurrentSecretGameId(null);
     resetForms();
   };
 
@@ -405,6 +483,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
         } else {
           onUpdateCategories(prev => [...prev, { id: catId, ...catForm, [target]: storedPath, games: [] } as any]);
         }
+        bumpAssetVersion();
       } catch (e) {
         // Fallback to raw path if import fails
         setCatForm(prev => ({ ...prev, [target]: path }));
@@ -445,6 +524,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           execArgs: info.Arguments || prev.execArgs || '',
           title: prev.title || info.TargetPath?.split('\\').pop()?.split('/').pop()?.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ').toUpperCase() || path.split('\\').pop()?.split('/').pop()?.replace(/\.[^/.]+$/, "").replace(/[_-]/g, ' ').toUpperCase() || ''
         }));
+        bumpAssetVersion();
       } catch (e) {
         console.error("Internal shortcut creation failed", e);
         setGameForm(prev => ({ ...prev, execPath: path }));
@@ -468,6 +548,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             games: cat.games.map(g => g.id === editingId ? { ...g, [target]: data.path } : g)
           })));
         }
+        bumpAssetVersion();
       }
     } catch (e) {
       console.error("Asset import failed", e);
@@ -478,6 +559,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     requestConfirmation("ERASE_ALL_REGISTRY_DATA?", async () => {
       await fetch('/api/system/wipe', { method: 'POST' });
       onUpdateCategories(prev => prev.map(c => ({ ...c, games: [] })));
+      bumpAssetVersion();
     });
   };
 
@@ -485,6 +567,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     requestConfirmation("PURGE_GAME_REGISTRY?", async () => {
       await fetch('/api/games/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId }) });
       onUpdateCategories(prev => prev.map(c => ({ ...c, games: c.games.filter(g => g.id !== gameId) })));
+      bumpAssetVersion();
     });
   };
 
@@ -506,7 +589,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
       return prev.map(c => c.id === editingId ? { ...c, ...catForm } : c);
     });
-
+    bumpAssetVersion();
     setIsFormOpen(false);
     setEditingId(null);
     resetForms();
@@ -557,6 +640,53 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     }));
   };
 
+  const handleToggleGameInCategory = (catId: string, gameId: string) => {
+    onUpdateCategories(prev => {
+      let isRemovingFromHidden = false;
+      let isAddingToHidden = false;
+
+      if (catId === 'hidden') {
+        const hiddenCat = prev.find(c => c.id === 'hidden');
+        if (hiddenCat?.games.some(g => g.id === gameId)) {
+          isRemovingFromHidden = true;
+        } else {
+          isAddingToHidden = true;
+        }
+      }
+
+      return prev.map(cat => {
+        if (isAddingToHidden) {
+          if (cat.id === 'hidden') {
+            const game = prev.flatMap(c => c.games).find(g => g.id === gameId);
+            return game ? { ...cat, games: [...cat.games, game] } : cat;
+          } else {
+            return { ...cat, games: cat.games.filter(g => g.id !== gameId) };
+          }
+        }
+
+        if (isRemovingFromHidden) {
+          if (cat.id === 'hidden') {
+            return { ...cat, games: cat.games.filter(g => g.id !== gameId) };
+          } else if (cat.id === 'all') {
+            const game = prev.find(c => c.id === 'hidden')?.games.find(g => g.id === gameId);
+            return game ? { ...cat, games: [...cat.games, game] } : cat;
+          }
+          return cat;
+        }
+
+        // Normal toggle
+        if (cat.id !== catId) return cat;
+        const exists = cat.games.some(g => g.id === gameId);
+        if (exists) {
+          return { ...cat, games: cat.games.filter(g => g.id !== gameId) };
+        } else {
+          const game = prev.flatMap(c => c.games).find(g => g.id === gameId);
+          return game ? { ...cat, games: [...cat.games, game] } : cat;
+        }
+      });
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -599,11 +729,34 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
         </div>
 
         <div className="flex justify-between items-center px-6 lg:px-10 py-5 lg:py-8 bg-black/60 border-b-2 border-white/10 shrink-0 relative z-[80]">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="font-['Press_Start_2P'] text-[9px] lg:text-[11px] uppercase tracking-tighter" style={{ color: activeAccent }}>[ CORE_ENGINE_TERMINAL ]</h2>
-            <span className="text-[7px] font-['Space_Mono'] opacity-60 uppercase tracking-[0.5em] text-white">Phantom_Shell_v{APP_VERSION}.SYS</span>
+          <div className="flex items-center gap-6 lg:gap-10">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="font-['Press_Start_2P'] text-[9px] lg:text-[11px] uppercase tracking-tighter" style={{ color: activeAccent }}>[ TERMINAL_NUCLEO_MOTOR ]</h2>
+              <span className="text-[7px] font-['Space_Mono'] opacity-60 uppercase tracking-[0.5em] text-white">PHANTOM_SHELL_V{APP_VERSION}.SYS</span>
+            </div>
+
+            {/* Master Status Tool */}
+            <div className="hidden md:flex items-center gap-4 bg-black/40 border-l-2 border-white/5 pl-6 py-1">
+              <div className="flex flex-col gap-1">
+                <span className="text-[6px] text-white/20 uppercase font-mono tracking-widest">Master_Link</span>
+                <div className="flex gap-1.5">
+                  <div className="w-1 h-3 bg-emerald-500/40"></div>
+                  <div className="w-1 h-3 bg-emerald-500/20"></div>
+                  <div className="w-1 h-3 bg-white/5"></div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[6px] text-white/20 uppercase font-mono tracking-widest">Neural_Load</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-16 h-1 bg-white/5 overflow-hidden">
+                    <div className="w-3/4 h-full" style={{ backgroundColor: activeAccent }}></div>
+                  </div>
+                  <span className="text-[6px] font-mono" style={{ color: activeAccent }}>74%</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <button onClick={onClose} className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest border-2" style={{ borderColor: activeAccent, color: activeAccent }}>{t('nav.disconnect')}</button>
+          <button onClick={onClose} className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest border-2 hover:bg-white hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]" style={{ borderColor: activeAccent, color: activeAccent }}>{t('nav.disconnect')}</button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
@@ -615,7 +768,16 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
               { id: 'integrations', label: t('nav.sync_protocols'), color: allGamesCategory.syncColor || activeAccent },
               { id: 'system', label: t('nav.core_sequence'), color: allGamesCategory.coreColor || activeAccent }
             ].map(item => (
-              <button key={item.id} onClick={() => { setTab(item.id as any); setEditingId(null); setIsFormOpen(false); }}
+              <button key={item.id} onClick={() => {
+                setTab(item.id as any);
+                if (item.id === 'secret') {
+                  setEditingId('hidden');
+                  setIsFormOpen(true);
+                } else {
+                  setEditingId(null);
+                  setIsFormOpen(false);
+                }
+              }}
                 className={`w-full py-4 text-[9px] font-bold uppercase tracking-[0.3em] transition-all relative border-2 text-left px-5 ${tab === item.id ? 'text-black' : 'bg-transparent text-white/40 border-white/5 hover:text-white'}`}
                 style={{ backgroundColor: tab === item.id ? item.color : 'transparent', borderColor: tab === item.id ? item.color : 'transparent' }}>
                 {item.label}
@@ -623,7 +785,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             ))}
           </div>
 
-          <div ref={scrollContainerRef} className="flex-1 p-5 lg:p-10 overflow-y-auto custom-scrollbar font-['Space_Mono'] pb-24 lg:pb-32">
+          <div ref={scrollContainerRef} className="flex-1 p-5 lg:p-10 overflow-y-auto no-scrollbar font-['Space_Mono'] pb-10 relative">
             {tab === 'games' && (
               <GamesTab
                 isFormOpen={isFormOpen}
@@ -668,9 +830,14 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 setCatForm={setCatForm}
                 handleSaveCategoryData={handleSaveCategoryData}
                 handleMoveGameInCategory={handleMoveGameInCategory}
+                handleToggleGameInCategory={handleToggleGameInCategory}
+                allGames={allGamesCategory.games}
                 triggerFileBrowser={triggerFileBrowser}
                 activeAccent={activeAccent}
                 scrollToForm={scrollToForm}
+                onEditGame={setCurrentSecretGameId}
+                onDeleteGame={handleDeleteGame}
+                onWipeRegistry={handleWipeMasterRegistry}
               />
             )}
 
@@ -689,11 +856,76 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             )}
 
             {tab === 'system' && (
-              <SystemTab activeAccent={activeAccent} allGamesCategory={allGamesCategory} onUpdateCategories={onUpdateCategories} taskbarMargin={taskbarMargin} onUpdateTaskbarMargin={onUpdateTaskbarMargin} triggerFileBrowser={triggerFileBrowser} onResolveAsset={onResolveAsset} />
-              // <div className="p-4 bg-red-500/20 text-white font-mono">SYSTEM TAB TEMPORARILY DISABLED FOR DEBUGGING</div>
+              <SystemTab
+                activeAccent={activeAccent}
+                allGamesCategory={allGamesCategory}
+                onUpdateCategories={onUpdateCategories}
+                taskbarMargin={taskbarMargin}
+                onUpdateTaskbarMargin={onUpdateTaskbarMargin}
+                uiScale={uiScale}
+                onUpdateUIScale={onUpdateUIScale}
+                triggerFileBrowser={triggerFileBrowser}
+                onResolveAsset={onResolveAsset}
+                handleSystemFormat={handleWipeMasterRegistry}
+              />
+            )}
+
+            {tab === 'secret' && (
+              currentSecretGameId ? (
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-1">
+                    <h3 className="text-[12px] font-bold tracking-[0.2em]">{t('modal.secret_unit_override')}</h3>
+                    <button
+                      onClick={() => setCurrentSecretGameId(null)}
+                      className="text-[8px] text-white/40 hover:text-white uppercase tracking-widest text-left"
+                    >
+                      {t('modal.back_to_node')}
+                    </button>
+                  </div>
+                  <GameEditForm
+                    isFormOpen={true}
+                    setIsFormOpen={setIsFormOpen}
+                    isSecretContext={true}
+                    editingId={currentSecretGameId}
+                    activeAccent="#ec4899"
+                    gameForm={gameForm}
+                    setGameForm={setGameForm}
+                    handleSaveGame={handleSaveGame}
+                    handleSyncWithGemini={() => { }}
+                    isSyncingGemini={false}
+                    triggerFileBrowser={triggerFileBrowser}
+                    onResolveAsset={onResolveAsset}
+                    otherCategories={otherCategories}
+                    sgdbKey={sgdbKey}
+                    sgdbEnabled={sgdbEnabled}
+                    setSearchModal={setSearchModal}
+                  />
+                </div>
+              ) : (
+                <CategoryEditForm
+                  isFormOpen={true}
+                  setIsFormOpen={setIsFormOpen}
+                  gameList={categories.find(c => c.id === 'hidden')?.games || []}
+                  editingId="hidden"
+                  catForm={catForm}
+                  setCatForm={setCatForm}
+                  handleSaveCategoryData={handleSaveCategoryData}
+                  handleMoveGameInCategory={handleMoveGameInCategory}
+                  handleToggleGameInCategory={handleToggleGameInCategory}
+                  onEditGame={setCurrentSecretGameId}
+                  onDeleteGame={handleDeleteGame}
+                  onInitializeUnit={() => setCurrentSecretGameId('new_secret')}
+                  onWipeRegistry={handleWipeMasterRegistry}
+                  allGames={allGamesCategory.games}
+                  triggerFileBrowser={triggerFileBrowser}
+                  onResolveAsset={onResolveAsset}
+                  activeAccent="#ec4899"
+                />
+              )
             )}
           </div>
         </div>
+        <CyberScrollbar containerRef={scrollContainerRef} accentColor={activeAccent} />
       </div>
       <FileExplorerModal isOpen={explorer.isOpen} onClose={() => setExplorer(prev => ({ ...prev, isOpen: false }))} onSelect={handleExplorerSelect} filter={explorer.filter} accentColor={activeAccent} initialPath={explorer.initialPath} />
     </div>

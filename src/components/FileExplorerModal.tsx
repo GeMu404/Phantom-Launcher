@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ASSETS } from '../constants';
+import CyberScrollbar from './CyberScrollbar';
 
 interface FileItem {
     name: string;
@@ -26,6 +27,8 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
     const [contents, setContents] = useState<FileItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const sidebarRef = useRef<HTMLDivElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -163,9 +166,9 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                     <button onClick={onClose} className="px-5 lg:px-8 py-2 lg:py-3 text-[7px] lg:text-[8px] font-['Press_Start_2P'] opacity-60 hover:opacity-100 transition-all border-2 border-white/20 hover:border-white/50 hover:bg-white/5 active:scale-95 relative z-[110]">DISCONNECT</button>
                 </div>
 
-                <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-1 overflow-hidden relative">
                     {/* Sidebar: Drives & Libraries */}
-                    <div className="w-56 border-r border-white/5 bg-black/40 p-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+                    <div ref={sidebarRef} className="w-56 border-r border-white/5 bg-black/40 p-4 flex flex-col gap-2 overflow-y-auto no-scrollbar relative">
                         <label className="text-[7px] opacity-40 uppercase tracking-widest mb-1 mt-2">System_Folders</label>
                         {libraries.map(lib => (
                             <button
@@ -213,7 +216,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                         </div>
 
                         {/* List */}
-                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        <div ref={listRef} className="flex-1 overflow-y-auto p-4 no-scrollbar relative">
                             {loading ? (
                                 <div className="h-full flex flex-col items-center justify-center gap-4 opacity-40">
                                     <div className="w-8 h-8 border-2 border-white/20 border-t-white animate-spin rounded-full"></div>
@@ -236,7 +239,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                                     </button>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 h-auto col-span-full">
                                     {contents.filter(isFiltered).map((item, i) => {
                                         const isMatch = !item.isDir && filter !== 'any' && (
                                             (filter === 'exe' && (item.ext === '.exe' || item.ext === '.lnk' || item.ext === '.bat' || item.ext === '.url')) ||
@@ -303,6 +306,9 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                         <button onClick={onClose} className="px-6 py-2 border-2 border-white/10 text-[9px] font-mono uppercase tracking-widest hover:bg-white/5 transition-all">ABORT_PROTOCOL</button>
                     </div>
                 </div>
+                {/* Fixed Scrollbars */}
+                <CyberScrollbar containerRef={sidebarRef} accentColor={accentColor} top="160px" bottom="80px" right="auto" left="212px" width="12px" />
+                <CyberScrollbar containerRef={listRef} accentColor={accentColor} top="215px" bottom="80px" right="2px" />
             </div>
         </div>
     );

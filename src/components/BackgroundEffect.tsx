@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 
 const AmbientNebula: React.FC<{ color: string, size?: string, opacity?: number, duration?: string }> = React.memo(({
   color,
@@ -109,6 +109,65 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
   const finalWallpaperPath = gameWallpaper || categoryWallpaper || globalWallpaper;
   const resolvedUrl = useMemo(() => resolveAsset(finalWallpaperPath), [finalWallpaperPath, isLowRes]);
 
+  // Double-buffering state
+  const [activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
+  const [layerA, setLayerA] = useState({ url: resolvedUrl, isReady: true });
+  const [layerB, setLayerB] = useState({ url: '', isReady: false });
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Buffer synchronization
+  useEffect(() => {
+    // If the top-level URL is actually new
+    const currentActiveUrl = activeLayer === 'A' ? layerA.url : layerB.url;
+    if (resolvedUrl === currentActiveUrl) return;
+
+    // Handle empty URL case immediately (fade out nicely)
+    if (!resolvedUrl) {
+      if (activeLayer === 'A') {
+        setLayerB({ url: '', isReady: true });
+        setActiveLayer('B');
+      } else {
+        setLayerA({ url: '', isReady: true });
+        setActiveLayer('A');
+      }
+      return;
+    }
+
+    // Start loading into the inactive buffer
+    if (activeLayer === 'A') {
+      setLayerB({ url: resolvedUrl, isReady: false });
+    } else {
+      setLayerA({ url: resolvedUrl, isReady: false });
+    }
+    setIsTransitioning(true);
+  }, [resolvedUrl]);
+
+  const handleLayerLoad = (layer: 'A' | 'B') => {
+    if (layer === 'A' && activeLayer === 'B' && layerA.url) {
+      setLayerA(p => ({ ...p, isReady: true }));
+      setActiveLayer('A');
+      setTimeout(() => setIsTransitioning(false), 500);
+    } else if (layer === 'B' && activeLayer === 'A' && layerB.url) {
+      setLayerB(p => ({ ...p, isReady: true }));
+      setActiveLayer('B');
+      setTimeout(() => setIsTransitioning(false), 500);
+    } else {
+      // Initial / same layer load
+      if (layer === 'A') setLayerA(p => ({ ...p, isReady: true }));
+      else setLayerB(p => ({ ...p, isReady: true }));
+    }
+  };
+
+  // Fallback for broken images to prevent hanging transition
+  const handleLayerError = (layer: 'A' | 'B') => {
+    if (layer === 'A') {
+      setLayerA({ url: '', isReady: true });
+    } else {
+      setLayerB({ url: '', isReady: true });
+    }
+    handleLayerLoad(layer); // Force the switch to the empty state so we don't hold the old image forever
+  };
+
   const getObjectFitStyle = () => {
     switch (wallpaperMode) {
       case 'fill': return { objectFit: 'fill' as const };
@@ -120,16 +179,31 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]">
-      {/* 1. Wallpaper Layer */}
+      {/* 1. Wallpaper Layer (Double Buffered) */}
       <div className="absolute inset-0 z-0 bg-black">
-        {resolvedUrl && (
+        {/* Layer A */}
+        {layerA.url && (
           <img
-            key={resolvedUrl}
-            src={resolvedUrl}
-            className="w-full h-full block animate-wallpaper-in"
+            src={layerA.url}
+            onLoad={() => handleLayerLoad('A')}
+            onError={() => handleLayerError('A')}
+            className={`absolute inset-0 w-full h-full block transition-opacity duration-700 ease-in-out ${activeLayer === 'A' ? 'opacity-100' : 'opacity-0'}`}
             style={{
               ...getObjectFitStyle(),
-              // HIGH: real CSS filter for premium look. BALANCED/LOW: overlays only (free)
+              ...(isHigh ? { filter: 'brightness(0.65) saturate(1.1)' } : {})
+            }}
+            alt=""
+          />
+        )}
+        {/* Layer B */}
+        {layerB.url && (
+          <img
+            src={layerB.url}
+            onLoad={() => handleLayerLoad('B')}
+            onError={() => handleLayerError('B')}
+            className={`absolute inset-0 w-full h-full block transition-opacity duration-700 ease-in-out ${activeLayer === 'B' ? 'opacity-100' : 'opacity-0'}`}
+            style={{
+              ...getObjectFitStyle(),
               ...(isHigh ? { filter: 'brightness(0.65) saturate(1.1)' } : {})
             }}
             alt=""
@@ -164,8 +238,8 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
           style={{
             // High intensity neon glow vignette (Stronger Light Bleed)
             boxShadow: isLow
-              ? 'inset 0 0 150px rgba(0,0,0,0.8)'
-              : `inset 0 0 300px rgba(0,0,0,0.95), inset 0 0 150px ${color}66, inset 0 0 80px ${color}99, inset 0 0 40px ${color}`
+              ? 'inset 0 0 120px rgba(0,0,0,0.85)'
+              : `inset 0 0 250px rgba(0,0,0,0.9), inset 0 0 120px ${color}44`
           }}
         />
       )}

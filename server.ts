@@ -59,11 +59,64 @@ if (!fs.existsSync(DATA_FILE) || fs.readFileSync(DATA_FILE, 'utf-8').trim() === 
     fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2));
 }
 
+// Helper to fetch store tags from Steam (with cache to prevent rate limits)
+const TAGS_CACHE_FILE = path.join(BASE_DIR, 'tags_cache.json');
+let steamTagCache: Record<string, string[]> = {};
+let isTagCacheLoaded = false;
+
+const loadTagCache = () => {
+    if (isTagCacheLoaded) return;
+    try {
+        if (fs.existsSync(TAGS_CACHE_FILE)) {
+            steamTagCache = JSON.parse(fs.readFileSync(TAGS_CACHE_FILE, 'utf-8'));
+        }
+        isTagCacheLoaded = true;
+    } catch (e) { }
+};
+
+const saveTagCache = () => {
+    try {
+        fs.writeFileSync(TAGS_CACHE_FILE, JSON.stringify(steamTagCache, null, 2));
+    } catch (e) { }
+};
+
+const getStoreTags = async (appId: string): Promise<string[]> => {
+    loadTagCache();
+    if (steamTagCache[appId]) return steamTagCache[appId];
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        if (res.status === 429) {
+            console.log(`[Steam] Rate limit hit fetching tags for app ${appId}`);
+            return []; // Skip if rate limited to avoid crashing
+        }
+
+        const json = await res.json() as any;
+        if (json[appId]?.success) {
+            const data = json[appId].data;
+            const genres = (data.genres || []).map((g: any) => g.description.toLowerCase());
+            const categories = (data.categories || []).map((c: any) => c.description.toLowerCase());
+            const adult = (data.content_descriptors?.ids?.includes(3) || data.required_age >= 18) ? ['adultonly'] : [];
+            const isSoftware = (data.type === 'software' || data.type === 'tool' || data.type === 'application') ? ['software'] : [];
+
+            const tags = [...genres, ...categories, ...adult, ...isSoftware];
+            steamTagCache[appId] = tags;
+            return tags;
+        }
+    } catch (e) { }
+
+    steamTagCache[appId] = []; // Cache empty to avoid re-fetching failed ones
+    return [];
+};
+
 // Image Processor for standardizing dimensions
 const processImage = async (input: string | Buffer, dest: string, type: string): Promise<string> => {
     console.log(`[Jimp] Processing ${type} -> ${dest}`);
     try {
-        const image = await Jimp.read(input as any);
+        let image = await Jimp.read(input as any);
 
         if (type === 'cover') {
             // Vertical Grid: 600x900 (Fill/Cover)
@@ -71,14 +124,19 @@ const processImage = async (input: string | Buffer, dest: string, type: string):
         } else if (type === 'banner') {
             // Horizontal Grid: 920x430 (Fill/Cover)
             image.cover(920, 430);
+        } else if (type === 'icon') {
+            // Category Icons: Standardized 256x246 (mostly square/vertical-ish)
+            image.contain(256, 246);
         } else if (type === 'logo') {
-            // Logo: Match contain logic - check dimensions
-            const w = image.bitmap.width;
-            const h = image.bitmap.height;
-            const ratio = Math.min(800 / w, 800 / h, 1);
-            if (ratio < 1) {
-                image.resize(Math.round(w * ratio), Math.round(h * ratio));
-            }
+            // Robust centering: autocrop -> scaleToFit -> composite on 800x320 canvas
+            image.autocrop();
+            image.scaleToFit(800, 320);
+
+            const canvas = new Jimp(800, 320, 0x00000000);
+            const x = (800 - image.bitmap.width) / 2;
+            const y = (320 - image.bitmap.height) / 2;
+            canvas.composite(image, x, y);
+            image = canvas;
         }
 
         // Quality optimization and save
@@ -115,30 +173,81 @@ const downloadImage = (url: string, dest: string): Promise<string> => {
     });
 };
 
+let heaviestSteamUserCache: string | null = null;
+const getHeaviestSteamUser = (userdataDir: string) => {
+    if (heaviestSteamUserCache) return heaviestSteamUserCache;
+    let heaviestUser = '';
+    let maxFiles = -1;
+    try {
+        if (!fs.existsSync(userdataDir)) return null;
+        const users = fs.readdirSync(userdataDir);
+        for (const user of users) {
+            const gridDir = path.join(userdataDir, user, 'config', 'grid');
+            if (fs.existsSync(gridDir)) {
+                const fileCount = fs.readdirSync(gridDir).length;
+                if (fileCount > maxFiles) {
+                    maxFiles = fileCount;
+                    heaviestUser = user;
+                }
+            }
+        }
+        if (heaviestUser) heaviestSteamUserCache = heaviestUser;
+    } catch (e) { }
+    return heaviestSteamUserCache;
+};
+
 // Local Steam Asset Crawler
 const findLocalSteamAsset = (appId: string, type: 'cover' | 'banner' | 'logo' | 'hero'): string | null => {
     const steamPath = 'C:\\Program Files (x86)\\Steam';
-    const filenameMap = {
+
+    // Modern Custom Artwork Naming Conventions
+    // Cover: {appid}p.png / .jpg
+    // Banner (Header): {appid}.png / .jpg
+    // Logo: {appid}_logo.png / .jpg
+    // Hero: {appid}_hero.png / .jpg
+    const suffixes = {
+        cover: ['p.png', 'p.jpg'],
+        banner: ['.png', '.jpg'],
+        logo: ['_logo.png', '_logo.jpg'],
+        hero: ['_hero.png', '_hero.jpg']
+    };
+
+    // Priority 1: userdata/*/config/grid (Heaviest user folder first)
+    const userdataDir = path.join(steamPath, 'userdata');
+    const heaviestUser = getHeaviestSteamUser(userdataDir);
+
+    // Check heaviest user first
+    if (heaviestUser) {
+        const gridDir = path.join(userdataDir, heaviestUser, 'config', 'grid');
+        for (const suffix of suffixes[type]) {
+            const localPath = path.join(gridDir, `${appId}${suffix}`);
+            if (fs.existsSync(localPath)) return localPath;
+        }
+    }
+
+    // Check all other users just in case
+    if (fs.existsSync(userdataDir)) {
+        try {
+            const users = fs.readdirSync(userdataDir);
+            for (const user of users) {
+                if (user === heaviestUser) continue;
+                const gridDir = path.join(userdataDir, user, 'config', 'grid');
+                for (const suffix of suffixes[type]) {
+                    const localPath = path.join(gridDir, `${appId}${suffix}`);
+                    if (fs.existsSync(localPath)) return localPath;
+                }
+            }
+        } catch (e) { }
+    }
+
+    // Priority 2: appcache/librarycache (Official Steam cache - mostly legacy)
+    const legacyFilenameMap = {
         cover: `${appId}_library_600x900.jpg`,
         banner: `${appId}_header.jpg`,
         logo: `${appId}_logo.png`,
         hero: `${appId}_library_hero.jpg`
     };
-    const targetFile = filenameMap[type];
-
-    // Priority 1: userdata/*/config/grid (User custom artwork)
-    const userdataDir = path.join(steamPath, 'userdata');
-    if (fs.existsSync(userdataDir)) {
-        const users = fs.readdirSync(userdataDir);
-        for (const user of users) {
-            const gridDir = path.join(userdataDir, user, 'config', 'grid');
-            const localPath = path.join(gridDir, targetFile);
-            if (fs.existsSync(localPath)) return localPath;
-        }
-    }
-
-    // Priority 2: appcache/librarycache (Official Steam cache)
-    const libraryCache = path.join(steamPath, 'appcache', 'librarycache', targetFile);
+    const libraryCache = path.join(steamPath, 'appcache', 'librarycache', legacyFilenameMap[type]);
     if (fs.existsSync(libraryCache)) return libraryCache;
 
     return null;
@@ -307,42 +416,51 @@ app.post('/api/assets/import', async (req, res) => {
         if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
 
         // Standardize extensions for processed files
-        const processedExt = assetType === 'logo' ? '.png' : '.jpg';
+        const processedExt = (assetType === 'logo' || assetType === 'icon') ? '.png' : '.jpg';
         const targetPath = path.join(gameDir, `${assetType}${processedExt}`);
         const tempPath = path.join(gameDir, `_temp_${assetType}${processedExt}`);
 
         if (assetType === 'launch') {
-            console.log(`[Assets] Creating Internal Launch Shortcut for: ${sourcePath}`);
+            console.log(`[Assets] Creating/Copying Launch Shortcut for: ${sourcePath}`);
             const internalLnk = path.join(gameDir, 'launch.lnk');
 
-            // Resolve the real target first (in case source is already a .lnk or .url)
-            const resolveScript = `
-$source = '${sourcePath.replace(/'/g, "''")}';
-$target = $source;
-if ($source -like '*.lnk') { 
-    $s = (New-Object -ComObject WScript.Shell).CreateShortcut($source);
-    $target = $s.TargetPath;
-} elseif ($source -like '*.url') {
-    $target = (Select-String -Path $source -Pattern '^URL=(.*)' | ForEach-Object { $_.Matches.Groups[1].Value }).Trim();
-}
-$target | Write-Output
-`;
-            exec(`powershell -NoProfile -Command "${resolveScript}"`, (err, stdout) => {
-                if (err) return res.status(500).json({ error: 'Failed to resolve shortcut target' });
-                const resolvedTarget = stdout.trim();
+            if (sourcePath.toLowerCase().endsWith('.lnk')) {
+                // JUST COPY IT
+                fs.copyFileSync(sourcePath, internalLnk);
+                res.json({ path: path.resolve(internalLnk) });
+            } else {
+                // Normal shortcut creation for EXEs
+                const combinedScript = `
+$targetPath = '${internalLnk.replace(/'/g, "''")}';
+$finalTarget = '${sourcePath.replace(/'/g, "''")}';
 
-                // Now create the internal .lnk pointing to the REAL target
-                const createScript = `
+if ($finalTarget -like '*.url') {
+    if (Test-Path $finalTarget) {
+        $content = Get-Content $finalTarget -Raw;
+        if ($content -match 'URL=(.*)') { $finalTarget = $matches[1].Trim() }
+    }
+}
+
 $WScript = New-Object -ComObject WScript.Shell;
-$s = $WScript.CreateShortcut('${internalLnk.replace(/'/g, "''")}');
-$s.TargetPath = '${resolvedTarget.replace(/'/g, "''")}';
-$s.Save();
+$newS = $WScript.CreateShortcut($targetPath);
+$newS.TargetPath = $finalTarget;
+$newS.Save();
 `;
-                exec(`powershell -NoProfile -Command "${createScript}"`, (createErr) => {
-                    if (createErr) return res.status(500).json({ error: 'Internal shortcut creation failed' });
-                    res.json({ path: path.resolve(internalLnk) });
+                const encoded = Buffer.from(combinedScript, 'utf16le').toString('base64');
+                exec(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err) => {
+                    if (err) {
+                        console.error('[Assets] Shortcut creation failed:', err);
+                        return res.status(500).json({ error: 'Shortcut creation failed' });
+                    }
+
+                    // Verification: Ensure it actually appeared on disk
+                    if (fs.existsSync(internalLnk)) {
+                        res.json({ path: path.resolve(internalLnk) });
+                    } else {
+                        res.status(500).json({ error: 'Verification failed: launch.lnk not found after creation' });
+                    }
                 });
-            });
+            }
             return;
         }
 
@@ -708,11 +826,17 @@ app.get('/api/proxy-image', async (req, res) => {
         }
     }
 
-    // 4. HAIL MARY: If lookups fail, try the first reasonable candidate anyway
-    if (!finalPath) {
-        console.warn(`[Proxy] Lookup failed for: ${filePath}. Candidates: ${JSON.stringify(candidates)}`);
-        finalPath = candidates[0];
-        console.warn(`[Proxy] Attempting Blind Read on: ${finalPath}`);
+    // 4. HAIL MARY: If lookups fail, serve a fallback image
+    if (!finalPath || !fs.existsSync(finalPath)) {
+        console.warn(`[Proxy] Lookup failed for: ${filePath}. Proceeding with fallback image.`);
+        // Decide fallback based on requested width (if >= 800 it's likely a banner/wallpaper)
+        const isWide = width && width >= 800;
+        finalPath = path.resolve(process.cwd(), isWide ? 'res/templates/banner.png' : 'res/templates/cover.png');
+
+        // If even the fallback is missing somehow, just return a 404 immediately
+        if (!fs.existsSync(finalPath)) {
+            return res.status(404).send('Not Found and no fallback available.');
+        }
     }
 
     // Serving Logic
@@ -792,10 +916,12 @@ const parseVdfPaths = (content: string): string[] => {
 const parseAcfManifest = (content: string) => {
     const appidMatch = content.match(/"appid"\s+"(\d+)"/);
     const nameMatch = content.match(/"name"\s+"(.*?)"/);
+    const lastUpdatedMatch = content.match(/"LastUpdated"\s+"(\d+)"/);
     if (appidMatch && nameMatch) {
         return {
             appid: appidMatch[1],
-            name: nameMatch[1]
+            name: nameMatch[1],
+            lastUpdated: lastUpdatedMatch ? parseInt(lastUpdatedMatch[1]) : 0
         };
     }
     return null;
@@ -821,6 +947,7 @@ try {
     $f.Filter = "${fileFilter}"
     $f.Title = "Select File via Phantom Launcher"
     $f.InitialDirectory = [Environment]::GetFolderPath("Desktop")
+    $f.DereferenceLinks = $false
     
     $result = $f.ShowDialog()
     if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
@@ -858,11 +985,10 @@ try {
     });
 });
 
-// Endpoint to scan Steam libraries
 app.all('/api/steam/scan', async (req, res) => {
     console.log('[Server] Scanning Steam libraries...');
     try {
-        const { includeHidden = false, includeSoftware = false } = req.body || {};
+        const { includeHidden = false, includeSoftware = false, includeAdultOnly = false } = req.body || {};
         const vdfPath = 'C:\\Program Files (x86)\\Steam\\config\\libraryfolders.vdf';
 
         if (!fs.existsSync(vdfPath)) {
@@ -870,6 +996,7 @@ app.all('/api/steam/scan', async (req, res) => {
         }
 
         const hiddenAppIds = new Set<string>();
+        const lastPlayedMap = new Map<string, number>();
         const softwareAppIds = new Set<string>([
             '214850', '250820', '365670', '1486350', '431960', '388080', '993090', '331200', '228980'
         ]);
@@ -879,7 +1006,6 @@ app.all('/api/steam/scan', async (req, res) => {
             if (fs.existsSync(userdataRoot)) {
                 const users = fs.readdirSync(userdataRoot);
                 for (const user of users) {
-                    // Modern Steam stores hidden apps in localconfig.vdf OR sharedconfig.vdf
                     const configPaths = [
                         path.join(userdataRoot, user, '7', 'remote', 'sharedconfig.vdf'),
                         path.join(userdataRoot, user, 'config', 'localconfig.vdf')
@@ -889,28 +1015,28 @@ app.all('/api/steam/scan', async (req, res) => {
                         if (fs.existsSync(configPath)) {
                             const content = fs.readFileSync(configPath, 'utf-8');
 
-                            // Robust way: Find "hidden" and look for the AppID above it
-                            // VDF structure for hidden is usually: "APPID" { ... "tags" { "0" "hidden" } }
-                            // or "Apps" { "APPID" { "Hidden" "1" } }
-
-                            // 1. Check for "tags" { "0" "hidden" } pattern
                             const hiddenTagRegex = /"(\d+)"\s*\{[^}]*"tags"\s*\{[^}]*"hidden"/gi;
                             let match;
                             while ((match = hiddenTagRegex.exec(content)) !== null) {
                                 hiddenAppIds.add(match[1]);
                             }
 
-                            // 2. Check for "Hidden" "1" pattern (sometimes in localconfig)
                             const hiddenKeyRegex = /"(\d+)"\s*\{[^}]*"Hidden"\s*"1"/gi;
                             while ((match = hiddenKeyRegex.exec(content)) !== null) {
                                 hiddenAppIds.add(match[1]);
+                            }
+
+                            // Extract LastPlayed times
+                            const lastPlayedRegex = /"([^"]+)"\s*\{[^}]*"LastPlayed"\s*"(\d+)"/gi;
+                            while ((match = lastPlayedRegex.exec(content)) !== null) {
+                                lastPlayedMap.set(match[1], parseInt(match[2]));
                             }
                         }
                     }
                 }
             }
         } catch (e) {
-            console.warn('[Server] Failed to parse hidden apps:', e);
+            console.warn('[Server] Failed to parse local configs:', e);
         }
 
         const vdfContent = fs.readFileSync(vdfPath, 'utf-8');
@@ -922,16 +1048,28 @@ app.all('/api/steam/scan', async (req, res) => {
             const appsPath = path.join(libPath, 'steamapps');
             if (fs.existsSync(appsPath)) {
                 const files = fs.readdirSync(appsPath);
+
+                // Process each game sequentially to avoid overwhelming Steam API
                 for (const file of files) {
                     if (file.startsWith('appmanifest_') && file.endsWith('.acf')) {
                         try {
                             const manifestContent = fs.readFileSync(path.join(appsPath, file), 'utf-8');
                             const info = parseAcfManifest(manifestContent);
                             if (info) {
-                                const isSoftware = softwareAppIds.has(info.appid) ||
+                                let isSoftware = softwareAppIds.has(info.appid) ||
                                     softwareKeywords.some(kw => info.name.toLowerCase().includes(kw.toLowerCase())) ||
                                     softwareKeywords.some(kw => file.toLowerCase().includes(kw.toLowerCase()));
+
+                                const tags = await getStoreTags(info.appid);
+                                if (tags.includes('software') || tags.includes('audio production') || tags.includes('utilities')) {
+                                    isSoftware = true;
+                                }
+
+                                const isAdultOnly = tags.includes('adultonly') || tags.includes('nsfw');
+
                                 if (!includeSoftware && isSoftware) continue;
+                                if (!includeAdultOnly && isAdultOnly) continue;
+
                                 const isHidden = hiddenAppIds.has(info.appid);
                                 if (!includeHidden && isHidden) continue;
 
@@ -950,7 +1088,9 @@ app.all('/api/steam/scan', async (req, res) => {
                                     id: gameId,
                                     title: info.name,
                                     execPath: `steam://rungameid/${info.appid}`,
-                                    source: 'steam'
+                                    source: 'steam',
+                                    // Use true LastPlayed if available, otherwise fallback to manifest LastUpdated
+                                    lastUpdated: lastPlayedMap.get(info.appid) || info.lastUpdated || 0
                                 };
 
                                 for (const asset of steamAssets) {
@@ -958,10 +1098,9 @@ app.all('/api/steam/scan', async (req, res) => {
                                     const ext = source.toLowerCase().includes('.png') ? '.png' : '.jpg';
                                     const dest = path.join(gameDir, `${asset.type}${ext}`);
 
-                                    // Assign resolved path to game object
                                     gameObj[asset.type] = path.resolve(dest);
 
-                                    // Background process: download/copy
+                                    // Background download/copy
                                     (async () => {
                                         if (source.startsWith('http')) {
                                             if (!fs.existsSync(dest)) await downloadImage(source, dest).catch(() => { });
@@ -979,7 +1118,9 @@ app.all('/api/steam/scan', async (req, res) => {
                 }
             }
         }
-        res.json({ games });
+        saveTagCache(); // Persist tags for next launch
+        // Sort explicitly by our resolved lastUpdated value
+        res.json({ games: games.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0)) });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
     }
@@ -1056,11 +1197,12 @@ foreach ($app in $startApps) {
                 Id = $gameId
                 ExecPath = $lnkPath
                 Logo = $logoPath
+                InstallDate = (Get-Item $installLoc).CreationTime.ToString("yyyy-MM-dd HH:mm:ss")
             }
         }
     }
 }
-$games | ConvertTo-Json -Depth 2
+$games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
 `;
         const encodedCommand = Buffer.from(psScript, 'utf16le').toString('base64');
         const command = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
@@ -1137,18 +1279,28 @@ app.post('/api/launch', (req, res) => {
         }
 
         if (execPath.startsWith('http') || execPath.startsWith('steam://')) {
+            console.log(`[Launch] Protocol URL: ${execPath}`);
             exec(`start "" "${execPath}"`);
         } else if (execPath.startsWith('shell:AppsFolder')) {
             // UWP Apps: Launch via explorer.exe
-            console.log(`[Launch] Executing via Explorer: ${execPath}`);
-            // Note: shell apps usually don't take traditional args this way, but we keep it for consistency
+            console.log(`[Launch] UWP/Store App: ${execPath}`);
             exec(`explorer.exe "${execPath}"`, (error) => {
                 if (error) console.error('[Launch] Explorer failed:', error);
             });
         } else {
-            // Standard executables
-            const fullCommand = execArgs ? `start "" "${execPath}" ${execArgs}` : `start "" "${execPath}"`;
-            exec(fullCommand);
+            // Standard executables & Shortcuts (.lnk)
+            // Using Start-Process is much more robust for .lnk files created via COM
+            console.log(`[Launch] Standard File: ${execPath}`);
+            if (execArgs) console.log(`[Launch] Arguments: ${execArgs}`);
+
+            const psCommand = `Start-Process -FilePath "${execPath.replace(/"/g, '`"')}" ${execArgs ? `-ArgumentList "${execArgs.replace(/"/g, '`"')}"` : ''}`;
+            console.log(`[Launch] PowerShell: ${psCommand}`);
+
+            exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (error) => {
+                if (error) {
+                    console.error('[Launch] PowerShell execution failed:', error);
+                }
+            });
         }
         res.json({ success: true });
     } catch (e) {

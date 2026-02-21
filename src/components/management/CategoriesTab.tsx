@@ -18,16 +18,21 @@ interface CategoriesTabProps {
     setCatForm: React.Dispatch<React.SetStateAction<any>>;
     handleSaveCategoryData: () => void;
     handleMoveGameInCategory: (catId: string, gameId: string, dir: 'up' | 'down') => void;
+    handleToggleGameInCategory: (catId: string, gameId: string) => void;
+    allGames: any[];
     triggerFileBrowser: (target: string, type: string) => void;
     activeAccent: string;
     scrollToForm: () => void;
+    onEditGame?: (gameId: string) => void;
+    onDeleteGame?: (gameId: string) => void;
+    onWipeRegistry?: () => void;
 }
 
 const CategoriesTab: React.FC<CategoriesTabProps> = ({
     editingId, setEditingId, handleCreateCategory, categories, editableCategories,
     onResolveAsset, handleMoveCategory, handleDeleteCategory, isFormOpen, setIsFormOpen,
-    catForm, setCatForm, handleSaveCategoryData, handleMoveGameInCategory,
-    triggerFileBrowser, activeAccent, scrollToForm
+    catForm, setCatForm, handleSaveCategoryData, handleMoveGameInCategory, handleToggleGameInCategory,
+    allGames, triggerFileBrowser, activeAccent, scrollToForm, onEditGame, onDeleteGame, onWipeRegistry
 }) => {
     const { t } = useTranslation();
 
@@ -57,12 +62,12 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
                         </div>
                     ))}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4 flex-none">
                     {categories.filter(c => c.id !== 'recent' && c.id !== 'all' && c.id !== 'hidden').map((c, idx) => {
                         const displayIdx = idx;
                         const sourceList = categories.filter(x => x.id !== 'recent' && x.id !== 'all' && x.id !== 'hidden');
                         return (
-                            <div key={c.id} className="relative group min-h-[120px] lg:min-h-[150px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
+                            <div key={c.id} className="relative group h-[120px] lg:h-[150px]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
                                 <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: c.color }} />
                                 <div className="absolute inset-[2px] bg-[#080808] flex flex-col overflow-hidden group/inner" style={{ clipPath: 'polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px)' }}>
                                     <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4 cursor-pointer relative group/inner" onClick={() => { setEditingId(c.id); scrollToForm(); }}>
@@ -104,9 +109,14 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
                 setCatForm={setCatForm}
                 handleSaveCategoryData={handleSaveCategoryData}
                 handleMoveGameInCategory={handleMoveGameInCategory}
+                handleToggleGameInCategory={handleToggleGameInCategory}
+                allGames={allGames}
                 triggerFileBrowser={triggerFileBrowser}
                 onResolveAsset={onResolveAsset}
                 activeAccent={activeAccent}
+                onEditGame={onEditGame}
+                onDeleteGame={onDeleteGame}
+                onWipeRegistry={onWipeRegistry}
             />
         </div>
     );

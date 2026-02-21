@@ -22,7 +22,7 @@ import { useLibrary } from './hooks/useLibrary';
 
 const App: React.FC = () => {
   // --- Custom Hooks ---
-  const { categories, setCategories, isDataLoaded, taskbarMargin, setTaskbarMargin, isBackendOnline } = usePersistence();
+  const { categories, setCategories, isDataLoaded, taskbarMargin, setTaskbarMargin, uiScale, setUIScale, isBackendOnline } = usePersistence();
   const { playSfx } = useAudio();
   const { isPaused } = usePerformance();
   const { t } = useTranslation();
@@ -34,6 +34,11 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [postLaunchNav, setPostLaunchNav] = useState(false);
+  const [initialNavDone, setInitialNavDone] = useState(false);
+  const [assetVersion, setAssetVersion] = useState(0);
+  const lastUnlockedRef = useRef(false);
+
+  const bumpAssetVersion = useCallback(() => setAssetVersion(v => v + 1), []);
 
   const launchTimerRef = useRef<number | null>(null);
   const inactivityTimerRef = useRef<number | null>(null);
@@ -41,8 +46,9 @@ const App: React.FC = () => {
 
   const { isSecretUnlocked, setIsSecretUnlocked } = useKonami(
     () => {
-      setNotification(t('app.phantom_unlocked'));
-      setTimeout(() => setNotification(null), 2000);
+      const rand = Math.floor(Math.random() * 40);
+      setNotification(`SECRET::${t(`secret_phrases.phrase_${rand}`)}`);
+      setTimeout(() => setNotification(null), 3000);
     },
     playSfx
   );
@@ -54,7 +60,7 @@ const App: React.FC = () => {
   const games = currentCategory?.games || [];
   const activeGame = games[activeGameIndex];
 
-  const { atmosphereSettings, resolveAsset } = useAtmosphere(categories, currentCategory, activeGame, isManagementOpen);
+  const { atmosphereSettings, resolveAsset } = useAtmosphere(categories, currentCategory, activeGame, isManagementOpen, assetVersion);
 
   // Clamp indices
   useEffect(() => {
@@ -86,7 +92,7 @@ const App: React.FC = () => {
       targets: trackWrapperRef.current,
       translateY: [0, moveDist],
       opacity: [1, 0],
-      duration: 250,
+      duration: 150,
       easing: 'easeInQuint'
     }).finished;
 
@@ -97,19 +103,21 @@ const App: React.FC = () => {
       targets: trackWrapperRef.current,
       translateY: [-moveDist, 0],
       opacity: [0, 1],
-      duration: 400,
+      duration: 250,
       easing: 'easeOutExpo'
     });
     setAppState('idle');
   }, [appState, currentCatIndex, activeGameIndex, displayCategories.length, playSfx]);
 
   // --- Auto-Lock Protocol (Phase 16) ---
-  const lockSecret = useCallback(() => {
+  const lockSecret = useCallback((isLaunching = false) => {
     setIsSecretUnlocked(false);
     if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
 
-    // Auto-Exit: If we are in the hidden category, go back to ALL
+    // Auto-Exit: If we are in the hidden category, go back to ALL (unless we are launching)
     if (displayCategories[currentCatIndex]?.id === 'hidden') {
+      if (isLaunching) return;
+
       const allIdx = displayCategories.findIndex(c => c.id === 'all');
       switchCategory(allIdx !== -1 ? allIdx : 0, 'up');
     }
@@ -127,12 +135,17 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isSecretUnlocked) {
       resetInactivityTimer();
-      // Auto-navigate to the hidden/secret category
-      const hiddenIdx = displayCategories.findIndex(c => c.id === 'hidden');
-      if (hiddenIdx !== -1 && hiddenIdx !== currentCatIndex) {
-        const dir = hiddenIdx > currentCatIndex ? 'down' : 'up';
-        switchCategory(hiddenIdx, dir);
+      // Auto-navigate to the hidden/secret category ONLY ONCE per unlock
+      if (!lastUnlockedRef.current) {
+        const hiddenIdx = displayCategories.findIndex(c => c.id === 'hidden');
+        if (hiddenIdx !== -1 && hiddenIdx !== currentCatIndex) {
+          const dir = hiddenIdx > currentCatIndex ? 'down' : 'up';
+          switchCategory(hiddenIdx, dir);
+        }
+        lastUnlockedRef.current = true;
       }
+    } else {
+      lastUnlockedRef.current = false;
     }
     return () => {
       if (inactivityTimerRef.current) window.clearTimeout(inactivityTimerRef.current);
@@ -159,8 +172,8 @@ const App: React.FC = () => {
     launchTimerRef.current = window.setTimeout(async () => {
       setAppState('launching');
       playSfx('launch');
-      // LOCK SECRET ON LAUNCH (Phase 16)
-      if (isSecretUnlocked) lockSecret();
+      // LOCK SECRET ON LAUNCH (Phase 16) - SKIP REDIRECT TO ALL
+      if (isSecretUnlocked) lockSecret(true);
       setNotification(`${t('app.launch_protocol')}::${activeGame.title}`);
 
       // Optimistic Update for Recent Games
@@ -217,6 +230,17 @@ const App: React.FC = () => {
     setPostLaunchNav(false);
   }, [postLaunchNav, displayCategories]);
 
+  // Handle Initial Navigation to Recent
+  useEffect(() => {
+    if (isDataLoaded && !initialNavDone && displayCategories.length > 0) {
+      const recentIdx = displayCategories.findIndex(c => c.id === 'recent');
+      if (recentIdx !== -1) {
+        setCurrentCatIndex(recentIdx);
+      }
+      setInitialNavDone(true);
+    }
+  }, [isDataLoaded, initialNavDone, displayCategories]);
+
 
 
 
@@ -267,7 +291,15 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className={`relative w-full h-full flex select-none text-white overflow-hidden bg-transparent ${atmosphereSettings.performanceMode === 'low' ? 'low-perf' : ''} ${atmosphereSettings.performanceMode === 'high' ? 'high-perf' : ''}`}>
+    <div
+      className={`relative w-full h-full flex select-none text-white overflow-hidden bg-transparent ${atmosphereSettings.performanceMode === 'low' ? 'low-perf' : ''} ${atmosphereSettings.performanceMode === 'high' ? 'high-perf' : ''}`}
+      style={{
+        transform: `scale(${uiScale})`,
+        transformOrigin: 'top left',
+        width: `${100 / uiScale}vw`,
+        height: `${100 / uiScale}vh`,
+      }}
+    >
       <BackgroundEffect
         color={currentCategory?.color || '#fff'}
         gameWallpaper={activeGame?.wallpaper}
@@ -308,6 +340,7 @@ const App: React.FC = () => {
         taskbarMargin={taskbarMargin}
         onResolveAsset={resolveAsset}
         isSecretUnlocked={isSecretUnlocked}
+        performanceMode={atmosphereSettings.performanceMode}
       />
 
       <main className="main-content flex-1 flex flex-col relative z-10 max-h-screen" style={{ paddingLeft: 'calc(50px + 1.5vh + 30px)' }}>
@@ -355,7 +388,10 @@ const App: React.FC = () => {
           accentColor={currentCategory?.color || '#fff'}
           taskbarMargin={taskbarMargin}
           onUpdateTaskbarMargin={setTaskbarMargin}
+          uiScale={uiScale}
+          onUpdateUIScale={setUIScale}
           onResolveAsset={resolveAsset}
+          bumpAssetVersion={bumpAssetVersion}
           isSecretUnlocked={isSecretUnlocked}
         />
       </React.Suspense>

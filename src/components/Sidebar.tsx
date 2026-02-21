@@ -9,11 +9,12 @@ interface SidebarProps {
   onSelect: (index: number) => void;
   onOpenManagement: () => void;
   taskbarMargin?: number;
-  onResolveAsset: (path: string | undefined) => string;
+  onResolveAsset: (path: string | undefined, width?: number) => string;
   isSecretUnlocked?: boolean;
+  performanceMode?: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false }) => {
+const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false, performanceMode = 'normal' }) => {
   const visibleCategories = categories.filter(c => c.enabled !== false && (c.id !== 'hidden' || isSecretUnlocked));
   const systemCategory = categories.find(c => c.id === 'all');
   const customConfigIcon = systemCategory?.configIcon || ASSETS.ui.config;
@@ -43,28 +44,26 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, o
             return (
               <div
                 key={cat.id}
-                onClick={() => onSelect(actualIdx)}
+                onClick={() => onSelect(vIdx)}
                 className={`
                   relative cursor-pointer flex-shrink-0 flex items-center justify-center transition-[transform,opacity] duration-300 p-1
                   ${isActive ? 'scale-110' : 'opacity-80 hover:opacity-100 hover:scale-105'}
                 `}
                 style={{ width: '40px', height: '40px' }}
               >
-                <img
-                  src={onResolveAsset(cat.icon || ASSETS.templates.icon, 64)}
-                  alt={cat.name}
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (target.getAttribute('data-fallback') === 'true') return;
-                    target.setAttribute('data-fallback', 'true');
-                    target.src = ASSETS.templates.icon;
-                  }}
-                  className="w-full h-full object-contain transition-[filter] duration-300"
+                <div
+                  className="w-full h-full transition-[opacity] duration-300"
                   style={{
-                    color: cat.color,
-                    filter: isActive
-                      ? `drop-shadow(0 0 1px ${cat.color})`
-                      : `none`
+                    backgroundColor: cat.color,
+                    maskImage: `url(${onResolveAsset(cat.icon || ASSETS.templates.icon, 256)})`,
+                    WebkitMaskImage: `url(${onResolveAsset(cat.icon || ASSETS.templates.icon, 256)})`,
+                    maskSize: 'contain',
+                    WebkitMaskSize: 'contain',
+                    maskPosition: 'center',
+                    WebkitMaskPosition: 'center',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskRepeat: 'no-repeat',
+                    opacity: isActive ? 1 : 0.4
                   }}
                 />
                 {isActive && (
@@ -92,12 +91,13 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, o
             const isLong = name.length > 10;
             return (
               <span
-                className="absolute bottom-0 left-1/2 whitespace-nowrap font-['Press_Start_2P'] font-bold uppercase tracking-[0.2em] text-white/40 select-none"
+                className="absolute bottom-0 left-1/2 whitespace-nowrap font-['Press_Start_2P'] font-bold uppercase tracking-[0.2em] select-none transition-[color,text-shadow] duration-500"
                 style={{
                   fontSize: isLong ? 'clamp(10px, 1.5vh, 20px)' : 'clamp(12px, 2.5vh, 32px)',
                   transform: 'rotate(-90deg)',
                   transformOrigin: '0 50%',
-                  textShadow: `0 0 20px ${categories[activeIndex]?.color || '#fff'}88`,
+                  color: categories[activeIndex]?.color || '#fff',
+                  textShadow: performanceMode === 'low' ? 'none' : `0 0 20px ${categories[activeIndex]?.color || '#fff'}88`,
                 }}
               >
                 {techText}

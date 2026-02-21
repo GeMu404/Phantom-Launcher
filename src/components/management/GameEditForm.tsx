@@ -6,6 +6,7 @@ import { Category } from '../../types';
 interface GameEditFormProps {
     isFormOpen: boolean;
     setIsFormOpen: (v: boolean) => void;
+    isSecretContext?: boolean;
     editingId: string | null;
     activeAccent: string;
     gameForm: {
@@ -40,7 +41,7 @@ interface GameEditFormProps {
 }
 
 const GameEditForm: React.FC<GameEditFormProps> = ({
-    isFormOpen, setIsFormOpen, editingId, activeAccent,
+    isFormOpen, setIsFormOpen, isSecretContext, editingId, activeAccent,
     gameForm, setGameForm, handleSaveGame, handleSyncWithGemini, isSyncingGemini,
     triggerFileBrowser, onResolveAsset, otherCategories, sgdbKey, sgdbEnabled,
     setSearchModal
@@ -156,31 +157,33 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-4 mt-8">
-                    <label className="text-[7px] lg:text-[8px] opacity-30 uppercase tracking-[0.2em] font-bold">Neural_Node_Assignment</label>
-                    <div className="flex flex-wrap gap-2">
-                        {otherCategories.length > 0 ? (
-                            otherCategories.map(cat => (
-                                <button key={cat.id} onClick={() => {
-                                    const exists = gameForm.categoryIds.includes(cat.id);
-                                    setGameForm({ ...gameForm, categoryIds: exists ? gameForm.categoryIds.filter(id => id !== cat.id) : [...gameForm.categoryIds, cat.id] });
-                                }}
-                                    className={`px-3 py-2 text-[7px] font-bold uppercase border-2 transition-all ${gameForm.categoryIds.includes(cat.id) ? 'text-black' : 'border-white/10 opacity-30 hover:opacity-100 hover:border-white/40'}`}
-                                    style={{
-                                        backgroundColor: gameForm.categoryIds.includes(cat.id) ? activeAccent : 'transparent',
-                                        borderColor: gameForm.categoryIds.includes(cat.id) ? activeAccent : undefined,
-                                        color: gameForm.categoryIds.includes(cat.id) ? '#000' : undefined
+                {!isSecretContext && (
+                    <div className="flex flex-col gap-4 mt-8">
+                        <label className="text-[7px] lg:text-[8px] opacity-30 uppercase tracking-[0.2em] font-bold">Neural_Node_Assignment</label>
+                        <div className="flex flex-wrap gap-2">
+                            {otherCategories.length > 0 ? (
+                                otherCategories.map(cat => (
+                                    <button key={cat.id} onClick={() => {
+                                        const exists = gameForm.categoryIds.includes(cat.id);
+                                        setGameForm({ ...gameForm, categoryIds: exists ? gameForm.categoryIds.filter(id => id !== cat.id) : [...gameForm.categoryIds, cat.id] });
                                     }}
-                                >{cat.name}</button>
-                            ))
-                        ) : (
-                            <div className="flex flex-col gap-1 opacity-40">
-                                <span className="text-[7px] uppercase font-mono tracking-tighter">No custom nodes detected.</span>
-                                <span className="text-[6px] uppercase font-mono tracking-tighter opacity-70">Game will live in "ALL GAMES" until you create a node in the Categories tab.</span>
-                            </div>
-                        )}
+                                        className={`px-3 py-2 text-[7px] font-bold uppercase border-2 transition-all ${gameForm.categoryIds.includes(cat.id) ? 'text-black' : 'border-white/10 opacity-30 hover:opacity-100 hover:border-white/40'}`}
+                                        style={{
+                                            backgroundColor: gameForm.categoryIds.includes(cat.id) ? activeAccent : 'transparent',
+                                            borderColor: gameForm.categoryIds.includes(cat.id) ? activeAccent : undefined,
+                                            color: gameForm.categoryIds.includes(cat.id) ? '#000' : undefined
+                                        }}
+                                    >{cat.name}</button>
+                                ))
+                            ) : (
+                                <div className="flex flex-col gap-1 opacity-40">
+                                    <span className="text-[7px] uppercase font-mono tracking-tighter">No custom nodes detected.</span>
+                                    <span className="text-[6px] uppercase font-mono tracking-tighter opacity-70">Game will live in "ALL GAMES" until you create a node in the Categories tab.</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 <button onClick={() => setIsFormOpen(false)} className="w-full mt-10 py-4 text-[7px] opacity-20 hover:opacity-100 uppercase font-bold tracking-widest transition-all border-t-2 border-white/5 hover:bg-white/5">DISCONNECT_INTERFACE</button>
             </div>

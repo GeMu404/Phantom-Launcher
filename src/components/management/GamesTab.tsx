@@ -82,26 +82,45 @@ const GamesTab: React.FC<GamesTabProps> = ({
                 />
             </div>
             <div className="flex flex-col gap-6 lg:gap-8">
-                <div className="flex justify-between items-center border-b-2 border-white/5 pb-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-[0.4em] opacity-60 text-white">{t('registry.storage_inventory')}</h4>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={handleVerifyDatabase}
-                            disabled={isVerifying}
-                            className={`px-5 py-2 border-2 font-bold text-[8px] uppercase transition-all ${isVerifying ? 'border-white/10 text-white/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500/10'}`}>
-                            {isVerifying ? 'SCANNING...' : 'VERIFY_DATABASE'}
-                        </button>
-                        {brokenIds.length > 0 && (
-                            <button onClick={handlePurgeBroken} className="px-5 py-2 border-2 border-red-500 bg-red-500 text-black font-bold text-[8px] uppercase animate-pulse">PURGE_BROKEN ({brokenIds.length})</button>
-                        )}
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            placeholder={t('registry.query_placeholder')}
-                            className="bg-black/40 text-[10px] border-2 border-white/10 p-2 outline-none uppercase font-mono w-40 lg:w-64"
-                        />
-                        <button onClick={handleWipeMasterRegistry} className="px-5 py-2 border-2 border-red-500 text-red-500 font-bold text-[8px] uppercase">{t('registry.erase_registry')}</button>
+                <div className="flex flex-col gap-6">
+                    {/* Level 1: Meta & Maintenance */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-white/5 pb-4 gap-6">
+                        <div className="flex flex-col gap-1">
+                            <h4 className="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.4em] text-white flex items-center gap-3">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_10px_#06b6d4]" />
+                                {t('registry.storage_inventory')}
+                            </h4>
+                            <span className="text-[6px] lg:text-[7px] font-mono opacity-20 uppercase tracking-[0.2em] ml-4.5">Active_Deployment_Sector</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-start md:justify-end">
+                            <button
+                                onClick={handleVerifyDatabase}
+                                disabled={isVerifying}
+                                className={`px-4 lg:px-6 py-2 border-2 font-bold text-[8px] uppercase transition-all whitespace-nowrap ${isVerifying ? 'border-white/10 text-white/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500/10'}`}>
+                                {isVerifying ? 'SCANN_INIT...' : 'VERIFY_DATABASE'}
+                            </button>
+                            {brokenIds.length > 0 && (
+                                <button onClick={handlePurgeBroken} className="px-4 lg:px-6 py-2 border-2 border-red-500 bg-red-500 text-black font-bold text-[8px] uppercase animate-pulse whitespace-nowrap shadow-[0_0_20px_rgba(239,68,68,0.4)]">PURGE_BROKEN ({brokenIds.length})</button>
+                            )}
+                            <div className="w-px h-6 bg-white/10 hidden lg:block" />
+                            <button onClick={handleWipeMasterRegistry} className="px-4 lg:px-6 py-2 border-2 border-red-500/30 text-red-500/60 hover:border-red-500 hover:text-red-500 font-bold text-[8px] uppercase transition-all whitespace-nowrap">
+                                [ {t('registry.erase_registry')} ]
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Level 2: Search Toolbar */}
+                    <div className="flex items-center gap-4 bg-white/5 p-2 lg:p-3 border-2 border-white/10 shadow-inner group/toolbar" style={{ clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)' }}>
+                        <div className="relative flex-1">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none text-[10px]">⌇</div>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                placeholder={t('registry.query_placeholder')}
+                                className="w-full bg-black/40 text-[10px] border-2 border-white/5 p-2.5 pl-8 outline-none uppercase font-mono focus:border-white/30 focus:bg-black/60 transition-all placeholder:opacity-20"
+                            />
+                        </div>
                     </div>
                 </div>
                 <div className="flex flex-col gap-2">

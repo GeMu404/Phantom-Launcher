@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
 /* Custom Scrollbar & Global Styles */
+html,
+body,
+#root {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
 body {
     background-color: #000;
     color: #fff;
@@ -8,9 +18,9 @@ body {
 }
 
 .liquid-glass {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(25px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* FAKE GLASS / LOW PERF OPTIMIZATIONS */
@@ -48,6 +58,15 @@ body {
 
 ::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.02);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 ::-webkit-scrollbar-thumb {

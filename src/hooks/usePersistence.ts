@@ -6,6 +6,7 @@ export const usePersistence = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [isDataLoaded, setIsDataLoaded] = useState(false);
     const [taskbarMargin, setTaskbarMargin] = useState<number>(0);
+    const [uiScale, setUIScale] = useState<number>(1.0);
     const [isBackendOnline, setIsBackendOnline] = useState<boolean | 'checking'>('checking');
 
     // Initial Load
@@ -33,6 +34,8 @@ export const usePersistence = () => {
         const loadSettings = () => {
             const margin = localStorage.getItem('phantom_launcher_margin');
             if (margin) setTaskbarMargin(parseInt(margin, 10));
+            const scale = localStorage.getItem('phantom_launcher_ui_scale');
+            if (scale) setUIScale(parseFloat(scale));
         };
 
         loadData();
@@ -64,10 +67,11 @@ export const usePersistence = () => {
         };
     }, [categories, isDataLoaded]);
 
-    // Sync Margin
+    // Sync Margin & UI Scale
     useEffect(() => {
         localStorage.setItem('phantom_launcher_margin', taskbarMargin.toString());
-    }, [taskbarMargin]);
+        localStorage.setItem('phantom_launcher_ui_scale', uiScale.toString());
+    }, [taskbarMargin, uiScale]);
 
     // Backend Health Poll
     useEffect(() => {
@@ -82,5 +86,5 @@ export const usePersistence = () => {
         return () => clearInterval(interval);
     }, []);
 
-    return { categories, setCategories, isDataLoaded, taskbarMargin, setTaskbarMargin, isBackendOnline };
+    return { categories, setCategories, isDataLoaded, taskbarMargin, setTaskbarMargin, uiScale, setUIScale, isBackendOnline };
 };
