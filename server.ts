@@ -5,15 +5,21 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import Link from 'react'; // Dummy import
-// Dynamic Sharp import to bypass Node SEA static analysis
-const requireFunc = typeof require !== 'undefined' ? require : eval('require');
+import { AppDatabase } from './database.js';
+import { createRequire } from 'node:module';
+import chokidar from 'chokidar';
+
+// Dynamic Sharp import using createRequire for Node SEA compatibility
+const isExe = process.execPath.toLowerCase().endsWith('phantomserver.exe');
+const requireFunc = isExe ? createRequire(process.execPath) : (typeof require !== 'undefined' ? require : eval('require'));
+
 let sharp: any = null;
 try {
-    const isExe = process.execPath.toLowerCase().endsWith('phantomserver.exe');
-    const exeDir = isExe ? requireFunc('path').dirname(process.execPath) : process.cwd();
-    const sharpPath = requireFunc('path').join(exeDir, 'node_modules', 'sharp');
+    const exeDir = isExe ? path.dirname(process.execPath) : process.cwd();
+    const sharpPath = path.join(exeDir, 'node_modules', 'sharp');
     sharp = requireFunc(sharpPath);
 } catch (e) {
+    console.error("FATAL: First absolute load failed for sharp:", e);
     try {
         sharp = requireFunc('sharp');
     } catch (e2) {
@@ -60,16 +66,17 @@ app.use('/res/storage', express.static(STORAGE_DIR));
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
-// Ensure data.json exists with CORRECT structure
-if (!fs.existsSync(DATA_FILE) || fs.readFileSync(DATA_FILE, 'utf-8').trim() === '') {
-    console.log('[Init] Creating initial data.json with default categories...');
-    const defaultData = {
-        categories: [
-            { id: 'all', name: 'ALL GAMES', icon: 'grid', color: '#ffffff', games: [], enabled: true },
-            { id: 'favorites', name: 'FAVORITES', icon: 'heart', color: '#ff4444', games: [], enabled: true }
-        ]
-    };
-    fs.writeFileSync(DATA_FILE, JSON.stringify(defaultData, null, 2));
+// SQLite Initialization and Migration
+const DB_FILE = path.join(BASE_DIR, 'phantom.db');
+const db = new AppDatabase(DB_FILE);
+db.migrateFromJson(DATA_FILE);
+
+if (db.getCategories().length === 0) {
+    console.log('[Init] Creating initial categories in SQLite...');
+    db.saveCategories([
+        { id: 'all', name: 'ALL GAMES', icon: 'grid', color: '#ffffff', games: [], enabled: true },
+        { id: 'favorites', name: 'FAVORITES', icon: 'heart', color: '#ff4444', games: [], enabled: true }
+    ]);
 }
 
 // Helper to fetch store tags from Steam (with cache to prevent rate limits)
@@ -129,32 +136,43 @@ const getStoreTags = async (appId: string): Promise<string[]> => {
 const processImage = async (input: string | Buffer, dest: string, type: string): Promise<string> => {
     console.log(`[Sharp] Processing ${type} -> ${dest}`);
     try {
-        let sharpInstance = sharp(input);
+        const metadata = await sharp(input).metadata();
+        const isAnimated = metadata.pages && metadata.pages > 1;
+
+        if (isAnimated) {
+            console.log(`[Sharp] Animation detected (frames: ${metadata.pages}). Bypassing processing for ${dest}`);
+            if (typeof input === 'string') {
+                fs.copyFileSync(input, dest);
+            } else {
+                fs.writeFileSync(dest, input);
+            }
+            return dest;
+        }
+
+        let sharpInstance = sharp(input, { animated: true });
 
         if (type === 'cover') {
-            // Vertical Grid: 600x900 (Fill/Cover)
             sharpInstance = sharpInstance.resize(600, 900, { fit: 'cover' });
         } else if (type === 'banner') {
-            // Horizontal Grid: 920x430 (Fill/Cover)
             sharpInstance = sharpInstance.resize(920, 430, { fit: 'cover' });
         } else if (type === 'icon') {
-            // Category Icons: Standardized 256x246 (mostly square/vertical-ish)
             sharpInstance = sharpInstance.resize(256, 246, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } });
         } else if (type === 'logo') {
-            // Trim and center on 800x320 canvas
-            sharpInstance = sharpInstance
-                .trim()
-                .resize(800, 320, { fit: 'inside' });
-
-            const buffer = await sharpInstance.png().toBuffer();
-            sharpInstance = sharp({
-                create: {
-                    width: 800,
-                    height: 320,
-                    channels: 4,
-                    background: { r: 0, g: 0, b: 0, alpha: 0 }
-                }
-            }).composite([{ input: buffer, gravity: 'center' }]);
+            // Animated WebP processing if detected
+            if (isAnimated) {
+                sharpInstance = sharpInstance.resize(800, 320, { fit: 'inside' }).webp({ effort: 0 });
+            } else {
+                sharpInstance = sharpInstance.trim().resize(800, 320, { fit: 'inside' });
+                const buffer = await sharpInstance.png().toBuffer();
+                sharpInstance = sharp({
+                    create: {
+                        width: 800,
+                        height: 320,
+                        channels: 4,
+                        background: { r: 0, g: 0, b: 0, alpha: 0 }
+                    }
+                }).composite([{ input: buffer, gravity: 'center' }]);
+            }
         }
 
         // Quality optimization and save
@@ -306,15 +324,7 @@ app.post('/api/sgdb/key', (req, res) => {
 // Get Launcher Data
 app.get('/api/data', (req, res) => {
     try {
-        if (!fs.existsSync(DATA_FILE)) return res.json({ categories: [] });
-        const data = fs.readFileSync(DATA_FILE, 'utf-8');
-        const parsedData = JSON.parse(data);
-
-        // Return the full object if it exists, legacy support for games array if needed
-        if (Array.isArray(parsedData)) {
-            return res.json({ categories: [{ id: 'all', name: 'ALL GAMES', games: parsedData, enabled: true }] });
-        }
-        res.json(parsedData.categories || []);
+        res.json(db.getCategories());
     } catch (e) {
         console.error('[Data] Load error:', e);
         res.status(500).json({ error: 'Failed to read data' });
@@ -324,14 +334,12 @@ app.get('/api/data', (req, res) => {
 // Save Launcher Data
 app.post('/api/data', (req, res) => {
     try {
-        // req.body should be the CATEGORIES array
         const categories = req.body;
         if (!Array.isArray(categories)) {
             return res.status(400).json({ error: 'Body must be a categories array' });
         }
 
-        const dataToSave = { categories };
-        fs.writeFileSync(DATA_FILE, JSON.stringify(dataToSave, null, 2));
+        db.saveCategories(categories);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Failed to save data' });
@@ -374,25 +382,22 @@ app.get('/api/sgdb/search/:query', (req, res) => {
 app.get('/api/sgdb/grids/:gameId/:type', (req, res) => {
     const key = getSGDBKey();
     if (!key) return res.status(401).json({ error: 'No API Key' });
-    const { gameId, type } = req.params; // type: 'grid' | 'hero' | 'logo'
+    const { gameId, type } = req.params; // type: 'grid' | 'hero' | 'logo' | 'banner'
 
-    // Unified Grid logic: Both 'grid' and 'hero' now pull from the 'grids' endpoint
-    // but filter by the targeted aspect ratios/dimensions.
     let endpointType = 'grids';
-    let styleQuery = '';
+    let styleQuery = '?styles=alternate,blurred,material';
 
-    if (type === 'grid') {
-        // Vertical Grids (Portrait)
-        styleQuery = '?styles=alternate,blurred,material';
-    } else if (type === 'hero') {
-        // Horizontal Grids (Landscape)
-        styleQuery = '?styles=alternate,blurred,material';
+    if (type === 'hero') {
+        endpointType = 'heroes';
     } else if (type === 'logo') {
         endpointType = 'logos';
         styleQuery = '';
     } else if (type === 'icon') {
         endpointType = 'icons';
         styleQuery = '';
+    } else if (type === 'banner') {
+        endpointType = 'grids';
+        // Banners are horizontal grids
     }
 
     const url = `https://www.steamgriddb.com/api/v2/${endpointType}/game/${gameId}${styleQuery}`;
@@ -407,12 +412,15 @@ app.get('/api/sgdb/grids/:gameId/:type', (req, res) => {
         response.on('end', () => {
             try {
                 const json = JSON.parse(data);
-                if (json.success && json.data && (type === 'grid' || type === 'hero')) {
-                    // Filter Grids by Aspect Ratio instead of strict dimensions
-                    json.data = json.data.filter((asset: any) => {
-                        const isVertical = asset.height > asset.width;
-                        return type === 'grid' ? isVertical : !isVertical;
-                    });
+                if (json.success && json.data) {
+                    if (type === 'grid') {
+                        // Strict Portrait
+                        json.data = json.data.filter((asset: any) => asset.height > asset.width);
+                    } else if (type === 'banner') {
+                        // Strict Landscape for grids
+                        json.data = json.data.filter((asset: any) => asset.width > asset.height);
+                    }
+                    // 'hero' endpoint naturally returns heroes, no extra filter needed
                 }
                 res.json(json);
             } catch (e) {
@@ -433,8 +441,9 @@ app.post('/api/assets/import', async (req, res) => {
         const gameDir = path.join(ASSETS_DIR, gameId);
         if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
 
-        // Standardize extensions for processed files
-        const processedExt = (assetType === 'logo' || assetType === 'icon') ? '.png' : '.jpg';
+        // Standardize extensions for processed files: Preserve PNG/GIF, otherwise fallback to JPG
+        const sourceExt = path.extname(sourcePath).toLowerCase();
+        const processedExt = (assetType === 'logo' || assetType === 'icon' || sourceExt === '.png' || sourceExt === '.gif' || sourceExt === '.apng') ? sourceExt : '.jpg';
         const targetPath = path.join(gameDir, `${assetType}${processedExt}`);
         const tempPath = path.join(gameDir, `_temp_${assetType}${processedExt}`);
 
@@ -514,21 +523,7 @@ app.post('/api/games/delete', (req, res) => {
     if (!gameId) return res.status(400).json({ error: 'gameId required' });
 
     try {
-        // 1. Update data.json
-        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-        // Correctly handle the categories structure
-        if (data.categories) {
-            data.categories = data.categories.map((cat: any) => ({
-                ...cat,
-                games: cat.games.filter((g: any) => g.id !== gameId)
-            }));
-        } else if (Array.isArray(data)) {
-            // Legacy support
-            const newData = data.filter((g: any) => g.id !== gameId);
-            fs.writeFileSync(DATA_FILE, JSON.stringify(newData, null, 2));
-            return res.json({ success: true });
-        }
-        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+        db.deleteGame(gameId);
 
         // 2. Delete Assets Folder
         const gameDir = path.join(ASSETS_DIR, gameId);
@@ -547,13 +542,11 @@ app.post('/api/games/delete', (req, res) => {
 app.post('/api/games/verify-integrity', (req, res) => {
     console.log('[Integrity] Verifying game shortcut paths...');
     try {
-        if (!fs.existsSync(DATA_FILE)) return res.json({ brokenIds: [] });
-        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
         const brokenIds: string[] = [];
 
         // Collect all unique games across categories
         const gamesMap = new Map();
-        const categories = Array.isArray(data) ? [{ games: data }] : (data.categories || []);
+        const categories = db.getCategories();
 
         categories.forEach((cat: any) => {
             cat.games?.forEach((g: any) => {
@@ -586,7 +579,7 @@ app.post('/api/games/verify-integrity', (req, res) => {
 // System Wipe (Factory Reset)
 app.post('/api/system/wipe', (req, res) => {
     try {
-        fs.writeFileSync(DATA_FILE, JSON.stringify([], null, 2));
+        db.wipeData();
         if (fs.existsSync(STORAGE_DIR)) {
             fs.rmSync(STORAGE_DIR, { recursive: true, force: true });
             fs.mkdirSync(ASSETS_DIR, { recursive: true });
@@ -607,45 +600,35 @@ app.get('/api/health', (req, res) => {
 
 // List system drives (Windows)
 app.get('/api/files/drives', (req, res) => {
-    console.log('[FS_EXPLORER] Listing logical drives...');
-    exec('powershell -Command "Get-PSDrive -PSProvider FileSystem | Select-Object -ExpandProperty Root"', (error, stdout) => {
-        if (error) {
-            console.error('[FS_EXPLORER] Failed to list drives:', error.message);
-            return res.status(500).json({ error: 'Failed to list drives' });
+    console.log('[FS_EXPLORER] Listing logical drives natively...');
+    try {
+        const drives: string[] = [];
+        for (let i = 65; i <= 90; i++) {
+            const drive = String.fromCharCode(i) + ':\\';
+            try {
+                if (fs.existsSync(drive)) drives.push(drive);
+            } catch (e) { }
         }
 
-        const drives = stdout.split(/\r?\n/)
-            .map(line => line.trim())
-            .filter(line => line.length > 0 && line.includes(':'))
-            .map(line => line.endsWith('\\') ? line : line + '\\');
+        const userProfile = process.env.USERPROFILE || '';
+        const rawLibraries = {
+            Desktop: path.join(userProfile, 'Desktop') + '\\',
+            Documents: path.join(userProfile, 'Documents') + '\\',
+            Pictures: path.join(userProfile, 'Pictures') + '\\',
+            Music: path.join(userProfile, 'Music') + '\\',
+            Videos: path.join(userProfile, 'Videos') + '\\',
+            Downloads: path.join(userProfile, 'Downloads') + '\\'
+        };
 
-        const psFolders = "$f=@{}; " +
-            "$f.Desktop=[Environment]::GetFolderPath('Desktop'); " +
-            "$f.Documents=[Environment]::GetFolderPath('MyDocuments'); " +
-            "$f.Pictures=[Environment]::GetFolderPath('MyPictures'); " +
-            "$f.Music=[Environment]::GetFolderPath('MyMusic'); " +
-            "$f.Videos=[Environment]::GetFolderPath('MyVideos'); " +
-            "$f.Downloads=(New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path; " +
-            "$f | ConvertTo-Json";
+        const libraries = Object.entries(rawLibraries).map(([name, p]) => {
+            return { name, path: fs.existsSync(p) ? p : '' };
+        }).filter(lib => lib.path && lib.path.length > 1);
 
-        exec(`powershell -Command "${psFolders}"`, (psError, psStdout) => {
-            let libraries: { name: string, path: string }[] = [];
-            if (psStdout) {
-                try {
-                    const resolved = JSON.parse(psStdout);
-                    libraries = Object.entries(resolved)
-                        .map(([name, path]: [string, any]) => ({
-                            name,
-                            path: path ? (String(path).endsWith('\\') ? String(path) : String(path) + '\\') : ''
-                        }))
-                        .filter(lib => lib.path && lib.path.length > 1);
-                } catch (e) {
-                    console.error('[FS_EXPLORER] Failed to parse library paths:', e);
-                }
-            }
-            res.json({ drives, libraries });
-        });
-    });
+        res.json({ drives, libraries });
+    } catch (error: any) {
+        console.error('[FS_EXPLORER] Failed to list drives natively:', error.message);
+        res.status(500).json({ error: 'Failed to list drives' });
+    }
 });
 
 // List directory contents
@@ -740,6 +723,7 @@ $obj | ConvertTo-Json
 });
 
 // Proxy Local Image with Resizing Support
+const PROXY_CACHE_VERSION = 'v4'; // v4: Animated WebP Optimization
 app.get('/api/proxy-image', async (req, res) => {
     const filePath = req.query.path as string;
     // DEBUG: Log Raw Request
@@ -871,8 +855,8 @@ app.get('/api/proxy-image', async (req, res) => {
         }
 
         let hash = 5381;
-        // Include mtime and size in the hash input
-        const str = `${finalPath}_${stats.mtimeMs}_${stats.size}`;
+        // Include mtime, size, and cache version in the hash input
+        const str = `${finalPath}_${stats.mtimeMs}_${stats.size}_${PROXY_CACHE_VERSION}`;
 
         for (let i = 0; i < str.length; i++) {
             hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
@@ -895,7 +879,20 @@ app.get('/api/proxy-image', async (req, res) => {
         try {
             if (!sharp) throw new Error("sharp is undefined");
 
-            let sharpInstance = sharp(finalPath);
+            const metadata = await sharp(finalPath).metadata();
+            const isAnimated = metadata.pages && metadata.pages > 1;
+
+            if (isAnimated) {
+                console.log(`[Proxy] Animation detected (frames: ${metadata.pages}). Bypassing resize for ${finalPath}`);
+                return res.sendFile(finalPath);
+            }
+
+            let sharpInstance = sharp(finalPath, { animated: true });
+
+            if (isAnimated) {
+                // For animated images, always convert to WebP to save VRAM in Wallpaper Engine/CEF
+                sharpInstance = sharpInstance.webp({ effort: 0 });
+            }
 
             if (width && height) {
                 sharpInstance = sharpInstance.resize(width, height, { fit: 'cover' });
@@ -950,6 +947,35 @@ const parseAcfManifest = (content: string) => {
 };
 
 // Endpoint to select a file via OS dialog
+app.post('/api/select-folder', (req, res) => {
+    console.log('[Server] Folder picker requested');
+    const psScript = `
+$ErrorActionPreference = 'Stop'
+try {
+    Add-Type -AssemblyName System.Windows.Forms
+    $f = New-Object System.Windows.Forms.FolderBrowserDialog
+    $f.Description = "Select Folder via Phantom Launcher"
+    $result = $f.ShowDialog()
+    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+        Write-Output $f.SelectedPath
+    }
+} catch {
+    Write-Error $_.Exception.Message
+}
+`;
+    const encodedCommand = Buffer.from(psScript, 'utf16le').toString('base64');
+    const command = `powershell -NoProfile -Sta -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error('[Server] Folder picker exec error:', error);
+            return res.status(500).json({ error: 'Failed to open dialog' });
+        }
+        const selectedPath = stdout.trim();
+        res.json({ path: selectedPath || null });
+    });
+});
+
 app.post('/api/select-file', (req, res) => {
     const { filter = 'exe', returnBase64 = false } = req.body;
     console.log(`[Server] File picker requested (filter: ${filter}, base64: ${returnBase64})`);
@@ -1266,6 +1292,172 @@ $games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
     }
 });
 
+const EMU_PLATFORMS: Record<string, { extensions: string[], mode: 'FILE' | 'FOLDER' }> = {
+    '3ds': { extensions: ['.3ds', '.cia'], mode: 'FILE' },
+    'n64': { extensions: ['.z64', '.n64', '.v64'], mode: 'FILE' },
+    'nds': { extensions: ['.nds'], mode: 'FILE' },
+    'ngc': { extensions: ['.iso', '.gcm', '.rvz'], mode: 'FILE' },
+    'nsw': { extensions: ['.nsp', '.xci'], mode: 'FILE' },
+    'wii': { extensions: ['.iso', '.wbfs', '.rvz'], mode: 'FILE' },
+    'wiu': { extensions: ['.wud', '.wux', '.rpx'], mode: 'FILE' },
+    'ps2': { extensions: ['.iso', '.bin', '.chd'], mode: 'FILE' },
+    'ps3': { extensions: [], mode: 'FOLDER' },
+    'ps4': { extensions: [], mode: 'FOLDER' },
+    'psp': { extensions: ['.iso', '.cso'], mode: 'FILE' },
+    'psv': { extensions: ['.vpk'], mode: 'FILE' },
+};
+
+function cleanEmuTitle(filename: string): string {
+    let name = filename.replace(/\.[^/.]+$/, ""); // Remove extension
+    name = name.replace(/\s*\(.*?\)/g, ""); // Remove (USA), (En,Fr,De), etc.
+    name = name.replace(/\s*\[.*?\]/g, ""); // Remove [!], [b1], etc.
+    name = name.replace(/_/g, " "); // Replace underscores with spaces
+    name = name.replace(/^\d+\s*-\s*/, ""); // Remove lead numbers like "0479 - "
+    return name.trim();
+}
+
+/**
+ * Basic PARAM.SFO (Sony File Overlay) title extractor.
+ * SFO files are key-value stores. We look for the "TITLE" key.
+ */
+function extractTitleFromSFO(sfoPath: string): string | null {
+    try {
+        if (!fs.existsSync(sfoPath)) return null;
+        const buffer = fs.readFileSync(sfoPath);
+
+        // PARAM.SFO header/index simple scan for "TITLE"
+        // Key table follows the header. We'll do a simple string search for 'TITLE'
+        // followed by null terminator, then find the value in the data table.
+        // For a more robust solution we'd parse the index table properly, 
+        // but simple string search usually works for Sony's standard SFOs.
+        const content = buffer.toString('utf-8');
+        const titleIndex = buffer.indexOf(Buffer.from('TITLE\0'));
+        if (titleIndex === -1) return null;
+
+        // In standard SFOs, values are nul-terminated strings in the later part of the file.
+        // We'll look for a reasonably long string after some offset.
+        // This is a heuristic: find TITLE, then skip some bytes and look for a non-empty string.
+        // Proper parsing would be: Header (20b) -> Index Entries (16b each) -> Key Table -> Data Table.
+        // Let's do it slightly better:
+
+        const header = {
+            keyOffset: buffer.readUInt32LE(0x08),
+            dataOffset: buffer.readUInt32LE(0x0C),
+            count: buffer.readUInt32LE(0x10)
+        };
+
+        for (let i = 0; i < header.count; i++) {
+            const entryOffset = 0x14 + (i * 16);
+            const keyStart = header.keyOffset + buffer.readUInt16LE(entryOffset);
+
+            // Find key length (null-terminated)
+            let keyEnd = keyStart;
+            while (keyEnd < buffer.length && buffer[keyEnd] !== 0) keyEnd++;
+            const key = buffer.toString('utf8', keyStart, keyEnd);
+
+            if (key === 'TITLE') {
+                const dataStart = header.dataOffset + buffer.readUInt32LE(entryOffset + 0x0C);
+                const dataLen = buffer.readUInt32LE(entryOffset + 0x08);
+                // Extract null-terminated string from data
+                let actualLen = 0;
+                while (actualLen < dataLen && buffer[dataStart + actualLen] !== 0) actualLen++;
+                return buffer.toString('utf8', dataStart, dataStart + actualLen).trim();
+            }
+        }
+    } catch (e) {
+        console.error("[SFO] Failed to parse title", e);
+    }
+    return null;
+}
+
+app.post('/api/emu/scan', async (req, res) => {
+    try {
+        const { platformId, romsDir, emuExe } = req.body;
+        if (!platformId || !romsDir || !emuExe) {
+            return res.status(400).json({ error: 'Missing platformId, romsDir or emuExe' });
+        }
+
+        const config = EMU_PLATFORMS[platformId];
+        if (!config) return res.status(400).json({ error: 'Invalid platformId' });
+
+        if (!fs.existsSync(romsDir)) return res.status(404).json({ error: 'ROMs directory not found' });
+
+        const games: any[] = [];
+        const scan = (dir: string) => {
+            if (!fs.existsSync(dir)) return;
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                const fullPath = path.join(dir, file);
+                const stat = fs.statSync(fullPath);
+
+                if (config.mode === 'FILE' && !stat.isDirectory()) {
+                    const ext = path.extname(file).toLowerCase();
+                    if (config.extensions.includes(ext)) {
+                        // Filter Switch Updates/DLC (conventional check: [UPD] or [v...])
+                        if (platformId === 'nsw' && (file.includes('[UPD]') || file.includes('[v'))) continue;
+
+                        games.push({
+                            id: `emu_${platformId}_${slugify(file)}`,
+                            title: cleanEmuTitle(file),
+                            execPath: emuExe,
+                            execArgs: `"${fullPath}"`,
+                            source: 'emulator',
+                            platform: platformId
+                        });
+                    }
+                } else if (config.mode === 'FOLDER' && stat.isDirectory()) {
+                    // Specific entry points and title extraction
+                    let execArgs = `"${fullPath}"`;
+                    let detectedTitle = cleanEmuTitle(file);
+
+                    if (platformId === 'ps3') {
+                        const sfoPath = path.join(fullPath, 'PS3_GAME', 'PARAM.SFO');
+                        const sfoTitle = extractTitleFromSFO(sfoPath);
+                        if (sfoTitle) detectedTitle = sfoTitle;
+
+                        const eboot = path.join(fullPath, 'PS3_GAME', 'USRDIR', 'EBOOT.BIN');
+                        if (fs.existsSync(eboot)) execArgs = `"${eboot}"`;
+                    } else if (platformId === 'ps4') {
+                        const sfoPath = path.join(fullPath, 'sce_sys', 'param.sfo');
+                        const sfoTitle = extractTitleFromSFO(sfoPath);
+                        if (sfoTitle) detectedTitle = sfoTitle;
+                    }
+
+                    games.push({
+                        id: `emu_${platformId}_${slugify(file)}`,
+                        title: detectedTitle,
+                        execPath: emuExe,
+                        execArgs: execArgs,
+                        source: 'emulator',
+                        platform: platformId
+                    });
+                } else if (stat.isDirectory()) {
+                    scan(fullPath); // Recursive scan for FILE mode
+                }
+            }
+        };
+
+        scan(romsDir);
+        res.json({ games });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Endpoint to trigger missing assets fetch for a category
+app.post('/api/assets/fetch-missing', async (req, res) => {
+    try {
+        const { categoryId } = req.body;
+        const categories = db.getCategories();
+        const cat = categories.find(c => c.id === categoryId);
+        if (!cat) return res.status(404).json({ error: 'Category not found' });
+
+        res.json({ success: true, count: cat.games.filter(g => !g.logo || !g.cover || !g.banner).length });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Endpoint to launch the file
 app.post('/api/launch', (req, res) => {
     try {
@@ -1276,25 +1468,8 @@ app.post('/api/launch', (req, res) => {
         // Update Last Played Timestamp
         if (gameId) {
             try {
-                const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-                let gameFound = false;
-
-                // Loop through categories to find the game
-                for (const cat of data.categories) {
-                    const game = cat.games.find((g: any) => g.id === gameId);
-                    if (game) {
-                        game.lastPlayed = new Date().toISOString();
-                        gameFound = true;
-                        // Don't break, game might be in multiple categories (though id should be unique per game object instance, 
-                        // but conceptual game is same. references might differ if we duplicated objects. 
-                        // System currently duplicates game objects in categories. We should update all instances.)
-                    }
-                }
-
-                if (gameFound) {
-                    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-                    console.log(`[Server] Updated lastPlayed for ${gameId}`);
-                }
+                db.updateGameLastPlayed(gameId);
+                console.log(`[Server] Updated lastPlayed for ${gameId} in DB`);
             } catch (err) {
                 console.error('[Server] Failed to update lastPlayed:', err);
             }
@@ -1311,16 +1486,14 @@ app.post('/api/launch', (req, res) => {
             });
         } else {
             // Standard executables & Shortcuts (.lnk)
-            // Using Start-Process is much more robust for .lnk files created via COM
+            // Using cmd's start is instant and natively supports .lnk resolution
             console.log(`[Launch] Standard File: ${execPath}`);
             if (execArgs) console.log(`[Launch] Arguments: ${execArgs}`);
 
-            const psCommand = `Start-Process -FilePath "${execPath.replace(/"/g, '`"')}" ${execArgs ? `-ArgumentList "${execArgs.replace(/"/g, '`"')}"` : ''}`;
-            console.log(`[Launch] PowerShell: ${psCommand}`);
-
-            exec(`powershell -NoProfile -ExecutionPolicy Bypass -Command "${psCommand}"`, (error) => {
+            const argsString = execArgs ? ` ${execArgs}` : '';
+            exec(`start "" "${execPath}"${argsString}`, (error) => {
                 if (error) {
-                    console.error('[Launch] PowerShell execution failed:', error);
+                    console.error('[Launch] Execution failed:', error);
                 }
             });
         }
@@ -1331,27 +1504,7 @@ app.post('/api/launch', (req, res) => {
     }
 });
 
-// 5. Shortcut Integrity Verification
-app.post('/api/games/verify-integrity', (req, res) => {
-    try {
-        if (!fs.existsSync(DATA_FILE)) return res.json({ brokenIds: [] });
-        const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-        const brokenIds: string[] = [];
-
-        for (const cat of data.categories) {
-            for (const game of cat.games) {
-                if (game.execPath && !game.execPath.startsWith('http') && !game.execPath.startsWith('steam://')) {
-                    if (!fs.existsSync(game.execPath)) {
-                        brokenIds.push(game.id);
-                    }
-                }
-            }
-        }
-        res.json({ brokenIds: Array.from(new Set(brokenIds)) });
-    } catch (e) {
-        res.status(500).json({ error: 'Integrity check failed' });
-    }
-});
+// Duplicate integrity endpoint removed
 
 const findFrontend = () => {
     const exeDir = path.dirname(process.execPath);
@@ -1371,4 +1524,49 @@ if (frontPath) {
     app.get('/', (req, res) => res.send(`Phantom Server Running.<br>Frontend NOT FOUND.`));
 }
 
-app.listen(port, () => console.log(`[Server] Phantom Launcher Backend running at http://localhost:${port} (VERSION: SHORTCUTS ENABLED)`));
+// --- Phase 5: Auto-Synchronization Engine (SSE + Chokidar) ---
+let sseClients: any[] = [];
+
+app.get('/api/sync/events', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    sseClients.push(res);
+    req.on('close', () => {
+        sseClients = sseClients.filter(client => client !== res);
+    });
+});
+
+const broadcastSyncEvent = (eventData: any) => {
+    sseClients.forEach(client => client.write(`data: ${JSON.stringify(eventData)}\n\n`));
+};
+
+try {
+    const steamConfigPath = 'C:/Program Files (x86)/Steam/userdata/*/config/grid';
+    const watchPaths = [ASSETS_DIR, steamConfigPath];
+
+    console.log(`[Sync] Mounting Chokidar Sentry on:`);
+    watchPaths.forEach(p => console.log(`  -> ${p}`));
+
+    chokidar.watch(watchPaths, {
+        ignored: /(^|[\/\\])\../, // ignore dotfiles
+        ignoreInitial: true,
+        depth: 5
+    }).on('all', (event, filePath) => {
+        if (['add', 'change', 'unlink'].includes(event)) {
+            if (filePath.match(/\.(png|jpg|jpeg|webp)$/i)) {
+                console.log(`[Sync] Triggered SSE Push. File changed: ${filePath}`);
+                // Debounce could be added here if multiple rapid firing events occur
+                broadcastSyncEvent({ type: 'ASSET_CHANGED', path: filePath, event });
+            }
+        }
+    }).on('error', (error) => {
+        console.error(`[Sync] Chokidar Watcher Error:`, error.message);
+    });
+} catch (e: any) {
+    console.error('[Sync] Sentry mount failed:', e.message);
+}
+
+app.listen(port, '127.0.0.1', () => console.log(`[Server] Phantom Launcher Backend running at http://127.0.0.1:${port} (VERSION: SHORTCUTS ENABLED)`));

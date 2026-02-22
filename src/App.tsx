@@ -19,6 +19,7 @@ import { usePerformance } from './hooks/usePerformance';
 import { useTranslation } from './hooks/useTranslation';
 import { useKonami } from './hooks/useKonami';
 import { useLibrary } from './hooks/useLibrary';
+import { useColor } from './hooks/useColor';
 
 const App: React.FC = () => {
   // --- Custom Hooks ---
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   const { playSfx } = useAudio();
   const { isPaused } = usePerformance();
   const { t } = useTranslation();
+  const { resolve: resolveColor, isMonochrome } = useColor(categories);
 
   // --- Local UI State ---
   const [currentCatIndex, setCurrentCatIndex] = useState(0);
@@ -241,9 +243,32 @@ const App: React.FC = () => {
     }
   }, [isDataLoaded, initialNavDone, displayCategories]);
 
+  // --- Phase 5: Auto-Sync SSE Listener ---
+  useEffect(() => {
+    if (!isBackendOnline) return;
 
+    // Use relative path so it correctly resolves via Vite proxy in dev, and absolute port in prod if needed.
+    const baseUrl = import.meta.env.DEV ? '' : 'http://127.0.0.1:3000';
+    const source = new EventSource(`${baseUrl}/api/sync/events`);
 
+    source.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'ASSET_CHANGED') {
+          console.log('[Sync] Asset change detected (Chokidar), busting cache...', data.path);
+          bumpAssetVersion();
+        }
+      } catch (e) {
+        console.error('[Sync] SSE parse failed:', e);
+      }
+    };
 
+    source.onerror = () => {
+      source.close();
+    };
+
+    return () => source.close();
+  }, [isBackendOnline, bumpAssetVersion]);
 
   // Keyboard Input
   useEffect(() => {
@@ -323,12 +348,12 @@ const App: React.FC = () => {
       <div className="absolute top-6 right-8 z-[150] flex items-center gap-3 pointer-events-none">
         <div className="flex flex-col items-end">
           <span className="text-[7px] font-['Space_Mono'] uppercase tracking-[0.3em] opacity-40">{t('app.core_status')}</span>
-          <span className={`text-[8px] font-bold uppercase tracking-widest ${isBackendOnline === true ? 'text-emerald-500' : isBackendOnline === 'checking' ? 'text-white/40' : 'text-red-500'}`}>
+          <span className={`text-[8px] font-bold uppercase tracking-widest`} style={{ color: resolveColor(isBackendOnline === true ? '#10b981' : isBackendOnline === 'checking' ? 'rgba(255,255,255,0.4)' : '#ef4444') }}>
             {isBackendOnline === true ? t('app.online') : isBackendOnline === 'checking' ? t('app.syncing') : t('app.offline')}
           </span>
         </div>
         <div className="relative w-2 h-2">
-          <div className={`absolute inset-0 rounded-full ${isBackendOnline === true ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : isBackendOnline === 'checking' ? 'bg-white/20' : 'bg-red-500 shadow-[0_0_10px_#ef4444]'} ${isBackendOnline === true ? 'animate-pulse' : ''}`}></div>
+          <div className={`absolute inset-0 rounded-full ${isBackendOnline === true ? 'animate-pulse' : ''}`} style={{ backgroundColor: resolveColor(isBackendOnline === true ? '#10b981' : isBackendOnline === 'checking' ? 'rgba(255,255,255,0.2)' : '#ef4444'), boxShadow: `0 0 10px ${resolveColor(isBackendOnline === true ? '#10b981' : '#00000000')}` }}></div>
         </div>
       </div>
 
@@ -341,10 +366,11 @@ const App: React.FC = () => {
         onResolveAsset={resolveAsset}
         isSecretUnlocked={isSecretUnlocked}
         performanceMode={atmosphereSettings.performanceMode}
+        resolveColor={resolveColor}
       />
 
       <main className="main-content flex-1 flex flex-col relative z-10 max-h-screen" style={{ paddingLeft: 'calc(50px + 1.5vh + 30px)' }}>
-        <Notification message={notification} color={currentCategory?.color || '#fff'} />
+        <Notification message={notification} color={resolveColor(currentCategory?.color || '#fff')} />
 
         <div ref={trackWrapperRef} className="h-[45%] flex items-start pt-0 mt-[4vh] overflow-visible">
           {games.length > 0 ? (
@@ -353,7 +379,7 @@ const App: React.FC = () => {
               games={games}
               activeIdx={activeGameIndex}
               onSelect={setActiveGameIndex}
-              color={currentCategory?.color || '#fff'}
+              color={resolveColor(currentCategory?.color || '#fff')}
               appState={appState}
               cardBlurEnabled={atmosphereSettings.cardBlurEnabled}
               cardTransparencyEnabled={atmosphereSettings.cardTransparencyEnabled}
@@ -361,6 +387,10 @@ const App: React.FC = () => {
               onResolveAsset={resolveAsset}
               onLaunch={handleLaunchRequest}
               performanceMode={atmosphereSettings.performanceMode}
+              innerGlowEnabled={atmosphereSettings.innerGlowEnabled}
+              outerGlowEnabled={atmosphereSettings.outerGlowEnabled}
+              slimModeEnabled={atmosphereSettings.slimModeEnabled}
+              primingAnimation={atmosphereSettings.primingAnimation}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center opacity-20 font-['Press_Start_2P'] text-[10px] tracking-[0.2em]">{t('app.unit_storage_empty')}</div>
@@ -370,7 +400,7 @@ const App: React.FC = () => {
 
       <GameInfo
         game={activeGame}
-        color={currentCategory?.color || '#fff'}
+        color={resolveColor(currentCategory?.color || '#fff')}
         isLaunching={appState === 'launching' || appState === 'priming'}
         onLaunch={handleLaunchRequest}
         taskbarMargin={taskbarMargin}
@@ -385,7 +415,7 @@ const App: React.FC = () => {
           categories={categories}
           currentCatIdx={currentCatIndex}
           onUpdateCategories={setCategories}
-          accentColor={currentCategory?.color || '#fff'}
+          accentColor={resolveColor(currentCategory?.color || '#fff')}
           taskbarMargin={taskbarMargin}
           onUpdateTaskbarMargin={setTaskbarMargin}
           uiScale={uiScale}
@@ -393,6 +423,8 @@ const App: React.FC = () => {
           onResolveAsset={resolveAsset}
           bumpAssetVersion={bumpAssetVersion}
           isSecretUnlocked={isSecretUnlocked}
+          resolveColor={resolveColor}
+          onNotification={setNotification}
         />
       </React.Suspense>
     </div >

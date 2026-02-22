@@ -15,7 +15,7 @@ interface FileExplorerModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (path: string) => void;
-    filter?: 'exe' | 'image' | 'video' | 'any';
+    filter?: 'exe' | 'image' | 'video' | 'folder' | 'any';
     accentColor: string;
     initialPath?: string;
 }
@@ -111,6 +111,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
 
     const isFiltered = (item: FileItem) => {
         if (item.isDir) return true;
+        if (filter === 'folder') return false; // In folder mode, we only show directories in the grid if they should be navigable
         if (filter === 'any') return true;
         if (filter === 'exe') return item.ext === '.exe' || item.ext === '.lnk' || item.ext === '.bat' || item.ext === '.url';
         if (filter === 'image') return ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(item.ext);
@@ -303,6 +304,15 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                         </div>
                     </div>
                     <div className="flex gap-3">
+                        {filter === 'folder' && (
+                            <button
+                                onClick={() => onSelect(currentPath)}
+                                className="px-6 py-2 border-2 text-[9px] font-mono uppercase tracking-widest transition-all bg-white text-black border-white hover:bg-white/80"
+                                style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#000' }}
+                            >
+                                SELECT_CURRENT_DIRECTORY
+                            </button>
+                        )}
                         <button onClick={onClose} className="px-6 py-2 border-2 border-white/10 text-[9px] font-mono uppercase tracking-widest hover:bg-white/5 transition-all">ABORT_PROTOCOL</button>
                     </div>
                 </div>

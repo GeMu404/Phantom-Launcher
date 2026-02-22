@@ -1,5 +1,5 @@
 {
-    "main": "phantom_app/server.js",
+    "main": "phantom_app/server.cjs",
     "output": "phantom_app/sea-prep.blob",
     "disableExperimentalSEAWarning": true
 }

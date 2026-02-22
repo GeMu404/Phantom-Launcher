@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getContrastColor } from '../../utils/colors';
 
 interface SubsectionProps {
     title: string;
@@ -50,7 +51,7 @@ const Subsection = React.memo(({ title, children, onSync, syncLabel = "COMMIT_CH
                             onMouseEnter={(e) => {
                                 if (syncStatus === 'idle') {
                                     e.currentTarget.style.backgroundColor = accentColor;
-                                    e.currentTarget.style.color = '#000';
+                                    e.currentTarget.style.color = getContrastColor(accentColor);
                                 }
                             }}
                             onMouseLeave={(e) => {

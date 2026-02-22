@@ -14,7 +14,8 @@ interface GameInfoProps {
   performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
 }
 
-const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color, isLaunching, onLaunch, taskbarMargin = 0, onResolveAsset, performanceMode = 'balanced' }) => {
+const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color: rawColor, isLaunching, onLaunch, taskbarMargin = 0, onResolveAsset, performanceMode = 'balanced' }) => {
+  const color = rawColor;
   const logoRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [imgStatus, setImgStatus] = useState<'loading' | 'loaded' | 'error'>('loading');

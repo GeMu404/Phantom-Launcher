@@ -3,6 +3,7 @@ import Subsection from './Subsection';
 import AssetInput from '../AssetInput';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Category } from '../../types';
+import { getContrastColor } from '../../utils/colors';
 
 interface SystemTabProps {
     activeAccent: string;
@@ -114,6 +115,12 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                         WebkitClipPath: 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)'
                                     }}>
                                     <div className="absolute inset-0" style={{ backgroundColor: currentColor }}></div>
+                                    <span
+                                        className="absolute inset-0 w-[150%] h-[150%] -translate-x-[20%] -translate-y-[20%] font-black text-[28px] opacity-10 pointer-events-none select-none flex items-center justify-center"
+                                        style={{ color: getContrastColor(currentColor) }}
+                                    >
+                                        #PICK
+                                    </span>
                                     <input type="color" value={currentColor} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, [cp.key]: e.target.value } : c))} className="absolute inset-0 w-[150%] h-[150%] bg-transparent border-none cursor-pointer -translate-x-1/4 -translate-y-1/4 opacity-0" />
                                 </div>
                             </div>
@@ -189,26 +196,80 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         { key: 'lowResWallpaper', label: t('system_tab.wallpaper_res') },
                         { key: 'wallpaperAAEnabled', label: t('system_tab.wallpaper_smooth') },
                         { key: 'cardTransparencyEnabled', label: t('system_tab.card_transparency') },
-                        { key: 'cardBlurEnabled', label: t('system_tab.card_blur') }
-                    ].map(toggle => (
-                        <div key={toggle.key} className="flex items-center justify-between py-2 border-b border-white/5">
-                            <label className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-white/60">{toggle.label}</label>
-                            <button
-                                onClick={() => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? {
-                                    ...c,
-                                    [toggle.key]: !(c as any)[toggle.key],
-                                    performanceMode: 'custom' // Switch to custom when manually toggled
-                                } : c))}
-                                className={`w-12 h-6 relative transition-all duration-300 border-2 ${(allGamesCategory as any)[toggle.key] !== false ? `bg-[localAccent] border-[localAccent] shadow-lg` : 'bg-black border-white/20'}`}
-                                style={{
-                                    backgroundColor: (allGamesCategory as any)[toggle.key] !== false ? activeAccent : undefined,
-                                    borderColor: (allGamesCategory as any)[toggle.key] !== false ? activeAccent : undefined
-                                }}
-                            >
-                                <div className={`absolute top-0.5 bottom-0.5 w-4 transition-all duration-300 ${(allGamesCategory as any)[toggle.key] !== false ? 'right-0.5 bg-black' : 'left-0.5 bg-white/20'}`}></div>
-                            </button>
-                        </div>
-                    ))}
+                        { key: 'cardBlurEnabled', label: t('system_tab.card_blur') },
+                        { key: 'innerGlowEnabled', label: "INNER NEON BLEED" },
+                        { key: 'outerGlowEnabled', label: "OUTER RADIANT AURA" },
+                        { key: 'slimModeEnabled', label: t('system_tab.slim_mode') },
+                        { key: 'monochromeModeEnabled', label: t('system_tab.monochrome_mode') }
+                    ].map(toggle => {
+                        const isEnabled = !!(allGamesCategory as any)[toggle.key];
+                        return (
+                            <div key={toggle.key} className="flex items-center justify-between py-2 border-b border-white/5">
+                                <label className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-white/60">{toggle.label}</label>
+                                <button
+                                    onClick={() => onUpdateCategories(prev => prev.map(c => {
+                                        if (c.id !== 'all') return c;
+
+                                        const nextValue = !isEnabled;
+                                        const updates: any = {
+                                            [toggle.key]: nextValue,
+                                            performanceMode: 'custom'
+                                        };
+
+                                        // Mutual Exclusivity: Slim vs Glows
+                                        if (toggle.key === 'slimModeEnabled' && nextValue === true) {
+                                            updates.innerGlowEnabled = false;
+                                            updates.outerGlowEnabled = false;
+                                        } else if ((toggle.key === 'innerGlowEnabled' || toggle.key === 'outerGlowEnabled') && nextValue === true) {
+                                            updates.slimModeEnabled = false;
+                                        }
+
+                                        return { ...c, ...updates };
+                                    }))}
+                                    className={`w-12 h-6 relative transition-all duration-300 border-2 ${isEnabled ? `bg-[localAccent] border-[localAccent] shadow-lg` : 'bg-black border-white/20'}`}
+                                    style={{
+                                        backgroundColor: isEnabled ? activeAccent : undefined,
+                                        borderColor: isEnabled ? activeAccent : undefined
+                                    }}
+                                >
+                                    <div className={`absolute top-0.5 bottom-0.5 w-4 transition-all duration-300 ${isEnabled ? 'right-0.5 bg-black' : 'left-0.5 bg-white/20'}`}></div>
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* PRIMING ANIMATION SELECTOR */}
+                <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-white/10 col-span-full">
+                    <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.priming_animation')}</label>
+                    <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 w-full">
+                        {([
+                            { id: 'waterfill', label: t('system_tab.anim_waterfill') },
+                            { id: 'scanline', label: t('system_tab.anim_scanline') },
+                            { id: 'ignition', label: t('system_tab.anim_ignition') },
+                            { id: 'charge', label: t('system_tab.anim_charge') },
+                            { id: 'shockwave', label: t('system_tab.anim_shockwave') },
+                            { id: 'glow_pulse', label: t('system_tab.anim_glow_pulse') }
+                        ] as const).map(anim => {
+                            const isSelected = (allGamesCategory.primingAnimation || 'waterfill') === anim.id;
+                            return (
+                                <button
+                                    key={anim.id}
+                                    onClick={() => onUpdateCategories(prev => prev.map(c =>
+                                        c.id === 'all' ? { ...c, primingAnimation: anim.id as any } : c
+                                    ))}
+                                    className={`py-2 border-2 font-bold text-[7px] uppercase tracking-widest transition-all ${isSelected ? '' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white'}`}
+                                    style={{
+                                        backgroundColor: isSelected ? activeAccent : undefined,
+                                        borderColor: isSelected ? activeAccent : undefined,
+                                        color: isSelected ? getContrastColor(activeAccent) : undefined
+                                    }}
+                                >
+                                    {anim.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="flex flex-col gap-4 mt-8 pt-4 border-t border-white/10 col-span-full">
@@ -223,7 +284,8 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                 config: {
                                     vignetteEnabled: false, scanlineEnabled: false, gridEnabled: false, bgAnimationsEnabled: false,
                                     lowResWallpaper: true, wallpaperAAEnabled: true, highQualityBlobs: false,
-                                    cardTransparencyEnabled: false, cardBlurEnabled: false, cardOpacity: 1.0
+                                    cardTransparencyEnabled: false, cardBlurEnabled: false, cardOpacity: 1.0,
+                                    innerGlowEnabled: false, outerGlowEnabled: false
                                 }
                             },
                             {
@@ -232,7 +294,8 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                 config: {
                                     vignetteEnabled: true, scanlineEnabled: false, gridEnabled: true, bgAnimationsEnabled: true,
                                     lowResWallpaper: false, wallpaperAAEnabled: false, highQualityBlobs: false,
-                                    cardTransparencyEnabled: true, cardBlurEnabled: false, cardOpacity: 0.7
+                                    cardTransparencyEnabled: true, cardBlurEnabled: false, cardOpacity: 0.7,
+                                    innerGlowEnabled: true, outerGlowEnabled: false
                                 }
                             },
                             {
@@ -241,7 +304,8 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                 config: {
                                     vignetteEnabled: true, scanlineEnabled: true, gridEnabled: true, bgAnimationsEnabled: true,
                                     lowResWallpaper: false, wallpaperAAEnabled: false, highQualityBlobs: true,
-                                    cardTransparencyEnabled: true, cardBlurEnabled: true, cardOpacity: 0.7
+                                    cardTransparencyEnabled: true, cardBlurEnabled: true, cardOpacity: 0.7,
+                                    innerGlowEnabled: true, outerGlowEnabled: true
                                 }
                             },
                             { id: 'custom', label: t('system_tab.performance_custom'), config: null }
@@ -260,13 +324,14 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                     className={`
                                         w-full py-3 px-2 border-2 text-[8px] lg:text-[9px] font-bold uppercase tracking-widest transition-all
                                         ${isActive
-                                            ? 'text-black'
+                                            ? ''
                                             : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white'
                                         }
                                     `}
                                     style={{
                                         backgroundColor: isActive ? activeAccent : undefined,
-                                        borderColor: isActive ? activeAccent : undefined
+                                        borderColor: isActive ? activeAccent : undefined,
+                                        color: isActive ? getContrastColor(activeAccent) : undefined
                                     }}
                                 >
                                     {mode.label}
@@ -275,8 +340,8 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         })}
                     </div>
                     {(allGamesCategory as any).performanceMode === 'low' && (
-                        <div className="text-[8px] text-emerald-400 font-mono mt-1 flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <div className="text-[8px] font-mono mt-1 flex items-center gap-2" style={{ color: '#34d399' }}>
+                            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: '#34d399' }}></div>
                             {t('system_tab.performance_low_desc')}
                         </div>
                     )}
@@ -293,7 +358,11 @@ const SystemTab: React.FC<SystemTabProps> = ({
                 <div className="flex flex-col gap-4 col-span-full">
                     <div className="flex items-center justify-between py-2 border-b border-white/5 w-full">
                         <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold whitespace-nowrap">{t('system_tab.interface_refresh')}</label>
-                        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-transparent text-cyan-400 font-bold text-[8px] uppercase tracking-[0.2em] border-2 border-cyan-500/50 hover:bg-cyan-500/10 hover:text-cyan-300 transition-all active:scale-95 shadow-[0_0_10px_rgba(34,211,238,0.1)]">
+                        <button onClick={() => window.location.reload()} className="px-6 py-2 bg-transparent font-bold text-[8px] uppercase tracking-[0.2em] border-2 transition-all active:scale-95"
+                            style={{ borderColor: activeAccent, color: activeAccent }}
+                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${activeAccent}22`; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
                             {t('system_tab.reload_ui_btn')}
                         </button>
                     </div>

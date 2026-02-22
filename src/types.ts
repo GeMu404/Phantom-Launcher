@@ -24,6 +24,8 @@ export interface Category {
   cardOpacity?: number; // Global transparency of cards
   cardBlurEnabled?: boolean;
   cardTransparencyEnabled?: boolean;
+  innerGlowEnabled?: boolean;
+  outerGlowEnabled?: boolean;
   lowResWallpaper?: boolean;
   wallpaperAAEnabled?: boolean;
   highQualityBlobs?: boolean;
@@ -41,6 +43,9 @@ export interface Category {
   nodeColor?: string;
   syncColor?: string;
   coreColor?: string;
+  slimModeEnabled?: boolean;
+  monochromeModeEnabled?: boolean;
+  primingAnimation?: 'waterfill' | 'scanline' | 'ignition' | 'charge' | 'shockwave' | 'glow_pulse';
 }
 
 export type AppState = 'idle' | 'transitioning' | 'launching' | 'priming';

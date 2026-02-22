@@ -87,7 +87,7 @@ const GamesTab: React.FC<GamesTabProps> = ({
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-white/5 pb-4 gap-6">
                         <div className="flex flex-col gap-1">
                             <h4 className="text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.4em] text-white flex items-center gap-3">
-                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse shadow-[0_0_10px_#06b6d4]" />
+                                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: activeAccent, boxShadow: `0 0 10px ${activeAccent}` }} />
                                 {t('registry.storage_inventory')}
                             </h4>
                             <span className="text-[6px] lg:text-[7px] font-mono opacity-20 uppercase tracking-[0.2em] ml-4.5">Active_Deployment_Sector</span>
@@ -96,7 +96,9 @@ const GamesTab: React.FC<GamesTabProps> = ({
                             <button
                                 onClick={handleVerifyDatabase}
                                 disabled={isVerifying}
-                                className={`px-4 lg:px-6 py-2 border-2 font-bold text-[8px] uppercase transition-all whitespace-nowrap ${isVerifying ? 'border-white/10 text-white/20' : 'border-cyan-500 text-cyan-500 hover:bg-cyan-500/10'}`}>
+                                className={`px-4 lg:px-6 py-2 border-2 font-bold text-[8px] uppercase transition-all whitespace-nowrap ${isVerifying ? 'border-white/10 text-white/20' : 'hover:bg-white/5'}`}
+                                style={{ borderColor: isVerifying ? undefined : activeAccent, color: isVerifying ? undefined : activeAccent }}
+                            >
                                 {isVerifying ? 'SCANN_INIT...' : 'VERIFY_DATABASE'}
                             </button>
                             {brokenIds.length > 0 && (

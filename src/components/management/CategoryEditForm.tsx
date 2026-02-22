@@ -4,6 +4,7 @@ import AssetInput from '../AssetInput';
 import ModeSelector from './ModeSelector';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Category } from '../../types';
+import { getContrastColor } from '../../utils/colors';
 
 interface CategoryEditFormProps {
     isFormOpen: boolean;
@@ -38,13 +39,33 @@ interface CategoryEditFormProps {
     allGames: { id: string; title: string; cover?: string }[];
     triggerFileBrowser: (target: string, type: 'exe' | 'image' | 'any') => void;
     onResolveAsset: (path: string | undefined) => string;
+    onFetchMissingAssets?: () => void;
     activeAccent: string;
 }
+
+const PLATFORM_COLORS: Record<string, string> = {
+    '3ds': '#ce181e',
+    'n64': '#316231',
+    'nds': '#ffffff',
+    'ngc': '#6a5acd', // GameCube Purple
+    'gamecube': '#6a5acd',
+    'nsw': '#e60012', // Switch Red
+    'switch': '#e60012',
+    'wii': '#ffffff', // Wii White
+    'wiu': '#009ac7',
+    'ps2': '#003791',
+    'ps3': '#000000',
+    'ps4': '#003791',
+    'psp': '#000000',
+    'psv': '#201e1f',
+    'xbox': '#107c10', // Xbox Green
+    'steam': '#66c0f4', // Steam Blue
+};
 
 const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
     isFormOpen, setIsFormOpen, gameList, editingId,
     catForm, setCatForm, handleSaveCategoryData, handleMoveGameInCategory, handleToggleGameInCategory,
-    onEditGame, onDeleteGame, onInitializeUnit, onWipeRegistry, allGames, triggerFileBrowser, onResolveAsset, activeAccent
+    onEditGame, onDeleteGame, onInitializeUnit, onWipeRegistry, allGames, triggerFileBrowser, onResolveAsset, onFetchMissingAssets, activeAccent
 }) => {
     const { t } = useTranslation();
     const [isAddingGame, setIsAddingGame] = React.useState(false);
@@ -55,6 +76,18 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
             .filter(g => g.title.toLowerCase().includes(selectionSearch.toLowerCase()))
             .sort((a, b) => a.title.localeCompare(b.title));
     }, [allGames, selectionSearch]);
+
+    // Auto-Color Logic
+    React.useEffect(() => {
+        if (editingId) return; // Only for new categories
+        const searchName = catForm.name.toLowerCase().trim();
+        for (const [key, color] of Object.entries(PLATFORM_COLORS)) {
+            if (searchName.includes(key)) {
+                setCatForm(prev => ({ ...prev, color }));
+                break;
+            }
+        }
+    }, [catForm.name, editingId]);
 
     if (!isFormOpen) {
         return (
@@ -101,7 +134,7 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
                                 color: catForm.enabled && editingId !== 'recent' ? activeAccent : undefined,
                                 borderColor: catForm.enabled && editingId !== 'recent' ? activeAccent : undefined
                             }}
-                            onMouseEnter={(e) => { if (catForm.enabled && editingId !== 'recent') { e.currentTarget.style.backgroundColor = activeAccent; e.currentTarget.style.color = '#000'; } }}
+                            onMouseEnter={(e) => { if (catForm.enabled && editingId !== 'recent') { e.currentTarget.style.backgroundColor = activeAccent; e.currentTarget.style.color = getContrastColor(activeAccent); } }}
                             onMouseLeave={(e) => { if (catForm.enabled && editingId !== 'recent') { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = activeAccent; } }}
                         >
                             {editingId === 'recent' ? t('registry.system_locked') : (catForm.enabled ? t('registry.online_protocol') : t('registry.offline_isolation'))}
@@ -137,12 +170,24 @@ const CategoryEditForm: React.FC<CategoryEditFormProps> = ({
                                 <span className="w-1.5 h-1.5 rotate-45 border border-current"></span>
                                 {isAddingGame ? t('registry.close_selector') : t('registry.add_existing')}
                             </button>
+                            {onFetchMissingAssets && (
+                                <button
+                                    onClick={onFetchMissingAssets}
+                                    className="px-4 py-2 border-2 border-white/10 text-white/40 hover:border-white hover:text-white hover:bg-white/5 font-bold text-[8px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/fetch"
+                                >
+                                    <span className="text-[10px] leading-none opacity-40 group-hover/fetch:opacity-100">🔍</span>
+                                    {t('registry.fetch_missing_assets')}
+                                </button>
+                            )}
                             {onInitializeUnit && (
                                 <button
                                     onClick={onInitializeUnit}
-                                    className="px-4 py-2 border-2 border-cyan-500/20 text-cyan-500/60 hover:border-cyan-500 hover:text-cyan-500 hover:bg-cyan-500/5 font-bold text-[8px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/init"
+                                    className="px-4 py-2 border-2 font-bold text-[8px] uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/init"
+                                    style={{ borderColor: `${activeAccent}44`, color: `${activeAccent}cc` }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = activeAccent; e.currentTarget.style.color = activeAccent; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${activeAccent}44`; e.currentTarget.style.color = `${activeAccent}cc`; }}
                                 >
-                                    <div className="w-1.5 h-1.5 bg-cyan-500/40 group-hover/init:bg-cyan-500 animate-pulse"></div>
+                                    <div className="w-1.5 h-1.5 animate-pulse" style={{ backgroundColor: activeAccent }}></div>
                                     {t('registry.initialize_unit')}
                                 </button>
                             )}

@@ -356,7 +356,7 @@ try {
         }
         else {
             $Shortcut.TargetPath = "powershell.exe"
-            $Shortcut.Arguments = "-WindowStyle Hidden -ExecutionPolicy Bypass -File `"$installDir\system\PhantomTray.ps1`""
+            $Shortcut.Arguments = "-WindowStyle Hidden -Sta -ExecutionPolicy Bypass -File `"$installDir\system\PhantomTray.ps1`""
         }
     
         $Shortcut.WorkingDirectory = "$installDir\system"

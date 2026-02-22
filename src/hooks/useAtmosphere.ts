@@ -34,6 +34,11 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
         const globalCardTransparency = allCat?.cardTransparencyEnabled ?? true;
         const globalScanlineEnabled = allCat?.scanlineEnabled ?? true;
         const globalVignetteEnabled = allCat?.vignetteEnabled ?? true;
+        const globalInnerGlow = allCat?.innerGlowEnabled ?? (allCat?.performanceMode !== 'low');
+        const globalOuterGlow = allCat?.outerGlowEnabled ?? (allCat?.performanceMode === 'high');
+        const globalSlimMode = allCat?.slimModeEnabled ?? false;
+        const globalMonochrome = allCat?.monochromeModeEnabled ?? false;
+        const globalPrimingAnimation = allCat?.primingAnimation || 'waterfill';
         const globalPerformanceMode = allCat?.performanceMode || 'high';
         const finalWidth = globalLowRes ? 960 : 1920;
 
@@ -63,6 +68,11 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
             gridEnabled: globalGridEnabled,
             scanlineEnabled: globalScanlineEnabled,
             vignetteEnabled: globalVignetteEnabled,
+            innerGlowEnabled: globalInnerGlow,
+            outerGlowEnabled: globalOuterGlow,
+            slimModeEnabled: globalSlimMode,
+            monochromeModeEnabled: globalMonochrome,
+            primingAnimation: globalPrimingAnimation,
             performanceMode: globalPerformanceMode
         };
     }, [currentCategory, categories, resolveAsset, activeGame?.wallpaper, isManagementOpen]);

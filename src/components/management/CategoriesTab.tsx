@@ -25,6 +25,7 @@ interface CategoriesTabProps {
     scrollToForm: () => void;
     onEditGame?: (gameId: string) => void;
     onDeleteGame?: (gameId: string) => void;
+    onFetchMissingAssets?: () => void;
     onWipeRegistry?: () => void;
 }
 
@@ -32,7 +33,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
     editingId, setEditingId, handleCreateCategory, categories, editableCategories,
     onResolveAsset, handleMoveCategory, handleDeleteCategory, isFormOpen, setIsFormOpen,
     catForm, setCatForm, handleSaveCategoryData, handleMoveGameInCategory, handleToggleGameInCategory,
-    allGames, triggerFileBrowser, activeAccent, scrollToForm, onEditGame, onDeleteGame, onWipeRegistry
+    allGames, triggerFileBrowser, activeAccent, scrollToForm, onEditGame, onDeleteGame, onFetchMissingAssets, onWipeRegistry
 }) => {
     const { t } = useTranslation();
 
@@ -116,6 +117,7 @@ const CategoriesTab: React.FC<CategoriesTabProps> = ({
                 activeAccent={activeAccent}
                 onEditGame={onEditGame}
                 onDeleteGame={onDeleteGame}
+                onFetchMissingAssets={onFetchMissingAssets}
                 onWipeRegistry={onWipeRegistry}
             />
         </div>

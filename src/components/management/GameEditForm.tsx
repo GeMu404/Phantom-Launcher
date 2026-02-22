@@ -2,6 +2,7 @@ import React from 'react';
 import Subsection from './Subsection';
 import AssetInput from '../AssetInput';
 import { Category } from '../../types';
+import { getContrastColor } from '../../utils/colors';
 
 interface GameEditFormProps {
     isFormOpen: boolean;
@@ -37,7 +38,7 @@ interface GameEditFormProps {
     otherCategories: Category[];
     sgdbKey: string;
     sgdbEnabled: boolean;
-    setSearchModal: React.Dispatch<React.SetStateAction<{ isOpen: boolean; type: 'grid' | 'hero' | 'logo'; targetField: 'cover' | 'banner' | 'logo' | 'icon' }>>;
+    setSearchModal: React.Dispatch<React.SetStateAction<{ isOpen: boolean; type: 'grid' | 'hero' | 'logo' | 'banner' | 'icon'; targetField: 'cover' | 'banner' | 'logo' | 'hero' | 'icon' }>>;
 }
 
 const GameEditForm: React.FC<GameEditFormProps> = ({
@@ -73,7 +74,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                                 onClick={() => triggerFileBrowser('execPath', 'exe')}
                                 className="px-5 font-bold text-[8px] uppercase tracking-widest border-2 transition-all active:scale-95"
                                 style={{ borderColor: activeAccent, color: activeAccent }}
-                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = activeAccent; e.currentTarget.style.color = '#000'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = activeAccent; e.currentTarget.style.color = getContrastColor(activeAccent); }}
                                 onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = activeAccent; }}
                             >
                                 BROWSE
@@ -122,7 +123,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                                 accentColor={activeAccent}
                                 onResolveAsset={onResolveAsset}
                                 sgdbEnabled={sgdbEnabled && !!sgdbKey}
-                                onCloudSearch={() => setSearchModal({ isOpen: true, type: 'hero', targetField: 'banner' })}
+                                onCloudSearch={() => setSearchModal({ isOpen: true, type: 'banner', targetField: 'banner' })}
                             />
                         </div>
 
@@ -153,6 +154,8 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                             previewType="wallpaper"
                             accentColor={activeAccent}
                             onResolveAsset={onResolveAsset}
+                            sgdbEnabled={sgdbEnabled && !!sgdbKey}
+                            onCloudSearch={() => setSearchModal({ isOpen: true, type: 'hero', targetField: 'wallpaper' })}
                         />
                     </div>
                 </div>
@@ -171,7 +174,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                                         style={{
                                             backgroundColor: gameForm.categoryIds.includes(cat.id) ? activeAccent : 'transparent',
                                             borderColor: gameForm.categoryIds.includes(cat.id) ? activeAccent : undefined,
-                                            color: gameForm.categoryIds.includes(cat.id) ? '#000' : undefined
+                                            color: gameForm.categoryIds.includes(cat.id) ? getContrastColor(activeAccent) : undefined
                                         }}
                                     >{cat.name}</button>
                                 ))

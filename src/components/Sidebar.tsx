@@ -12,9 +12,13 @@ interface SidebarProps {
   onResolveAsset: (path: string | undefined, width?: number) => string;
   isSecretUnlocked?: boolean;
   performanceMode?: string;
+  resolveColor: (raw: string) => string;
 }
 
-const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false, performanceMode = 'normal' }) => {
+const Sidebar: React.FC<SidebarProps> = React.memo(({
+  categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false,
+  performanceMode = 'normal', resolveColor
+}) => {
   const visibleCategories = categories.filter(c => c.enabled !== false && (c.id !== 'hidden' || isSecretUnlocked));
   const systemCategory = categories.find(c => c.id === 'all');
   const customConfigIcon = systemCategory?.configIcon || ASSETS.ui.config;
@@ -54,7 +58,7 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, o
                 <div
                   className="w-full h-full transition-[opacity] duration-300"
                   style={{
-                    backgroundColor: cat.color,
+                    backgroundColor: resolveColor(cat.color),
                     maskImage: `url(${onResolveAsset(cat.icon || ASSETS.templates.icon, 256)})`,
                     WebkitMaskImage: `url(${onResolveAsset(cat.icon || ASSETS.templates.icon, 256)})`,
                     maskSize: 'contain',
@@ -70,8 +74,8 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, o
                   <div
                     className="absolute -right-2 w-[2px] rounded-full"
                     style={{
-                      backgroundColor: cat.color,
-                      boxShadow: `0 0 10px 2px ${cat.color}`,
+                      backgroundColor: resolveColor(cat.color),
+                      boxShadow: `0 0 10px 2px ${resolveColor(cat.color)}`,
                       height: '60%'
                     }}
                   ></div>
@@ -96,8 +100,8 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({ categories, activeIndex, o
                   fontSize: isLong ? 'clamp(10px, 1.5vh, 20px)' : 'clamp(12px, 2.5vh, 32px)',
                   transform: 'rotate(-90deg)',
                   transformOrigin: '0 50%',
-                  color: categories[activeIndex]?.color || '#fff',
-                  textShadow: performanceMode === 'low' ? 'none' : `0 0 20px ${categories[activeIndex]?.color || '#fff'}88`,
+                  color: resolveColor(categories[activeIndex]?.color || '#fff'),
+                  textShadow: performanceMode === 'low' ? 'none' : `0 0 20px ${resolveColor(categories[activeIndex]?.color || '#fff')}88`,
                 }}
               >
                 {techText}

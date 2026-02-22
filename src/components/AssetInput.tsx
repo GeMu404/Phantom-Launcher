@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { getContrastColor } from '../utils/colors';
 
 interface AssetInputProps {
     label: string;
@@ -73,7 +73,7 @@ const AssetInput: React.FC<AssetInputProps> = React.memo(({
                             }}
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.backgroundColor = accentColor;
-                                e.currentTarget.style.color = '#000';
+                                e.currentTarget.style.color = getContrastColor(accentColor);
                             }}
                             onMouseLeave={(e) => {
                                 e.currentTarget.style.backgroundColor = 'transparent';

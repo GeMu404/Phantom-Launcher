@@ -69,7 +69,8 @@
         "registry_sequence": "Registry_Sequence",
         "close_selector": "[ CLOSE_SELECTOR ]",
         "search_for_unit": "SEARCH_FOR_UNIT...",
-        "no_units_registered": "No units registered in node"
+        "no_units_registered": "No units registered in node",
+        "fetch_missing_assets": "[ FETCH_MISSING_ASSETS ]"
     },
     "system_tab": {
         "interface_control_matrix": "Interface_Control_Matrix",
@@ -110,6 +111,15 @@
         "performance_custom": "CUSTOM",
         "performance_low_desc": "OPTIMIZED_FOR_INTEGRATED_GRAPHICS :: BLUR_ENABLED (960P)",
         "performance_custom_desc": "USER_DEFINED_PARAMETER_OVERRIDE",
+        "slim_mode": "SLIM_MODE_FRAMELESS",
+        "monochrome_mode": "MONOCHROME_PROTOCOL",
+        "priming_animation": "LAUNCH_FX_PROTOCOL",
+        "anim_waterfill": "WATERFILL",
+        "anim_scanline": "SCANLINE",
+        "anim_ignition": "IGNITION",
+        "anim_charge": "CHARGE",
+        "anim_shockwave": "SHOCKWAVE",
+        "anim_glow_pulse": "GLOW_PULSE",
         "reset_btn": "[ RESET ]"
     },
     "app": {

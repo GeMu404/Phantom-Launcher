@@ -13,6 +13,7 @@ import CategoriesTab from './management/CategoriesTab';
 import IntegrationsTab from './management/IntegrationsTab';
 import { useTranslation } from '../hooks/useTranslation';
 import CyberScrollbar from './CyberScrollbar';
+import { getContrastColor } from '../utils/colors';
 // const useTranslation = () => ({ t: (key: string) => key });
 
 interface ManagementModalProps {
@@ -29,6 +30,8 @@ interface ManagementModalProps {
   onResolveAsset: (path: string | undefined) => string;
   bumpAssetVersion: () => void;
   isSecretUnlocked?: boolean;
+  resolveColor: (raw: string) => string;
+  onNotification?: (msg: string | null) => void;
 }
 
 interface ConfirmState {
@@ -37,15 +40,76 @@ interface ConfirmState {
   isDanger?: boolean;
 }
 
+const PLATFORM_NAMES: Record<string, string> = {
+  '3ds': 'NINTENDO 3DS',
+  'n64': 'NINTENDO 64',
+  'nds': 'NINTENDO DS',
+  'ngc': 'NINTENDO GAMECUBE',
+  'nsw': 'NINTENDO SWITCH',
+  'wii': 'NINTENDO WII',
+  'wiu': 'NINTENDO WII U',
+  'ps2': 'PLAYSTATION 2',
+  'ps3': 'PLAYSTATION 3',
+  'ps4': 'PLAYSTATION 4',
+  'psp': 'PLAYSTATION PORTABLE',
+  'psv': 'PLAYSTATION VITA',
+};
 
 const ManagementModal: React.FC<ManagementModalProps> = ({
   isOpen, onClose, categories, currentCatIdx, onUpdateCategories, accentColor,
   taskbarMargin, onUpdateTaskbarMargin, uiScale, onUpdateUIScale, onResolveAsset, bumpAssetVersion,
-  isSecretUnlocked = false
+  isSecretUnlocked = false, resolveColor, onNotification
 }) => {
   const { t } = useTranslation();
+
+  const PLATFORM_COLORS: Record<string, string> = {
+    '3ds': '#ce181e',
+    'n64': '#316231',
+    'nds': '#ffffff',
+    'ngc': '#6a5acd', // GameCube Purple
+    'gc': '#6a5acd',
+    'gamecube': '#6a5acd',
+    'nsw': '#e60012', // Switch Red
+    'switch': '#e60012',
+    'wii': '#ffffff', // Wii White
+    'wiu': '#009ac7',
+    'ps1': '#003791',
+    'ps2': '#003791',
+    'ps3': '#000000',
+    'ps4': '#003791',
+    'psp': '#000000',
+    'psv': '#201e1f',
+    'xbox': '#107c10', // Xbox Green
+    'steam': '#66c0f4', // Steam Blue
+    'gb': '#8b9bb4',
+    'gbc': '#fb06d2',
+    'gba': '#2d1b6b',
+    'nes': '#e4000f',
+    'snes': '#8265a1',
+    'genesis': '#000000',
+    'dreamcast': '#ff4b00',
+    'ps5': '#0072ce',
+    'xbox_series': '#107c10',
+    'wii_u': '#009ac7',
+    'nintendo_64': '#316231',
+    'game_boy': '#8b9bb4',
+    'game_boy_color': '#fb06d2',
+    'game_boy_advance': '#2d1b6b',
+    'nintendo_ds': '#ffffff',
+    'nintendo_3ds': '#ce181e',
+    'nintendo_switch': '#e60012',
+    'playstation': '#003791',
+    'playstation_2': '#003791',
+    'playstation_3': '#000000',
+    'playstation_4': '#003791',
+    'playstation_portable': '#000000',
+    'playstation_vita': '#201e1f',
+    'sega_genesis': '#000000',
+    'sega_dreamcast': '#ff4b00',
+    'pc': '#66c0f4',
+  };
   const [tab, setTab] = useState<'games' | 'categories' | 'integrations' | 'system' | 'secret'>('games');
-  const [explorer, setExplorer] = useState<{ isOpen: boolean; target: string; filter: 'exe' | 'image' | 'any'; initialPath?: string }>({
+  const [explorer, setExplorer] = useState<{ isOpen: boolean; target: string; filter: 'exe' | 'image' | 'folder' | 'any'; initialPath?: string }>({
     isOpen: false,
     target: '',
     filter: 'any',
@@ -93,8 +157,10 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
   const [steamOptions, setSteamOptions] = useState({ includeSoftware: false, includeAdultOnly: false });
   const [sgdbKey, setSgdbKey] = useState('');
   const [sgdbEnabled, setSgdbEnabled] = useState(false);
-  const [searchModal, setSearchModal] = useState({ isOpen: false, type: 'grid' as 'grid' | 'hero' | 'logo', targetField: 'cover' as 'cover' | 'banner' | 'logo' | 'icon' });
+  const [searchModal, setSearchModal] = useState({ isOpen: false, type: 'grid' as 'grid' | 'hero' | 'logo' | 'banner' | 'icon', targetField: 'cover' as 'cover' | 'banner' | 'logo' | 'hero' | 'icon' });
   const [activeTempId, setActiveTempId] = useState<string | null>(null);
+  const [emuPath, setEmuPath] = useState('');
+  const [romsDir, setRomsDir] = useState('');
 
   useEffect(() => {
     if (isFormOpen && !editingId && !activeTempId) {
@@ -277,12 +343,13 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
 
   const activeAccent = useMemo(() => {
     const all = categories.find(c => c.id === 'all');
-    if (tab === 'games') return all?.assetColor || accentColor;
-    if (tab === 'categories') return all?.nodeColor || accentColor;
-    if (tab === 'integrations') return all?.syncColor || accentColor;
-    if (tab === 'system') return all?.coreColor || accentColor;
+    if (tab === 'games') return resolveColor(all?.assetColor || accentColor);
+    if (tab === 'categories') return resolveColor(all?.nodeColor || accentColor);
+    if (tab === 'integrations') return resolveColor(all?.syncColor || accentColor);
+    if (tab === 'system') return resolveColor(all?.coreColor || accentColor);
     return accentColor;
-  }, [tab, categories, accentColor]);
+  }, [tab, categories, accentColor, resolveColor]);
+
 
   useEffect(() => {
     setIsFormOpen(false);
@@ -331,7 +398,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             id: 'steam',
             name: 'STEAM',
             icon: (ASSETS as any).external?.steam || './res/external/steam_icon.png',
-            color: '#1b2838',
+            color: PLATFORM_COLORS['steam'],
             games: [],
             enabled: true,
             wallpaper: '',
@@ -348,17 +415,24 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           return cat;
         });
       });
+
+      if (onNotification) onNotification('STEAM::SYNC_PROTOCOL_SUCCESS');
+      setTimeout(() => onNotification?.(null), 3000);
       bumpAssetVersion();
-    } catch (e) {
+    } catch (e: any) {
       console.error("Steam sync failed", e);
+      if (onNotification) onNotification(`STEAM::CRITICAL_FAILURE::${e.message}`);
+      setTimeout(() => onNotification?.(null), 3000);
     }
   };
+  streamsync: if (onNotification) onNotification('STEAM::INIT_SYNC_PROTOCOL...');
 
   const handleSyncXboxLibrary = async () => {
     try {
       // Clear existing xbox list to "restart"
       onUpdateCategories(prev => prev.map(cat => (cat.id === 'xbox' || cat.id === 'all') ? { ...cat, games: cat.games.filter(g => g.source !== 'xbox') } : cat));
 
+      if (onNotification) onNotification('XBOX::INIT_SYNC_PROTOCOL...');
       const response = await fetch('/api/xbox/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -372,7 +446,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             id: 'xbox',
             name: 'XBOX',
             icon: './res/external/xbox.png',
-            color: '#107C10',
+            color: PLATFORM_COLORS['xbox'],
             games: [],
             enabled: true,
             wallpaper: '',
@@ -389,10 +463,130 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           return cat;
         });
       });
+
+      if (onNotification) onNotification('XBOX::SYNC_PROTOCOL_SUCCESS');
+      setTimeout(() => onNotification?.(null), 3000);
       bumpAssetVersion();
     } catch (e: any) {
       console.error("Xbox sync failed", e);
+      if (onNotification) onNotification(`XBOX::CRITICAL_FAILURE::${e.message}`);
+      setTimeout(() => onNotification?.(null), 3000);
     }
+  };
+
+  const handleSyncEmuLibrary = async (platformId: string, romsDir: string, emuExe: string) => {
+    const statusHandler = (s: string) => {
+      if (onNotification) onNotification(`${PLATFORM_NAMES[platformId] || platformId.toUpperCase()}::${s}`);
+    };
+
+    try {
+      statusHandler('DISCOVERING_ROM_METADATA...');
+      const response = await fetch('/api/emu/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platformId, romsDir, emuExe })
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      if (data.games && data.games.length > 0) {
+        statusHandler('FINALIZING_NODE_STRUCTURE...');
+        const catId = `emu_${platformId}`;
+        const existingCat = categories.find(c => c.id === catId);
+
+        const newCat: Category = {
+          id: catId,
+          name: PLATFORM_NAMES[platformId] || platformId.toUpperCase(),
+          icon: (ASSETS as any).templates?.icon || '',
+          color: PLATFORM_COLORS[platformId] || '#ffffff',
+          games: data.games,
+          enabled: true,
+          wallpaper: '',
+          wallpaperMode: 'cover',
+          gridOpacity: 0.15
+        };
+
+        onUpdateCategories(prev => {
+          const filtered = prev.filter(c => c.id !== catId);
+          return [...filtered, newCat];
+        });
+
+        // Batch Asset Fetch (Cloud Sync)
+        await handleFetchMissingAssets(catId, statusHandler);
+
+        statusHandler('SYNC_PROTOCOL_SUCCESS');
+        setTimeout(() => onNotification?.(null), 3000);
+
+        // Reset forms after success
+        setEmuPath('');
+        setRomsDir('');
+      }
+    } catch (e: any) {
+      console.error('[EmuSync] Error:', e);
+      if (onNotification) onNotification(`CRITICAL_FAILURE::${e.message}`);
+      setTimeout(() => onNotification?.(null), 3000);
+    }
+  };
+
+  const handleFetchMissingAssets = async (categoryId: string, onStatus?: (s: string) => void) => {
+    const cat = categories.find(c => c.id === categoryId);
+    if (!cat) return;
+
+    const gamesToFetch = cat.games.filter(g => !g.logo || !g.cover || !g.banner);
+    if (gamesToFetch.length === 0) {
+      if (onStatus) onStatus('ALL_ASSETS_SYNCED');
+      console.log("[Fetch] No missing assets found in this category.");
+      return;
+    }
+
+    if (onStatus) onStatus(`FETCHING_METADATA: 0/${gamesToFetch.length}`);
+    let processed = 0;
+    console.log(`[Fetch] Starting batch fetch for ${gamesToFetch.length} games in node ${cat.name}`);
+
+    for (const game of gamesToFetch) {
+      try {
+        if (onStatus) onStatus(`SYNCING: ${game.title.length > 20 ? game.title.substring(0, 17) + '...' : game.title} (${processed + 1}/${gamesToFetch.length})`);
+        const searchRes = await fetch(`/api/sgdb/search/${encodeURIComponent(game.title)}`);
+        const searchData = await searchRes.json();
+        if (searchData.success && searchData.data && searchData.data.length > 0) {
+          const sgdbId = searchData.data[0].id;
+          const assetTypes = ['logo', 'cover', 'banner'] as const;
+          const newAssets: any = {};
+
+          for (const type of assetTypes) {
+            // Already have it? Skip
+            if ((type === 'logo' && game.logo) || (type === 'cover' && game.cover) || (type === 'banner' && game.banner)) continue;
+
+            const gridRes = await fetch(`/api/sgdb/grids/${sgdbId}/${type === 'cover' ? 'grid' : type}`);
+            const gridData = await gridRes.json();
+            if (gridData.success && gridData.data && gridData.data.length > 0) {
+              const remoteUrl = gridData.data[0].url;
+              const importRes = await fetch('/api/assets/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourcePath: remoteUrl, gameId: game.id, assetType: type })
+              });
+              const importData = await importRes.json();
+              if (importData.path) newAssets[type] = importData.path;
+            }
+          }
+
+          if (Object.keys(newAssets).length > 0) {
+            onUpdateCategories(prev => prev.map(c => ({
+              ...c,
+              games: c.games.map(cg => cg.id === game.id ? { ...cg, ...newAssets } : cg)
+            })));
+          }
+        }
+        processed++;
+      } catch (e) {
+        console.error(`[Fetch] Failed to fetch assets for ${game.title}:`, e);
+        processed++;
+      }
+    }
+    if (onStatus) onStatus('SYNC_PROTOCOL_COMPLETE');
+    bumpAssetVersion();
   };
 
   const handleSaveGame = async () => {
@@ -456,14 +650,22 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     setExplorer({
       isOpen: true,
       target,
-      filter: type === 'exe' ? 'exe' : 'image',
-      initialPath: type === 'exe' ? 'DESKTOP' : 'PICTURES'
+      filter: type === 'folder' ? 'folder' : (type === 'exe' ? 'exe' : 'image'),
+      initialPath: type === 'exe' ? 'DESKTOP' : (type === 'image' ? 'PICTURES' : undefined)
     });
   };
 
   const handleExplorerSelect = async (path: string) => {
     const { target } = explorer;
     setExplorer(prev => ({ ...prev, isOpen: false }));
+    if (target === 'emuPath') {
+      setEmuPath(path);
+      return;
+    }
+    if (target === 'romsDir') {
+      setRomsDir(path);
+      return;
+    }
     if (tab === 'categories') {
       const catId = editingId;
       if (!catId) return;
@@ -762,11 +964,11 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
         <div className="flex flex-1 overflow-hidden">
           <div className="w-40 lg:w-60 bg-black/80 border-r-2 border-white/10 flex flex-col p-3 lg:p-4 gap-2 overflow-y-auto no-scrollbar shrink-0">
             {[
-              { id: 'games', label: t('nav.unit_registry'), color: allGamesCategory.assetColor || activeAccent },
-              { id: 'categories', label: t('nav.neural_nodes'), color: allGamesCategory.nodeColor || activeAccent },
-              ...(isSecretUnlocked ? [{ id: 'secret', label: t('nav.secret_link'), color: '#ec4899' }] : []),
-              { id: 'integrations', label: t('nav.sync_protocols'), color: allGamesCategory.syncColor || activeAccent },
-              { id: 'system', label: t('nav.core_sequence'), color: allGamesCategory.coreColor || activeAccent }
+              { id: 'games', label: t('nav.unit_registry'), color: resolveColor(allGamesCategory.assetColor || activeAccent) },
+              { id: 'categories', label: t('nav.neural_nodes'), color: resolveColor(allGamesCategory.nodeColor || activeAccent) },
+              ...(isSecretUnlocked ? [{ id: 'secret', label: t('nav.secret_link'), color: resolveColor('#ec4899') }] : []),
+              { id: 'integrations', label: t('nav.sync_protocols'), color: resolveColor(allGamesCategory.syncColor || activeAccent) },
+              { id: 'system', label: t('nav.core_sequence'), color: resolveColor(allGamesCategory.coreColor || activeAccent) }
             ].map(item => (
               <button key={item.id} onClick={() => {
                 setTab(item.id as any);
@@ -778,8 +980,12 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                   setIsFormOpen(false);
                 }
               }}
-                className={`w-full py-4 text-[9px] font-bold uppercase tracking-[0.3em] transition-all relative border-2 text-left px-5 ${tab === item.id ? 'text-black' : 'bg-transparent text-white/40 border-white/5 hover:text-white'}`}
-                style={{ backgroundColor: tab === item.id ? item.color : 'transparent', borderColor: tab === item.id ? item.color : 'transparent' }}>
+                className={`w-full py-4 text-[9px] font-bold uppercase tracking-[0.3em] transition-all relative border-2 text-left px-5 ${tab === item.id ? '' : 'bg-transparent text-white/40 border-white/5 hover:text-white'}`}
+                style={{
+                  backgroundColor: tab === item.id ? item.color : 'transparent',
+                  borderColor: tab === item.id ? item.color : 'transparent',
+                  color: tab === item.id ? getContrastColor(item.color) : undefined
+                }}>
                 {item.label}
               </button>
             ))}
@@ -837,6 +1043,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 scrollToForm={scrollToForm}
                 onEditGame={setCurrentSecretGameId}
                 onDeleteGame={handleDeleteGame}
+                onFetchMissingAssets={() => editingId && handleFetchMissingAssets(editingId)}
                 onWipeRegistry={handleWipeMasterRegistry}
               />
             )}
@@ -846,6 +1053,12 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 activeAccent={activeAccent}
                 handleSyncSteamLibrary={handleSyncSteamLibrary}
                 handleSyncXboxLibrary={handleSyncXboxLibrary}
+                handleSyncEmuLibrary={handleSyncEmuLibrary}
+                emuPath={emuPath}
+                setEmuPath={setEmuPath}
+                romsDir={romsDir}
+                setRomsDir={setRomsDir}
+                triggerFileBrowser={triggerFileBrowser}
                 sgdbKey={sgdbKey}
                 handleUpdateSgdbKey={handleUpdateSgdbKey}
                 sgdbEnabled={sgdbEnabled}
@@ -875,6 +1088,20 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-1">
                     <h3 className="text-[12px] font-bold tracking-[0.2em]">{t('modal.secret_unit_override')}</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSearchModal({ isOpen: true, type: 'banner', targetField: 'banner' })}
+                        className="flex-1 py-1.5 bg-white/5 border border-white/10 text-[8px] uppercase font-bold hover:bg-white/10"
+                      >
+                        SGDB_BANNER
+                      </button>
+                      <button
+                        onClick={() => setSearchModal({ isOpen: true, type: 'hero', targetField: 'hero' })}
+                        className="flex-1 py-1.5 bg-white/5 border border-white/10 text-[8px] uppercase font-bold hover:bg-white/10"
+                      >
+                        SGDB_HERO
+                      </button>
+                    </div>
                     <button
                       onClick={() => setCurrentSecretGameId(null)}
                       className="text-[8px] text-white/40 hover:text-white uppercase tracking-widest text-left"
@@ -887,7 +1114,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                     setIsFormOpen={setIsFormOpen}
                     isSecretContext={true}
                     editingId={currentSecretGameId}
-                    activeAccent="#ec4899"
+                    activeAccent={resolveColor('#ec4899')}
                     gameForm={gameForm}
                     setGameForm={setGameForm}
                     handleSaveGame={handleSaveGame}
