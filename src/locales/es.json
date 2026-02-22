@@ -18,7 +18,14 @@
         "commit_key": "GUARDAR_CLAVE",
         "get_api_key": "OBTENER_KEY",
         "unit_saved": "UNIDAD_GUARDADA",
-        "commit_changes": "GUARDAR_CAMBIOS"
+        "commit_changes": "GUARDAR_CAMBIOS",
+        "syncing": "SINCRONIZANDO",
+        "sync_success": "SINC_PROTOCOLO_EXITO",
+        "sync_failed": "SINC_PROTOCOLO_FALLIDO",
+        "discovering_metadata": "DESCUBRIENDO_METADATOS",
+        "finalizing_structure": "FINALIZANDO_ESTRUCTURA",
+        "fetching_assets": "OBTENIENDO_RECURSOS",
+        "sync_complete": "SINC_PROTOCOLO_COMPLETA"
     },
     "modal": {
         "management_node": "NODO_GESTION",
@@ -59,6 +66,8 @@
         "add_existing": "[ AÑADIR_EXISTENTE ]",
         "initialize_unit": "[ INICIALIZAR_UNIDAD ]",
         "purge_master": "[ PURGA_MAESTRA ]",
+        "wipe_confirmation": "¿LIMPIAR_REGISTRO_MAESTRO?",
+        "purge_confirmation": "¿PURGAR_REGISTRO_JUEGO?",
         "node_label": "Etiqueta_Nodo",
         "accent_matrix_hex": "Hex_Matriz_Acento",
         "online_protocol": "[ PROTOCOLO_ONLINE ]",

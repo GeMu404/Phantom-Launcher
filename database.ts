@@ -77,7 +77,8 @@ export class AppDatabase {
                 banner TEXT,
                 logo TEXT,
                 hero TEXT,
-                installDate TEXT
+                installDate TEXT,
+                execArgs TEXT
             );
 
             CREATE TABLE IF NOT EXISTS CategoryGames (
@@ -110,6 +111,14 @@ export class AppDatabase {
                 } catch (e) { console.error(`Failed to add column ${name}:`, e); }
             }
         });
+
+        const gameColumns = this.db.prepare("PRAGMA table_info(Games)").all();
+        const hasGameColumn = (name: string) => gameColumns.some((c: any) => c.name === name);
+        if (!hasGameColumn('execArgs')) {
+            try {
+                this.db.prepare("ALTER TABLE Games ADD COLUMN execArgs TEXT").run();
+            } catch (e) { console.error("Failed to add execArgs column to Games:", e); }
+        }
     }
 
     public migrateFromJson(jsonPath: string) {
@@ -212,7 +221,7 @@ export class AppDatabase {
                     coreColor, slimModeEnabled, monochromeModeEnabled
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
-            const insertGame = this.db.prepare('INSERT OR IGNORE INTO Games (id, title, execPath, source, lastPlayed, lastUpdated, cover, banner, logo, hero, installDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            const insertGame = this.db.prepare('INSERT OR IGNORE INTO Games (id, title, execPath, source, lastPlayed, lastUpdated, cover, banner, logo, hero, installDate, execArgs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             const insertRelation = this.db.prepare('INSERT INTO CategoryGames (categoryId, gameId) VALUES (?, ?)');
 
             categories.forEach((cat, index) => {
@@ -230,7 +239,7 @@ export class AppDatabase {
                     cat.games.forEach((g: any) => {
                         insertGame.run(
                             g.id, g.title, g.execPath || '', g.source || '', g.lastPlayed || '', g.lastUpdated || 0,
-                            g.cover || '', g.banner || '', g.logo || '', g.hero || '', g.installDate || ''
+                            g.cover || '', g.banner || '', g.logo || '', g.hero || '', g.installDate || '', g.execArgs || ''
                         );
                         insertRelation.run(cat.id, g.id);
                     });

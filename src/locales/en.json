@@ -18,7 +18,14 @@
         "commit_key": "COMMIT_KEY",
         "get_api_key": "GET_API_KEY",
         "unit_saved": "UNIT_SAVED",
-        "commit_changes": "COMMIT_CHANGES"
+        "commit_changes": "COMMIT_CHANGES",
+        "syncing": "SYNCING",
+        "sync_success": "SYNC_PROTOCOL_SUCCESS",
+        "sync_failed": "SYNC_PROTOCOL_FAILED",
+        "discovering_metadata": "DISCOVERING_METADATA",
+        "finalizing_structure": "FINALIZING_STRUCTURE",
+        "fetching_assets": "FETCHING_ASSETS",
+        "sync_complete": "SYNC_PROTOCOL_COMPLETE"
     },
     "modal": {
         "management_node": "MANAGEMENT_NODE",
@@ -59,6 +66,8 @@
         "add_existing": "[ ADD_EXISTING ]",
         "initialize_unit": "[ INITIALIZE_UNIT ]",
         "purge_master": "[ PURGE_MASTER ]",
+        "wipe_confirmation": "WIPE_MASTER_REGISTRY?",
+        "purge_confirmation": "PURGE_GAME_REGISTRY?",
         "node_label": "Node_Label",
         "accent_matrix_hex": "Accent_Matrix_Hex",
         "online_protocol": "[ ONLINE_PROTOCOL ]",

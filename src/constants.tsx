@@ -3,6 +3,8 @@ import { Category } from './types';
 
 
 // CONFIGURACIÓN DE ASSETS
+export const APP_VERSION = '0.9.0-preview';
+
 // Usamos rutas de texto directas.
 // NOTA: Para que esto funcione, la carpeta 'res' debe estar servida en la raíz de tu servidor web (junto al index.html).
 export const ASSETS = {

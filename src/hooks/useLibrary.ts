@@ -57,15 +57,24 @@ export function useLibrary(categories: Category[], isSecretUnlocked: boolean, t:
             } as any];
         }
 
-        const newCats = categories.filter(c => c.id !== 'recent');
+        const newCats = categories.filter(c => c.id !== 'recent' && c.id !== 'hidden');
         const allIndex = newCats.findIndex(c => c.id === 'all');
-        if (allIndex !== -1) {
-            newCats.splice(allIndex + 1, 0, recentCategory as any);
-        } else {
-            newCats.unshift(recentCategory as any);
+
+        // Final Assembly in strict order: [All, Recent, Hidden, ...others]
+        const finalCats: Category[] = [];
+        const allCat = newCats.find(c => c.id === 'all');
+        if (allCat) finalCats.push(allCat);
+        finalCats.push(recentCategory as any);
+
+        if (isSecretUnlocked) {
+            const hiddenCat = categories.find(c => c.id === 'hidden');
+            if (hiddenCat) finalCats.push(hiddenCat);
         }
 
-        return newCats.filter(c => c.enabled !== false && (c.id !== 'hidden' || isSecretUnlocked));
+        const remainingCats = newCats.filter(c => c.id !== 'all');
+        finalCats.push(...remainingCats);
+
+        return finalCats.filter(c => c.enabled !== false);
     }, [categories, isSecretUnlocked, t]);
 
     return { displayCategories };

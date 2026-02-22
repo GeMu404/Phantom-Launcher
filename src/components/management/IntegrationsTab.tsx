@@ -100,12 +100,13 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = ({
 
 const EmuSyncForm: React.FC<{
     activeAccent: string,
-    onSync: (platformId: string, romsDir: string, emuExe: string) => Promise<void>,
+    onSync: (platformId: string, romsDir: string, emuExe: string, customArgs: string) => Promise<void>,
     emuPath: string,
     romsDir: string,
     triggerFileBrowser: (t: string, type: string) => void
 }> = ({ activeAccent, onSync, emuPath, romsDir, triggerFileBrowser }) => {
     const [platform, setPlatform] = React.useState('n64');
+    const [customArgs, setCustomArgs] = React.useState('');
     const [isScanning, setIsScanning] = React.useState(false);
 
     const platforms = [
@@ -129,7 +130,7 @@ const EmuSyncForm: React.FC<{
     const handleSync = async () => {
         if (!emuPath || !romsDir) return;
         setIsScanning(true);
-        await onSync(platform, romsDir, emuPath);
+        await onSync(platform, romsDir, emuPath, customArgs);
         setIsScanning(false);
     };
 
@@ -186,6 +187,17 @@ const EmuSyncForm: React.FC<{
                         BROWSE
                     </button>
                 </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+                <label className="text-[7px] text-white/30 uppercase font-black tracking-[0.2em]">Custom_Arguments (Optional)</label>
+                <input
+                    type="text"
+                    value={customArgs}
+                    onChange={(e) => setCustomArgs(e.target.value)}
+                    placeholder="e.g. -f --no-gui -args..."
+                    className="w-full bg-black/60 border-2 border-white/10 p-2 text-[9px] text-white/80 font-mono outline-none focus:border-white/30"
+                />
             </div>
 
             <button

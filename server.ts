@@ -4,31 +4,14 @@ import { exec, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
-import Link from 'react'; // Dummy import
 import { AppDatabase } from './database.js';
-import { createRequire } from 'node:module';
 import chokidar from 'chokidar';
 
-// Dynamic Sharp import using createRequire for Node SEA compatibility
-const isExe = process.execPath.toLowerCase().endsWith('phantomserver.exe');
-const requireFunc = isExe ? createRequire(process.execPath) : (typeof require !== 'undefined' ? require : eval('require'));
-
-let sharp: any = null;
-try {
-    const exeDir = isExe ? path.dirname(process.execPath) : process.cwd();
-    const sharpPath = path.join(exeDir, 'node_modules', 'sharp');
-    sharp = requireFunc(sharpPath);
-} catch (e) {
-    console.error("FATAL: First absolute load failed for sharp:", e);
-    try {
-        sharp = requireFunc('sharp');
-    } catch (e2) {
-        console.error("FATAL: Could not load sharp module.", e2);
-    }
-}
-
-const __filename = '';
-const __dirname = path.resolve();
+// Module imports
+import { processImage, downloadImage, sharp } from './server/imageUtils.js';
+import { getStoreTags, saveTagCache, findLocalSteamAsset } from './server/steamUtils.js';
+import { EMU_PLATFORMS, PLATFORM_NAMES, cleanEmuTitle, extractTitleFromSFO } from './server/emuUtils.js';
+import { launchViaShell } from './server/launchUtils.js';
 
 // Slugify Helper
 const slugify = (text: string): string => {
@@ -78,216 +61,6 @@ if (db.getCategories().length === 0) {
         { id: 'favorites', name: 'FAVORITES', icon: 'heart', color: '#ff4444', games: [], enabled: true }
     ]);
 }
-
-// Helper to fetch store tags from Steam (with cache to prevent rate limits)
-const TAGS_CACHE_FILE = path.join(BASE_DIR, 'tags_cache.json');
-let steamTagCache: Record<string, string[]> = {};
-let isTagCacheLoaded = false;
-
-const loadTagCache = () => {
-    if (isTagCacheLoaded) return;
-    try {
-        if (fs.existsSync(TAGS_CACHE_FILE)) {
-            steamTagCache = JSON.parse(fs.readFileSync(TAGS_CACHE_FILE, 'utf-8'));
-        }
-        isTagCacheLoaded = true;
-    } catch (e) { }
-};
-
-const saveTagCache = () => {
-    try {
-        fs.writeFileSync(TAGS_CACHE_FILE, JSON.stringify(steamTagCache, null, 2));
-    } catch (e) { }
-};
-
-const getStoreTags = async (appId: string): Promise<string[]> => {
-    loadTagCache();
-    if (steamTagCache[appId]) return steamTagCache[appId];
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`, { signal: controller.signal });
-        clearTimeout(timeout);
-
-        if (res.status === 429) {
-            console.log(`[Steam] Rate limit hit fetching tags for app ${appId}`);
-            return []; // Skip if rate limited to avoid crashing
-        }
-
-        const json = await res.json() as any;
-        if (json[appId]?.success) {
-            const data = json[appId].data;
-            const genres = (data.genres || []).map((g: any) => g.description.toLowerCase());
-            const categories = (data.categories || []).map((c: any) => c.description.toLowerCase());
-            const adult = (data.content_descriptors?.ids?.includes(3) || data.required_age >= 18) ? ['adultonly'] : [];
-            const isSoftware = (data.type === 'software' || data.type === 'tool' || data.type === 'application') ? ['software'] : [];
-
-            const tags = [...genres, ...categories, ...adult, ...isSoftware];
-            steamTagCache[appId] = tags;
-            return tags;
-        }
-    } catch (e) { }
-
-    steamTagCache[appId] = []; // Cache empty to avoid re-fetching failed ones
-    return [];
-};
-
-// Image Processor for standardizing dimensions
-const processImage = async (input: string | Buffer, dest: string, type: string): Promise<string> => {
-    console.log(`[Sharp] Processing ${type} -> ${dest}`);
-    try {
-        const metadata = await sharp(input).metadata();
-        const isAnimated = metadata.pages && metadata.pages > 1;
-
-        if (isAnimated) {
-            console.log(`[Sharp] Animation detected (frames: ${metadata.pages}). Bypassing processing for ${dest}`);
-            if (typeof input === 'string') {
-                fs.copyFileSync(input, dest);
-            } else {
-                fs.writeFileSync(dest, input);
-            }
-            return dest;
-        }
-
-        let sharpInstance = sharp(input, { animated: true });
-
-        if (type === 'cover') {
-            sharpInstance = sharpInstance.resize(600, 900, { fit: 'cover' });
-        } else if (type === 'banner') {
-            sharpInstance = sharpInstance.resize(920, 430, { fit: 'cover' });
-        } else if (type === 'icon') {
-            sharpInstance = sharpInstance.resize(256, 246, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } });
-        } else if (type === 'logo') {
-            // Animated WebP processing if detected
-            if (isAnimated) {
-                sharpInstance = sharpInstance.resize(800, 320, { fit: 'inside' }).webp({ effort: 0 });
-            } else {
-                sharpInstance = sharpInstance.trim().resize(800, 320, { fit: 'inside' });
-                const buffer = await sharpInstance.png().toBuffer();
-                sharpInstance = sharp({
-                    create: {
-                        width: 800,
-                        height: 320,
-                        channels: 4,
-                        background: { r: 0, g: 0, b: 0, alpha: 0 }
-                    }
-                }).composite([{ input: buffer, gravity: 'center' }]);
-            }
-        }
-
-        // Quality optimization and save
-        await sharpInstance.toFile(dest);
-        return dest;
-    } catch (e: any) {
-        console.error(`[Sharp] Final error on ${dest}:`, e.message);
-        // Fallback: if jimp fails but we have the file, just move it
-        if (typeof input === 'string' && fs.existsSync(input) && input !== dest) {
-            fs.copyFileSync(input, dest);
-        }
-        return dest;
-    }
-};
-
-// Download Helper for Offline protocol
-const downloadImage = (url: string, dest: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        // We always re-download if we want to process it, but here we'll just check existence for simplicity in Steam scan
-        if (dest.includes('steam_') && fs.existsSync(dest)) return resolve(dest);
-
-        https.get(url, (response) => {
-            if (response.statusCode !== 200) {
-                return reject(new Error(`Failed to download: ${response.statusCode}`));
-            }
-            const chunks: any[] = [];
-            response.on('data', chunk => chunks.push(chunk));
-            response.on('end', () => {
-                const buffer = Buffer.concat(chunks);
-                fs.writeFileSync(dest, buffer);
-                resolve(dest);
-            });
-        }).on('error', reject);
-    });
-};
-
-let heaviestSteamUserCache: string | null = null;
-const getHeaviestSteamUser = (userdataDir: string) => {
-    if (heaviestSteamUserCache) return heaviestSteamUserCache;
-    let heaviestUser = '';
-    let maxFiles = -1;
-    try {
-        if (!fs.existsSync(userdataDir)) return null;
-        const users = fs.readdirSync(userdataDir);
-        for (const user of users) {
-            const gridDir = path.join(userdataDir, user, 'config', 'grid');
-            if (fs.existsSync(gridDir)) {
-                const fileCount = fs.readdirSync(gridDir).length;
-                if (fileCount > maxFiles) {
-                    maxFiles = fileCount;
-                    heaviestUser = user;
-                }
-            }
-        }
-        if (heaviestUser) heaviestSteamUserCache = heaviestUser;
-    } catch (e) { }
-    return heaviestSteamUserCache;
-};
-
-// Local Steam Asset Crawler
-const findLocalSteamAsset = (appId: string, type: 'cover' | 'banner' | 'logo' | 'hero'): string | null => {
-    const steamPath = 'C:\\Program Files (x86)\\Steam';
-
-    // Modern Custom Artwork Naming Conventions
-    // Cover: {appid}p.png / .jpg
-    // Banner (Header): {appid}.png / .jpg
-    // Logo: {appid}_logo.png / .jpg
-    // Hero: {appid}_hero.png / .jpg
-    const suffixes = {
-        cover: ['p.png', 'p.jpg'],
-        banner: ['.png', '.jpg'],
-        logo: ['_logo.png', '_logo.jpg'],
-        hero: ['_hero.png', '_hero.jpg']
-    };
-
-    // Priority 1: userdata/*/config/grid (Heaviest user folder first)
-    const userdataDir = path.join(steamPath, 'userdata');
-    const heaviestUser = getHeaviestSteamUser(userdataDir);
-
-    // Check heaviest user first
-    if (heaviestUser) {
-        const gridDir = path.join(userdataDir, heaviestUser, 'config', 'grid');
-        for (const suffix of suffixes[type]) {
-            const localPath = path.join(gridDir, `${appId}${suffix}`);
-            if (fs.existsSync(localPath)) return localPath;
-        }
-    }
-
-    // Check all other users just in case
-    if (fs.existsSync(userdataDir)) {
-        try {
-            const users = fs.readdirSync(userdataDir);
-            for (const user of users) {
-                if (user === heaviestUser) continue;
-                const gridDir = path.join(userdataDir, user, 'config', 'grid');
-                for (const suffix of suffixes[type]) {
-                    const localPath = path.join(gridDir, `${appId}${suffix}`);
-                    if (fs.existsSync(localPath)) return localPath;
-                }
-            }
-        } catch (e) { }
-    }
-
-    // Priority 2: appcache/librarycache (Official Steam cache - mostly legacy)
-    const legacyFilenameMap = {
-        cover: `${appId}_library_600x900.jpg`,
-        banner: `${appId}_header.jpg`,
-        logo: `${appId}_logo.png`,
-        hero: `${appId}_library_hero.jpg`
-    };
-    const libraryCache = path.join(steamPath, 'appcache', 'librarycache', legacyFilenameMap[type]);
-    if (fs.existsSync(libraryCache)) return libraryCache;
-
-    return null;
-};
 
 // SGDB Key & Settings Management
 // (Using global CONFIG_FILE defined at the top)
@@ -1120,11 +893,7 @@ app.all('/api/steam/scan', async (req, res) => {
 
                                 const isHidden = hiddenAppIds.has(info.appid);
                                 if (!includeHidden && isHidden) continue;
-
                                 const gameId = `steam_${info.appid}`;
-                                const gameDir = path.join(ASSETS_DIR, gameId);
-                                if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
-
                                 const steamAssets = [
                                     { type: 'cover', remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_600x900.jpg`, local: findLocalSteamAsset(info.appid, 'cover') },
                                     { type: 'banner', remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/header.jpg`, local: findLocalSteamAsset(info.appid, 'banner') },
@@ -1137,15 +906,17 @@ app.all('/api/steam/scan', async (req, res) => {
                                     title: info.name,
                                     execPath: `steam://rungameid/${info.appid}`,
                                     source: 'steam',
-                                    // Use true LastPlayed if available, otherwise fallback to manifest LastUpdated
                                     lastUpdated: lastPlayedMap.get(info.appid) || info.lastUpdated || 0
                                 };
 
                                 for (const asset of steamAssets) {
                                     const source = asset.local || asset.remote;
                                     const ext = source.toLowerCase().includes('.png') ? '.png' : '.jpg';
-                                    const dest = path.join(gameDir, `${asset.type}${ext}`);
+                                    const assetSubDir = path.join('steam', info.appid.toString());
+                                    const fullAssetDir = path.join(ASSETS_DIR, assetSubDir);
+                                    if (!fs.existsSync(fullAssetDir)) fs.mkdirSync(fullAssetDir, { recursive: true });
 
+                                    const dest = path.join(fullAssetDir, `${asset.type}${ext}`);
                                     gameObj[asset.type] = path.resolve(dest);
 
                                     // Background download/copy
@@ -1264,11 +1035,13 @@ $games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
                 for (const g of psGames) {
                     if (!g.Id) continue;
                     const gameId = g.Id;
-                    const gameDir = path.join(ASSETS_DIR, gameId);
-                    if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
                     let localLogoPath = null;
                     if (g.Logo && (fs.existsSync(g.Logo))) {
-                        const logoDestPng = path.join(gameDir, 'logo.png');
+                        const assetSubDir = path.join('xbox', gameId);
+                        const fullAssetDir = path.join(ASSETS_DIR, assetSubDir);
+                        if (!fs.existsSync(fullAssetDir)) fs.mkdirSync(fullAssetDir, { recursive: true });
+
+                        const logoDestPng = path.join(fullAssetDir, 'logo.png');
                         try {
                             fs.copyFileSync(g.Logo, logoDestPng);
                             localLogoPath = path.resolve(logoDestPng);
@@ -1292,87 +1065,10 @@ $games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
     }
 });
 
-const EMU_PLATFORMS: Record<string, { extensions: string[], mode: 'FILE' | 'FOLDER' }> = {
-    '3ds': { extensions: ['.3ds', '.cia'], mode: 'FILE' },
-    'n64': { extensions: ['.z64', '.n64', '.v64'], mode: 'FILE' },
-    'nds': { extensions: ['.nds'], mode: 'FILE' },
-    'ngc': { extensions: ['.iso', '.gcm', '.rvz'], mode: 'FILE' },
-    'nsw': { extensions: ['.nsp', '.xci'], mode: 'FILE' },
-    'wii': { extensions: ['.iso', '.wbfs', '.rvz'], mode: 'FILE' },
-    'wiu': { extensions: ['.wud', '.wux', '.rpx'], mode: 'FILE' },
-    'ps2': { extensions: ['.iso', '.bin', '.chd'], mode: 'FILE' },
-    'ps3': { extensions: [], mode: 'FOLDER' },
-    'ps4': { extensions: [], mode: 'FOLDER' },
-    'psp': { extensions: ['.iso', '.cso'], mode: 'FILE' },
-    'psv': { extensions: ['.vpk'], mode: 'FILE' },
-};
-
-function cleanEmuTitle(filename: string): string {
-    let name = filename.replace(/\.[^/.]+$/, ""); // Remove extension
-    name = name.replace(/\s*\(.*?\)/g, ""); // Remove (USA), (En,Fr,De), etc.
-    name = name.replace(/\s*\[.*?\]/g, ""); // Remove [!], [b1], etc.
-    name = name.replace(/_/g, " "); // Replace underscores with spaces
-    name = name.replace(/^\d+\s*-\s*/, ""); // Remove lead numbers like "0479 - "
-    return name.trim();
-}
-
-/**
- * Basic PARAM.SFO (Sony File Overlay) title extractor.
- * SFO files are key-value stores. We look for the "TITLE" key.
- */
-function extractTitleFromSFO(sfoPath: string): string | null {
-    try {
-        if (!fs.existsSync(sfoPath)) return null;
-        const buffer = fs.readFileSync(sfoPath);
-
-        // PARAM.SFO header/index simple scan for "TITLE"
-        // Key table follows the header. We'll do a simple string search for 'TITLE'
-        // followed by null terminator, then find the value in the data table.
-        // For a more robust solution we'd parse the index table properly, 
-        // but simple string search usually works for Sony's standard SFOs.
-        const content = buffer.toString('utf-8');
-        const titleIndex = buffer.indexOf(Buffer.from('TITLE\0'));
-        if (titleIndex === -1) return null;
-
-        // In standard SFOs, values are nul-terminated strings in the later part of the file.
-        // We'll look for a reasonably long string after some offset.
-        // This is a heuristic: find TITLE, then skip some bytes and look for a non-empty string.
-        // Proper parsing would be: Header (20b) -> Index Entries (16b each) -> Key Table -> Data Table.
-        // Let's do it slightly better:
-
-        const header = {
-            keyOffset: buffer.readUInt32LE(0x08),
-            dataOffset: buffer.readUInt32LE(0x0C),
-            count: buffer.readUInt32LE(0x10)
-        };
-
-        for (let i = 0; i < header.count; i++) {
-            const entryOffset = 0x14 + (i * 16);
-            const keyStart = header.keyOffset + buffer.readUInt16LE(entryOffset);
-
-            // Find key length (null-terminated)
-            let keyEnd = keyStart;
-            while (keyEnd < buffer.length && buffer[keyEnd] !== 0) keyEnd++;
-            const key = buffer.toString('utf8', keyStart, keyEnd);
-
-            if (key === 'TITLE') {
-                const dataStart = header.dataOffset + buffer.readUInt32LE(entryOffset + 0x0C);
-                const dataLen = buffer.readUInt32LE(entryOffset + 0x08);
-                // Extract null-terminated string from data
-                let actualLen = 0;
-                while (actualLen < dataLen && buffer[dataStart + actualLen] !== 0) actualLen++;
-                return buffer.toString('utf8', dataStart, dataStart + actualLen).trim();
-            }
-        }
-    } catch (e) {
-        console.error("[SFO] Failed to parse title", e);
-    }
-    return null;
-}
 
 app.post('/api/emu/scan', async (req, res) => {
     try {
-        const { platformId, romsDir, emuExe } = req.body;
+        const { platformId, romsDir, emuExe, execArgs } = req.body;
         if (!platformId || !romsDir || !emuExe) {
             return res.status(400).json({ error: 'Missing platformId, romsDir or emuExe' });
         }
@@ -1383,6 +1079,8 @@ app.post('/api/emu/scan', async (req, res) => {
         if (!fs.existsSync(romsDir)) return res.status(404).json({ error: 'ROMs directory not found' });
 
         const games: any[] = [];
+        const shortcutTasks: { lnkPath: string, targetExe: string, args: string }[] = [];
+
         const scan = (dir: string) => {
             if (!fs.existsSync(dir)) return;
             const files = fs.readdirSync(dir);
@@ -1393,51 +1091,89 @@ app.post('/api/emu/scan', async (req, res) => {
                 if (config.mode === 'FILE' && !stat.isDirectory()) {
                     const ext = path.extname(file).toLowerCase();
                     if (config.extensions.includes(ext)) {
-                        // Filter Switch Updates/DLC (conventional check: [UPD] or [v...])
                         if (platformId === 'nsw' && (file.includes('[UPD]') || file.includes('[v'))) continue;
 
+                        const gameId = `emu_${platformId}_${slugify(file)}`;
+                        const gameDir = path.join(ASSETS_DIR, gameId);
+                        if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
+
+                        const lnkPath = path.join(gameDir, 'launch.lnk');
+                        const finalArgs = execArgs ? `${execArgs} "${fullPath}"` : `${config.defaultArgs} "${fullPath}"`;
+                        shortcutTasks.push({ lnkPath, targetExe: emuExe, args: finalArgs });
+
                         games.push({
-                            id: `emu_${platformId}_${slugify(file)}`,
+                            id: gameId,
                             title: cleanEmuTitle(file),
-                            execPath: emuExe,
-                            execArgs: `"${fullPath}"`,
+                            execPath: path.resolve(lnkPath),
                             source: 'emulator',
-                            platform: platformId
+                            sourceId: platformId,
+                            platform: platformId,
+                            category: PLATFORM_NAMES[platformId] || platformId.toUpperCase()
                         });
                     }
                 } else if (config.mode === 'FOLDER' && stat.isDirectory()) {
-                    // Specific entry points and title extraction
-                    let execArgs = `"${fullPath}"`;
+                    let folderArgs = `"${fullPath}"`;
                     let detectedTitle = cleanEmuTitle(file);
 
                     if (platformId === 'ps3') {
                         const sfoPath = path.join(fullPath, 'PS3_GAME', 'PARAM.SFO');
                         const sfoTitle = extractTitleFromSFO(sfoPath);
                         if (sfoTitle) detectedTitle = sfoTitle;
-
                         const eboot = path.join(fullPath, 'PS3_GAME', 'USRDIR', 'EBOOT.BIN');
-                        if (fs.existsSync(eboot)) execArgs = `"${eboot}"`;
+                        if (fs.existsSync(eboot)) folderArgs = `"${eboot}"`;
                     } else if (platformId === 'ps4') {
                         const sfoPath = path.join(fullPath, 'sce_sys', 'param.sfo');
                         const sfoTitle = extractTitleFromSFO(sfoPath);
                         if (sfoTitle) detectedTitle = sfoTitle;
                     }
 
+                    const gameId = `emu_${platformId}_${slugify(file)}`;
+                    const gameDir = path.join(ASSETS_DIR, gameId);
+                    if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
+                    const lnkPath = path.join(gameDir, 'launch.lnk');
+                    shortcutTasks.push({ lnkPath, targetExe: emuExe, args: folderArgs });
+
                     games.push({
-                        id: `emu_${platformId}_${slugify(file)}`,
+                        id: gameId,
                         title: detectedTitle,
-                        execPath: emuExe,
-                        execArgs: execArgs,
+                        execPath: path.resolve(lnkPath),
                         source: 'emulator',
                         platform: platformId
                     });
                 } else if (stat.isDirectory()) {
-                    scan(fullPath); // Recursive scan for FILE mode
+                    scan(fullPath);
                 }
             }
         };
 
         scan(romsDir);
+
+        // Batch-create all shortcuts via PowerShell
+        if (shortcutTasks.length > 0) {
+            console.log(`[EmuScan] Creating ${shortcutTasks.length} shortcuts...`);
+            const psLines = shortcutTasks.map(t => {
+                const lnk = t.lnkPath.replace(/'/g, "''");
+                const target = t.targetExe.replace(/'/g, "''");
+                const args = t.args.replace(/'/g, "''");
+                return `$s=$w.CreateShortcut('${lnk}');$s.TargetPath='${target}';$s.Arguments='${args}';$s.Save()`;
+            });
+            const psScript = `$w=New-Object -ComObject WScript.Shell\n${psLines.join('\n')}`;
+            const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+
+            await new Promise<void>((resolve, reject) => {
+                exec(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
+                    { maxBuffer: 1024 * 1024 * 10 }, (err) => {
+                        if (err) {
+                            console.error('[EmuScan] Shortcut creation failed:', err.message);
+                            reject(err);
+                        } else {
+                            console.log(`[EmuScan] ${shortcutTasks.length} shortcuts created`);
+                            resolve();
+                        }
+                    });
+            });
+        }
+
         res.json({ games });
     } catch (e: any) {
         res.status(500).json({ error: e.message });
@@ -1485,17 +1221,9 @@ app.post('/api/launch', (req, res) => {
                 if (error) console.error('[Launch] Explorer failed:', error);
             });
         } else {
-            // Standard executables & Shortcuts (.lnk)
-            // Using cmd's start is instant and natively supports .lnk resolution
-            console.log(`[Launch] Standard File: ${execPath}`);
-            if (execArgs) console.log(`[Launch] Arguments: ${execArgs}`);
-
-            const argsString = execArgs ? ` ${execArgs}` : '';
-            exec(`start "" "${execPath}"${argsString}`, (error) => {
-                if (error) {
-                    console.error('[Launch] Execution failed:', error);
-                }
-            });
+            // Launch via Shell.Application COM — equivalent to double-clicking
+            console.log(`[Launch] Shell.Application: ${execPath}`);
+            launchViaShell(execPath, execArgs);
         }
         res.json({ success: true });
     } catch (e) {
@@ -1562,7 +1290,7 @@ try {
                 broadcastSyncEvent({ type: 'ASSET_CHANGED', path: filePath, event });
             }
         }
-    }).on('error', (error) => {
+    }).on('error', (error: any) => {
         console.error(`[Sync] Chokidar Watcher Error:`, error.message);
     });
 } catch (e: any) {
