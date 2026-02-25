@@ -1,6 +1,7 @@
 import React from 'react';
 import Subsection from './Subsection';
 import AssetInput from '../AssetInput';
+import CyberScrollbar from '../CyberScrollbar';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Category } from '../../types';
 import { getContrastColor } from '../../utils/colors';
@@ -16,6 +17,7 @@ interface SystemTabProps {
     triggerFileBrowser: (target: string, type: 'exe' | 'image' | 'any') => void;
     onResolveAsset: (path: string | undefined) => string;
     handleSystemFormat: () => void;
+    resolveColor: (raw: string) => string;
 }
 
 const PanicResetButton: React.FC<{ handleAction: () => void; t: any }> = ({ handleAction, t }) => {
@@ -73,7 +75,7 @@ const PanicResetButton: React.FC<{ handleAction: () => void; t: any }> = ({ hand
 
 const SystemTab: React.FC<SystemTabProps> = ({
     activeAccent, allGamesCategory, onUpdateCategories,
-    taskbarMargin, onUpdateTaskbarMargin, uiScale, onUpdateUIScale, triggerFileBrowser, onResolveAsset, handleSystemFormat
+    taskbarMargin, onUpdateTaskbarMargin, uiScale, onUpdateUIScale, triggerFileBrowser, onResolveAsset, handleSystemFormat, resolveColor
 }) => {
     const { t, language, setLanguage } = useTranslation();
     const [localScale, setLocalScale] = React.useState(uiScale);
@@ -86,7 +88,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
         <div className="flex flex-col gap-6 lg:gap-8">
             <Subsection title={t('system_tab.language_settings')} accentColor={activeAccent}>
                 <div className="flex items-center justify-between py-2 border-b border-white/5">
-                    <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.system_language')}</label>
+                    <label className="text-[9px] lg:text-[10px] opacity-80 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.system_language')}</label>
                     <div className="flex gap-4">
                         <button onClick={() => setLanguage('en')} className={`px-4 py-2 border-2 ${language === 'en' ? 'bg-white text-black border-white' : 'bg-transparent text-white/40 border-white/10'} font-bold text-[8px] uppercase tracking-widest transition-all hover:text-white hover:border-white`}>ENGLISH</button>
                         <button onClick={() => setLanguage('es')} className={`px-4 py-2 border-2 ${language === 'es' ? 'bg-white text-black border-white' : 'bg-transparent text-white/40 border-white/10'} font-bold text-[8px] uppercase tracking-widest transition-all hover:text-white hover:border-white`}>ESPAÑOL</button>
@@ -100,12 +102,14 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         { key: 'assetColor', label: t('system_tab.assets_hex'), default: '#a855f7' },
                         { key: 'nodeColor', label: t('system_tab.nodes_hex'), default: '#06b6d4' },
                         { key: 'syncColor', label: t('system_tab.sync_hex'), default: '#22c55e' },
-                        { key: 'coreColor', label: t('system_tab.core_hex'), default: '#9acd32' }
+                        { key: 'coreColor', label: t('system_tab.core_hex'), default: '#9acd32' },
+                        { key: 'explorerColor', label: "FILES_HEX", default: '#00ffff' },
+                        { key: 'sgdbColor', label: "CLOUD_HEX", default: '#66c0f4' }
                     ].map(cp => {
                         const currentColor = (allGamesCategory as any)[cp.key] || cp.default;
                         return (
                             <div key={cp.key} className="flex flex-col gap-1.5">
-                                <label className="text-[7px] opacity-40 uppercase tracking-widest font-bold">{cp.label}</label>
+                                <label className="text-[7px] opacity-60 uppercase tracking-widest font-bold">{cp.label}</label>
                                 <div className="relative group/picker overflow-hidden border-2 transition-all p-[1.5px]"
                                     style={{
                                         width: '44px',
@@ -121,7 +125,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                                     >
                                         #PICK
                                     </span>
-                                    <input type="color" value={currentColor} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, [cp.key]: e.target.value } : c))} className="absolute inset-0 w-[150%] h-[150%] bg-transparent border-none cursor-pointer -translate-x-1/4 -translate-y-1/4 opacity-0" />
+                                    <input type="color" value={currentColor} onChange={e => onUpdateCategories(prev => prev.map(c => c.id === 'all' ? { ...c, [cp.key]: e.target.value } : c))} className="absolute inset-0 w-full h-full bg-transparent border-none cursor-pointer opacity-0" />
                                 </div>
                             </div>
                         );
@@ -130,7 +134,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
 
                 <div className="flex flex-col gap-2 mt-2 col-span-full">
                     <div className="flex justify-between items-center">
-                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.taskbar_offset_buffer')}</label>
+                        <label className="text-[9px] lg:text-[10px] opacity-80 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.taskbar_offset_buffer')}</label>
                         <button
                             onClick={() => onUpdateTaskbarMargin(0)}
                             className="text-[7px] font-bold opacity-30 hover:opacity-100 border border-white/10 px-1.5 py-0.5"
@@ -156,7 +160,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                 </div>
                 <div className="flex flex-col gap-2 mt-3 col-span-full">
                     <div className="flex justify-between items-center">
-                        <label className="text-[9px] lg:text-[10px] opacity-60 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.terminal_dpi_scaling')}</label>
+                        <label className="text-[9px] lg:text-[10px] opacity-80 uppercase tracking-[0.2em] text-white font-bold">{t('system_tab.terminal_dpi_scaling')}</label>
                         <button
                             onClick={() => {
                                 setLocalScale(1.0);
@@ -205,7 +209,7 @@ const SystemTab: React.FC<SystemTabProps> = ({
                         const isEnabled = !!(allGamesCategory as any)[toggle.key];
                         return (
                             <div key={toggle.key} className="flex items-center justify-between py-2 border-b border-white/5">
-                                <label className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-white/60">{toggle.label}</label>
+                                <label className="text-[8px] lg:text-[9px] font-bold uppercase tracking-widest text-white/80">{toggle.label}</label>
                                 <button
                                     onClick={() => onUpdateCategories(prev => prev.map(c => {
                                         if (c.id !== 'all') return c;

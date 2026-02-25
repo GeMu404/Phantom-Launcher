@@ -72,15 +72,14 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 lg:p-10 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500 overflow-hidden">
+        <div className="modal-glass fixed inset-0 z-[1100] flex items-center justify-center p-4 lg:p-10 bg-black/50 backdrop-blur-md overflow-hidden">
             <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.6)_100%)]"></div>
 
-            <div className="relative flex flex-col bg-[#020202]/85 border-none shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-500"
+            <div className="relative flex flex-col bg-[#020202]/85 border-none shadow-[0_0_100px_rgba(0,0,0,0.8)]"
                 style={{
                     width: 'min(1100px, 95vw)',
                     height: 'min(850px, 90vh)',
-                    clipPath: 'polygon(30px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px)',
-                    boxShadow: `0 0 50px ${accentColor}22`
+                    clipPath: 'polygon(30px 0, 100% 0, 100% calc(100% - 30px), calc(100% - 30px) 100%, 0 100%, 0 30px)'
                 }}>
 
                 {/* Architect Frame */}
@@ -92,25 +91,24 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                     }}>
                     <div className="w-full h-full bg-[#050505] opacity-80"
                         style={{
-                            clipPath: 'polygon(27.5px 0, 100% 0, 100% calc(100% - 27.5px), calc(100% - 27.5px) 100%, 0 100%, 0 27.5px)',
-                            boxShadow: `inset 0 0 40px ${accentColor}66`
+                            clipPath: 'polygon(27.5px 0, 100% 0, 100% calc(100% - 27.5px), calc(100% - 27.5px) 100%, 0 100%, 0 27.5px)'
                         }}></div>
                 </div>
                 {/* Header Subsystem */}
-                <div className="flex justify-between items-center p-6 lg:p-10 border-b-2 border-white/10 bg-black/60 shrink-0 relative z-[100]">
-                    <div className="flex flex-col gap-1">
-                        <h3 className="text-[9px] lg:text-[11px] font-bold font-['Press_Start_2P'] uppercase tracking-tighter" style={{ color: accentColor, textShadow: `0 0 20px ${accentColor}aa` }}>
-                            [ CLOUD_QUERY_ENGINE.SYS ] // <span className="opacity-40">{type.toUpperCase()}</span>
-                        </h3>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[7px] font-mono text-white/40 uppercase tracking-[0.5em]">REMOTE_NEURAL_LINK_INDEX</span>
+                <div className="flex justify-between items-center px-6 lg:px-10 py-4 lg:py-6 bg-white/5 border-b-2 border-white/10 shrink-0 relative z-[100]">
+                    <div className="flex items-center gap-6 lg:gap-10">
+                        <div className="flex flex-col gap-0.5">
+                            <h3 className="font-['Press_Start_2P'] text-[9px] lg:text-[11px] uppercase tracking-tighter" style={{ color: accentColor }}>
+                                [ CLOUD_QUERY_ENGINE.SYS ] // <span className="opacity-40">{type.toUpperCase()}</span>
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[7px] font-mono text-white opacity-80 uppercase tracking-[0.5em]">REMOTE_NEURAL_LINK_INDEX</span>
+                            </div>
                         </div>
                     </div>
                     <button onClick={onClose}
-                        className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest transition-all border-2 active:scale-95"
+                        className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest border-2 hover:bg-white hover:text-black transition-all active:scale-95"
                         style={{ borderColor: accentColor, color: accentColor }}
-                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = accentColor; e.currentTarget.style.color = '#000'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = accentColor; }}
                     >
                         [ CEASE_QUERY ]
                     </button>
@@ -122,7 +120,7 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                         <div className="absolute inset-0 bg-black/90 z-30 flex items-center justify-center backdrop-blur-md transition-all">
                             <div className="flex flex-col items-center gap-6">
                                 <div className="w-12 h-12 border-2 border-t-white border-white/10 animate-spin rounded-full" style={{ borderColor: `${accentColor} transparent transparent transparent` }}></div>
-                                <span className="text-[10px] font-mono animate-pulse uppercase tracking-[0.4em] text-white">ACCESSING_NEURAL_NETWORK...</span>
+                                <span className="text-[10px] font-mono animate-pulse uppercase tracking-[0.4em] text-white/80">ACCESSING_NEURAL_NETWORK...</span>
                             </div>
                         </div>
                     )}
@@ -159,7 +157,7 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                                         >
                                             <div className="absolute left-0 top-0 w-1 h-full opacity-0 group-hover:opacity-100 transition-opacity" style={{ backgroundColor: accentColor }}></div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[10px] font-bold text-white group-hover:text-white uppercase tracking-wider transition-colors font-['Space_Mono'] truncate">{game.name}</span>
+                                                <span className="text-[11px] font-bold text-white group-hover:text-white uppercase tracking-wider transition-colors font-['Space_Mono'] truncate">{game.name}</span>
                                                 <span className="text-[7px] text-white/20 font-mono tracking-tighter">SECTOR_ID: {game.id}</span>
                                             </div>
                                             <div className="flex items-center gap-4 shrink-0">
@@ -179,15 +177,15 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                     )}
 
                     {step === 'results' && (
-                        <div className="flex flex-col h-full bg-black/20">
-                            <div className="p-4 border-b-2 border-white/10 flex items-center justify-between bg-black/60">
+                        <div className="flex flex-col h-full bg-black/10">
+                            <div className="p-4 border-b-2 border-white/10 flex items-center justify-between bg-white/5">
                                 <button
                                     onClick={() => { setStep('search'); handleSearch(query); }}
-                                    className="px-6 py-2 text-[9px] uppercase font-bold text-white/40 hover:text-white flex items-center gap-3 transition-all active:scale-95"
+                                    className="px-6 py-2 text-[9px] uppercase font-bold text-white/60 hover:text-white flex items-center gap-3 transition-all active:scale-95"
                                 >
                                     ← REVERT_TO_SEARCH_INDEX
                                 </button>
-                                <span className="text-[8px] opacity-40 uppercase tracking-[0.4em] font-mono">SELECT_UNIT_FOR_DEPLOYMENT</span>
+                                <span className="text-[8px] opacity-70 uppercase tracking-[0.4em] font-mono">SELECT_UNIT_FOR_DEPLOYMENT</span>
                             </div>
                             <div ref={resultsRef} className="flex-1 overflow-y-auto p-8 lg:p-10 no-scrollbar relative">
                                 <div className={`grid gap-6 ${type === 'hero' ? 'grid-cols-1 md:grid-cols-2' :
@@ -238,8 +236,8 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                         </div>
                     )}
                 </div>
-                {step === 'search' && <CyberScrollbar containerRef={searchRef} accentColor={accentColor} top="190px" bottom="20px" right="2px" />}
-                {step === 'results' && <CyberScrollbar containerRef={resultsRef} accentColor={accentColor} top="140px" bottom="20px" right="2px" />}
+                {step === 'search' && <CyberScrollbar containerRef={searchRef} accentColor={accentColor} top="170px" bottom="20px" right="8px" />}
+                {step === 'results' && <CyberScrollbar containerRef={resultsRef} accentColor={accentColor} top="130px" bottom="20px" right="8px" />}
             </div>
         </div>
     );

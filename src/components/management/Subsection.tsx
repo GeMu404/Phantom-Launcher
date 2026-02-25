@@ -32,7 +32,7 @@ const Subsection = React.memo(({ title, children, onSync, syncLabel = "COMMIT_CH
 
     return (
         <div className="relative group transition-all" style={{ clipPath: polyOuter, background: `${accentColor}44`, padding: '2px', contain: 'layout paint' }}>
-            <div className="flex flex-col gap-3 p-3 lg:p-4 bg-black/95 relative" style={{ clipPath: polyInner }}>
+            <div className="flex flex-col gap-3 p-3 lg:p-4 bg-black/20 relative" style={{ clipPath: polyInner }}>
                 <div className="flex justify-between items-center relative z-10 border-b-2 border-white/5 pb-2">
                     <h4 className="text-[10px] lg:text-[12px] font-bold uppercase tracking-[0.5em] text-white/90" style={{ textShadow: `0 0 15px ${accentColor}88` }}>{title}</h4>
                     {onSync && (

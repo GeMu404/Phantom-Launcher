@@ -1,3 +1,4 @@
+import React, { useCallback } from 'react';
 import { Category, Game } from '../types';
 import { ASSETS, CATEGORIES as INITIAL_CATEGORIES } from '../constants';
 import { useTranslation } from './useTranslation';
@@ -26,6 +27,16 @@ const PLATFORM_COLORS: Record<string, string> = {
     'sega_dreamcast': '#ff4b00', 'pc': '#66c0f4',
 };
 
+const slugify = (text: string): string => {
+    return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '');
+};
+
 const NEON_COLORS = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800', '#ff0000', '#8800ff', '#0088ff'];
 
 interface UseManagementParams {
@@ -44,15 +55,15 @@ export function useManagement({
 }: UseManagementParams) {
     const { t } = useTranslation();
 
-    const handleSyncSteamLibrary = async (steamOptions: { includeSoftware: boolean; includeAdultOnly: boolean }) => {
+    const handleSyncSteamLibrary = useCallback(async (steamOptions: { includeSoftware: boolean; includeAdultOnly: boolean; quiet?: boolean }) => {
         try {
             onUpdateCategories(prev => prev.map(cat => (cat.id === 'steam' || cat.id === 'all') ? { ...cat, games: cat.games.filter(g => g.source !== 'steam') } : cat));
-            if (onNotification) onNotification(`STEAM::${t('system.init_sync')}...`);
+            if (onNotification && !steamOptions.quiet) onNotification(`STEAM::${t('system.init_sync')}...`);
             onClose();
 
             const response = await fetch('/api/steam/scan', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(steamOptions)
+                body: JSON.stringify({ includeSoftware: steamOptions.includeSoftware, includeAdultOnly: steamOptions.includeAdultOnly })
             });
             const { games: steamGames } = await response.json();
             onUpdateCategories(prev => {
@@ -75,20 +86,20 @@ export function useManagement({
                     return cat;
                 });
             });
-            if (onNotification) onNotification(`STEAM::${t('system.sync_success')}`);
+            if (onNotification && !steamOptions.quiet) onNotification(`STEAM::${t('system.sync_success')}`);
             bumpAssetVersion();
-            setTimeout(() => onNotification?.(null), 2000);
+            if (!steamOptions.quiet) setTimeout(() => onNotification?.(null), 2000);
         } catch (e: any) {
             console.error("Steam sync failed", e);
-            if (onNotification) onNotification(`STEAM::${t('system.sync_failed')}::${e.message}`);
-            setTimeout(() => onNotification?.(null), 3000);
+            if (onNotification && !steamOptions.quiet) onNotification(`STEAM::${t('system.sync_failed')}::${e.message}`);
+            if (!steamOptions.quiet) setTimeout(() => onNotification?.(null), 3000);
         }
-    };
+    }, [onUpdateCategories, onNotification, onClose, t, bumpAssetVersion]);
 
-    const handleSyncXboxLibrary = async () => {
+    const handleSyncXboxLibrary = useCallback(async (options?: { quiet?: boolean }) => {
         try {
             onUpdateCategories(prev => prev.map(cat => (cat.id === 'xbox' || cat.id === 'all') ? { ...cat, games: cat.games.filter(g => g.source !== 'xbox') } : cat));
-            if (onNotification) onNotification(`XBOX::${t('system.init_sync')}...`);
+            if (onNotification && !options?.quiet) onNotification(`XBOX::${t('system.init_sync')}...`);
             onClose();
             const response = await fetch('/api/xbox/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
             const { games: xboxGames } = await response.json();
@@ -111,17 +122,17 @@ export function useManagement({
                     return cat;
                 });
             });
-            if (onNotification) onNotification(`XBOX::${t('system.sync_success')}`);
+            if (onNotification && !options?.quiet) onNotification(`XBOX::${t('system.sync_success')}`);
             bumpAssetVersion();
-            setTimeout(() => onNotification?.(null), 2000);
+            if (!options?.quiet) setTimeout(() => onNotification?.(null), 2000);
         } catch (e: any) {
             console.error("Xbox sync failed", e);
-            if (onNotification) onNotification(`XBOX::${t('system.sync_failed')}::${e.message}`);
-            setTimeout(() => onNotification?.(null), 3000);
+            if (onNotification && !options?.quiet) onNotification(`XBOX::${t('system.sync_failed')}::${e.message}`);
+            if (!options?.quiet) setTimeout(() => onNotification?.(null), 3000);
         }
-    };
+    }, [onUpdateCategories, onNotification, onClose, t, bumpAssetVersion]);
 
-    const handleFetchMissingAssets = async (categoryId: string, onStatus?: (s: string) => void) => {
+    const handleFetchMissingAssets = useCallback(async (categoryId: string, onStatus?: (s: string) => void) => {
         onClose();
         const cat = categories.find(c => c.id === categoryId);
         if (!cat) return;
@@ -186,10 +197,10 @@ export function useManagement({
         if (onStatus) onStatus('SYNC_COMPLETE');
         bumpAssetVersion();
         setTimeout(() => onNotification?.(null), 2000);
-    };
+    }, [onClose, categories, t, onUpdateCategories, bumpAssetVersion, onNotification]);
 
-    const handleSyncEmuLibrary = async (
-        platformId: string, romsDir: string, emuExe: string, customArgs?: string
+    const handleSyncEmuLibrary = useCallback(async (
+        platformId: string, romsDir: string, emuExe: string, customArgs?: string, customIcon?: string
     ) => {
         const statusHandler = (s: string) => {
             if (onNotification) onNotification(`${PLATFORM_NAMES[platformId] || platformId.toUpperCase()}::${t(`system.${s.toLowerCase()}`) || s}`);
@@ -213,8 +224,8 @@ export function useManagement({
                 const newCat: Category = {
                     id: catId,
                     name: PLATFORM_NAMES[platformId] || platformId.toUpperCase(),
-                    icon: `./res/external/${platformId}.png`,
-                    color: PLATFORM_COLORS[platformId] || '#ffffff',
+                    icon: customIcon || `./res/external/${platformId}.png`,
+                    color: customIcon ? '#ffffff' : (PLATFORM_COLORS[platformId] || '#ffffff'),
                     games: data.games, enabled: true,
                     wallpaper: '', wallpaperMode: 'cover', gridOpacity: 0.15
                 };
@@ -234,9 +245,9 @@ export function useManagement({
             if (onNotification) onNotification(`${t('system.sync_failed')}::${e.message}`);
             setTimeout(() => onNotification?.(null), 3000);
         }
-    };
+    }, [onNotification, t, onClose, onUpdateCategories, handleFetchMissingAssets, bumpAssetVersion]);
 
-    const handleDeleteGame = (
+    const handleDeleteGame = useCallback((
         gameId: string,
         requestConfirmation: (msg: string, onConfirm: () => void, isDanger?: boolean) => void
     ) => {
@@ -245,9 +256,9 @@ export function useManagement({
             onUpdateCategories(prev => prev.map(c => ({ ...c, games: c.games.filter(g => g.id !== gameId) })));
             bumpAssetVersion();
         });
-    };
+    }, [t, onUpdateCategories, bumpAssetVersion]);
 
-    const handleWipeMasterRegistry = (
+    const handleWipeMasterRegistry = useCallback((
         requestConfirmation: (msg: string, onConfirm: () => void, isDanger?: boolean) => void
     ) => {
         requestConfirmation(t('registry.wipe_confirmation'), async () => {
@@ -257,20 +268,20 @@ export function useManagement({
                 const resetCats = INITIAL_CATEGORIES.map(c => ({
                     ...c, color: '#ffffff', assetColor: '#00ffff', nodeColor: '#ff00ff',
                     syncColor: '#ffff00', coreColor: '#00ff00', gridOpacity: 0.15,
-                    cardOpacity: 0.7, performanceMode: 'balanced', bgAnimationsEnabled: true,
+                    cardOpacity: 0.7, performanceMode: 'balanced' as const, bgAnimationsEnabled: true,
                     gridEnabled: true, scanlineEnabled: false, vignetteEnabled: true,
                     highQualityBlobs: false, cardTransparencyEnabled: true, cardBlurEnabled: false,
                     innerGlowEnabled: true, outerGlowEnabled: false
-                }));
+                } as Category));
                 return hiddenCat ? [...resetCats, hiddenCat] : resetCats;
             });
             onUpdateTaskbarMargin(0);
             onUpdateUIScale(1.0);
             bumpAssetVersion();
         });
-    };
+    }, [t, onUpdateCategories, onUpdateTaskbarMargin, onUpdateUIScale, bumpAssetVersion]);
 
-    const handleCreateCategory = (
+    const handleCreateCategory = useCallback((
         setEditingId: (id: string | null) => void,
         setCatForm: (form: any) => void,
         scrollToForm: () => void
@@ -282,9 +293,9 @@ export function useManagement({
         setEditingId(newId);
         setCatForm({ name: 'NEW_NODE', icon: ASSETS.templates.icon, color: nextColor, wallpaper: '', wallpaperMode: 'cover', gridOpacity: 0.15, enabled: true });
         scrollToForm();
-    };
+    }, [categories.length, onUpdateCategories]);
 
-    const handleDeleteCategory = (
+    const handleDeleteCategory = useCallback((
         catId: string,
         editingId: string | null,
         setEditingId: (id: string | null) => void,
@@ -295,9 +306,9 @@ export function useManagement({
             onUpdateCategories(prev => prev.filter(c => c.id !== catId));
             if (editingId === catId) setEditingId(null);
         });
-    };
+    }, [onUpdateCategories]);
 
-    const handleMoveCategory = (catId: string, direction: 'up' | 'down') => {
+    const handleMoveCategory = useCallback((catId: string, direction: 'up' | 'down') => {
         if (catId === 'all') return;
         onUpdateCategories(prev => {
             const idx = prev.findIndex(c => c.id === catId);
@@ -308,9 +319,9 @@ export function useManagement({
             [newCats[idx], newCats[newIdx]] = [newCats[newIdx], newCats[idx]];
             return newCats;
         });
-    };
+    }, [onUpdateCategories]);
 
-    const handleMoveGameInCategory = (catId: string, gameId: string, direction: 'up' | 'down') => {
+    const handleMoveGameInCategory = useCallback((catId: string, gameId: string, direction: 'up' | 'down') => {
         onUpdateCategories(prev => prev.map(cat => {
             if (cat.id !== catId) return cat;
             const gIdx = cat.games.findIndex(g => g.id === gameId);
@@ -321,9 +332,9 @@ export function useManagement({
             [newGames[gIdx], newGames[newIdx]] = [newGames[newIdx], newGames[gIdx]];
             return { ...cat, games: newGames };
         }));
-    };
+    }, [onUpdateCategories]);
 
-    const handleToggleGameInCategory = (catId: string, gameId: string) => {
+    const handleToggleGameInCategory = useCallback((catId: string, gameId: string) => {
         onUpdateCategories(prev => {
             let isRemovingFromHidden = false;
             let isAddingToHidden = false;
@@ -365,13 +376,80 @@ export function useManagement({
                 }
             });
         });
-    };
+    }, [onUpdateCategories]);
+
+    const handleSaveGame = useCallback(async (
+        gameForm: any,
+        editingId: string | null,
+    ) => {
+        if (!gameForm.title.trim()) return;
+
+        const slug = slugify(gameForm.title);
+        let newId = editingId;
+
+        if (!newId) {
+            let candidateId = `manual_${slug}`;
+            let counter = 0;
+            const idExists = (id: string) => categories.some(c => c.games.some(g => g.id === id));
+            while (idExists(candidateId)) {
+                counter++;
+                candidateId = `manual_${slug}-${counter}`;
+            }
+            newId = candidateId;
+        }
+
+        const existingGame = categories.flatMap(c => c.games).find(g => g.id === newId);
+
+        const gameObj: Game = {
+            ...existingGame!,
+            id: newId!,
+            title: gameForm.title,
+            cover: gameForm.cover,
+            banner: gameForm.banner,
+            logo: gameForm.logo,
+            execPath: gameForm.execPath,
+            execArgs: gameForm.execArgs,
+            source: existingGame?.source || 'manual',
+            wallpaper: gameForm.wallpaper
+        };
+
+        onUpdateCategories(prev => prev.map(cat => {
+            let isTarget = cat.id === 'all' || gameForm.categoryIds.includes(cat.id);
+            if (cat.id === 'all' && gameForm.categoryIds.includes('hidden')) isTarget = false;
+            const exists = cat.games.some(g => g.id === newId);
+            if (isTarget) return exists ? { ...cat, games: cat.games.map(g => g.id === newId ? gameObj : g) } : { ...cat, games: [...cat.games, gameObj] };
+            return { ...cat, games: cat.games.filter(g => g.id !== newId) };
+        }));
+
+        bumpAssetVersion();
+        return newId;
+    }, [categories, onUpdateCategories, bumpAssetVersion]);
+
+    const handleImportAsset = useCallback(async (sourcePath: string, gameId: string, assetType: string) => {
+        try {
+            const importRes = await fetch('/api/assets/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sourcePath, gameId, assetType })
+            });
+            const importData = await importRes.json();
+            if (importData.path) {
+                bumpAssetVersion();
+                return importData.path;
+            }
+            return sourcePath;
+        } catch (e) {
+            console.error("Asset import failed", e);
+            return sourcePath;
+        }
+    }, [bumpAssetVersion]);
 
     return {
         PLATFORM_NAMES, PLATFORM_COLORS, NEON_COLORS,
         handleSyncSteamLibrary, handleSyncXboxLibrary, handleSyncEmuLibrary,
         handleFetchMissingAssets, handleDeleteGame, handleWipeMasterRegistry,
         handleCreateCategory, handleDeleteCategory, handleMoveCategory,
-        handleMoveGameInCategory, handleToggleGameInCategory
+        handleMoveGameInCategory, handleToggleGameInCategory,
+        handleSaveGame, handleImportAsset, slugify
     };
 }

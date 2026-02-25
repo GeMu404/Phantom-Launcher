@@ -3,7 +3,7 @@ import { Category } from './types';
 
 
 // CONFIGURACIÓN DE ASSETS
-export const APP_VERSION = '0.9.0-preview';
+export const APP_VERSION = '0.9.02';
 
 // Usamos rutas de texto directas.
 // NOTA: Para que esto funcione, la carpeta 'res' debe estar servida en la raíz de tu servidor web (junto al index.html).
@@ -34,6 +34,8 @@ export const CATEGORIES: Category[] = [
     nodeColor: '#ff00ff',
     syncColor: '#ffff00',
     coreColor: '#00ff00',
+    explorerColor: '#00ffff',
+    sgdbColor: '#66c0f4',
     wallpaper: '',
     wallpaperMode: 'cover',
     gridOpacity: 0.15,

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ASSETS } from '../constants';
 import CyberScrollbar from './CyberScrollbar';
+import { getContrastColor } from '../utils/colors';
 
 interface FileItem {
     name: string;
@@ -124,7 +125,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
     const breadcrumbs = currentPath.split(/[\\/]/).filter(Boolean);
 
     return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 lg:p-8 bg-black/50 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="modal-glass fixed inset-0 z-[1000] flex items-center justify-center p-4 lg:p-8 bg-black/50 backdrop-blur-md">
             <div className="absolute inset-0" onClick={onClose} />
 
             <div className="relative flex flex-col bg-[#020202]/85 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] group/modal"
@@ -145,51 +146,48 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                     }}>
                     <div className="w-full h-full bg-[#050505] opacity-80"
                         style={{
-                            clipPath: 'polygon(27.5px 0, 100% 0, 100% calc(100% - 27.5px), calc(100% - 27.5px) 100%, 0 100%, 0 27.5px)',
-                            boxShadow: `inset 0 0 40px ${accentColor}66`
+                            clipPath: 'polygon(27.5px 0, 100% 0, 100% calc(100% - 27.5px), calc(100% - 27.5px) 100%, 0 100%, 0 27.5px)'
                         }}></div>
                 </div>
 
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 lg:p-10 border-b border-white/10 bg-black/60 shrink-0 relative z-[100]">
-                    <div className="flex flex-col gap-0.5">
-                        <h2 className="text-[9px] lg:text-[11px] font-bold font-['Press_Start_2P'] uppercase tracking-tighter animate-pulse" style={{ color: accentColor, textShadow: `0 0 20px ${accentColor}, 0 0 5px #fff` }}>
-                            [ INTERNAL_FS_EXPLORER.EXE ]
-                        </h2>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[7px] font-mono text-white/40 uppercase tracking-[0.5em]">Protocol: Direct_IO_V3</span>
-                            <div className="flex gap-1">
-                                <div className="w-1 h-1 rounded-full animate-ping" style={{ backgroundColor: accentColor }}></div>
-                                <div className="w-1 h-1 rounded-full opacity-40" style={{ backgroundColor: accentColor }}></div>
+                {/* Header Subsystem */}
+                <div className="flex justify-between items-center px-6 lg:px-10 py-4 lg:py-6 bg-white/5 border-b-2 border-white/10 shrink-0 relative z-[100]">
+                    <div className="flex items-center gap-6 lg:gap-10">
+                        <div className="flex flex-col gap-0.5">
+                            <h2 className="font-['Press_Start_2P'] text-[9px] lg:text-[11px] uppercase tracking-tighter" style={{ color: accentColor }}>
+                                [ INTERNAL_FS_EXPLORER.EXE ]
+                            </h2>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[7px] font-mono text-white opacity-80 uppercase tracking-[0.5em]">Protocol: Direct_IO_V3</span>
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="px-5 lg:px-8 py-2 lg:py-3 text-[7px] lg:text-[8px] font-['Press_Start_2P'] opacity-60 hover:opacity-100 transition-all border-2 border-white/20 hover:border-white/50 hover:bg-white/5 active:scale-95 relative z-[110]">DISCONNECT</button>
+                    <button onClick={onClose} className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest border-2 hover:bg-white hover:text-black transition-all active:scale-95" style={{ borderColor: accentColor, color: accentColor }}>[ DISCONNECT ]</button>
                 </div>
 
                 <div className="flex flex-1 overflow-hidden relative">
                     {/* Sidebar: Drives & Libraries */}
-                    <div ref={sidebarRef} className="w-56 border-r border-white/5 bg-black/40 p-4 flex flex-col gap-2 overflow-y-auto no-scrollbar relative">
-                        <label className="text-[7px] opacity-40 uppercase tracking-widest mb-1 mt-2">System_Folders</label>
+                    <div ref={sidebarRef} className="w-60 border-r border-white/10 bg-black/20 p-4 flex flex-col gap-2 overflow-y-auto no-scrollbar relative">
+                        <label className="text-[9px] font-bold opacity-30 uppercase tracking-[0.3em] mb-1 mt-2 px-2">System_Folders</label>
                         {libraries.map(lib => (
                             <button
                                 key={lib.path}
                                 onClick={() => browse(lib.path)}
-                                className={`p-2 py-1.5 text-[9px] font-mono text-left transition-all border-2 ${currentPath === lib.path ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-white/40 hover:text-white/60'}`}
+                                className={`p-3 py-2 text-[10px] font-bold font-mono text-left transition-all border-2 ${currentPath === lib.path ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-white/40 hover:text-white/60'}`}
                             >
-                                {lib.name}
+                                {lib.name.toUpperCase()}
                             </button>
                         ))}
 
                         <div className="h-4" />
-                        <label className="text-[7px] opacity-40 uppercase tracking-widest mb-1">Logical_Volumes</label>
+                        <label className="text-[9px] font-bold opacity-30 uppercase tracking-[0.3em] mb-1 px-2">Logical_Volumes</label>
                         {drives.map(drive => (
                             <button
                                 key={drive}
                                 onClick={() => browse(drive)}
-                                className={`p-2 py-1.5 text-[9px] font-mono text-left transition-all border-2 ${currentPath.startsWith(drive) ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-white/40 hover:text-white/60'}`}
+                                className={`p-3 py-2 text-[10px] font-bold font-mono text-left transition-all border-2 ${currentPath.startsWith(drive) ? 'bg-white/10 border-white/20 text-white' : 'border-transparent text-white/40 hover:text-white/60'}`}
                             >
-                                DISK::{drive}
+                                VOLUME::{drive}
                             </button>
                         ))}
                     </div>
@@ -199,12 +197,12 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                         {/* Breadcrumbs */}
                         <div className="p-4 bg-white/2 border-b border-white/5 flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
                             <button onClick={handleBack} className="flex-shrink-0 w-8 h-8 flex items-center justify-center border-2 border-white/10 hover:bg-white/10">
-                                <span className="opacity-60 text-xs">←</span>
+                                <span className="opacity-80 text-xs">←</span>
                             </button>
                             <div className="flex items-center gap-1 font-mono text-[9px] uppercase tracking-wider">
                                 {breadcrumbs.map((part, i) => (
                                     <React.Fragment key={i}>
-                                        <span className="opacity-30">/</span>
+                                        <span className="opacity-50">/</span>
                                         <button
                                             onClick={() => browse(breadcrumbs.slice(0, i + 1).join('\\') + '\\')}
                                             className="hover:text-white transition-colors px-1"
@@ -219,7 +217,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                         {/* List */}
                         <div ref={listRef} className="flex-1 overflow-y-auto p-4 no-scrollbar relative">
                             {loading ? (
-                                <div className="h-full flex flex-col items-center justify-center gap-4 opacity-40">
+                                <div className="h-full flex flex-col items-center justify-center gap-4 opacity-70">
                                     <div className="w-8 h-8 border-2 border-white/20 border-t-white animate-spin rounded-full"></div>
                                     <span className="text-[8px] font-mono uppercase tracking-[0.4em]">Mounting_Sector...</span>
                                 </div>
@@ -252,20 +250,20 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                                             <button
                                                 key={i}
                                                 onClick={() => item.isDir ? browse(item.path) : onSelect(item.path)}
-                                                className={`group flex flex-col items-center p-4 border-2 transition-all text-center gap-3 relative overflow-hidden ${isMatch ? 'bg-black/40 hover:bg-white/5' : 'border-white/5 hover:border-white/20 hover:bg-white/5'
+                                                className={`group flex flex-col items-center p-6 border-2 transition-all text-center gap-4 relative overflow-hidden ${isMatch ? 'bg-black/40 hover:bg-white/5' : 'border-white/5 hover:border-white/20 hover:bg-white/5'
                                                     }`}
                                                 style={{ borderColor: isMatch ? `${accentColor}44` : undefined }}
                                             >
                                                 {/* Bevel Corner */}
                                                 <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                                                <div className="w-10 h-10 flex items-center justify-center relative">
+                                                <div className="w-14 h-12 flex items-center justify-center relative">
                                                     {item.isDir ? (
-                                                        <div className="w-10 h-8 bg-white/10 relative rounded-sm" style={{ clipPath: 'polygon(0 0, 40% 0, 50% 20%, 100% 20%, 100% 100%, 0 100%)' }}>
+                                                        <div className="w-14 h-10 bg-white/10 relative rounded-sm" style={{ clipPath: 'polygon(0 0, 40% 0, 50% 20%, 100% 20%, 100% 100%, 0 100%)' }}>
                                                             <div className="absolute inset-0 border" style={{ borderColor: `${accentColor}33` }} />
                                                         </div>
                                                     ) : (
-                                                        <div className={`w-8 h-10 border-2 relative rounded-sm group-hover:bg-white/10 transition-colors flex items-center justify-center overflow-hidden`} style={{ borderColor: isMatch ? accentColor : 'rgba(255,255,255,0.2)' }}>
+                                                        <div className={`w-12 h-14 border-2 relative rounded-sm group-hover:bg-white/10 transition-colors flex items-center justify-center overflow-hidden`} style={{ borderColor: isMatch ? accentColor : 'rgba(255,255,255,0.2)' }}>
                                                             {['.jpg', '.jpeg', '.png', '.webp'].includes(item.ext) ? (
                                                                 <img src={`/api/proxy-image?path=${encodeURIComponent(item.path)}`} className={`w-full h-full object-cover transition-opacity ${isMatch ? 'opacity-90 group-hover:opacity-100' : 'opacity-50 group-hover:opacity-100'}`} />
                                                             ) : (
@@ -274,7 +272,7 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                                                         </div>
                                                     )}
                                                 </div>
-                                                <span className={`text-[9px] font-mono truncate w-full px-2 transition-colors ${isMatch ? 'text-white font-bold' : 'text-white/60 group-hover:text-white'}`} title={item.name}>
+                                                <span className={`text-[10px] font-mono font-bold truncate w-full px-2 transition-colors ${isMatch ? 'text-white' : 'text-white/60 group-hover:text-white'}`} title={item.name}>
                                                     {item.name}
                                                 </span>
                                             </button>
@@ -292,33 +290,32 @@ const FileExplorerModal: React.FC<FileExplorerModalProps> = ({ isOpen, onClose, 
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-white/5 bg-black/60 flex justify-between items-center px-8">
+                <div className="p-4 border-t border-white/10 bg-white/5 flex justify-between items-center px-8 shrink-0 relative z-[95]">
                     <div className="flex gap-6 items-center">
                         <div className="flex flex-col gap-1">
-                            <span className="text-[7px] opacity-40 uppercase tracking-widest">Status</span>
+                            <span className="text-[7px] opacity-70 uppercase tracking-widest">Status</span>
                             <span className="text-[9px] font-mono" style={{ color: accentColor }}>CHANNEL_SECURE</span>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <span className="text-[7px] opacity-40 uppercase tracking-widest">Path</span>
-                            <span className="text-[9px] font-mono text-white/50 truncate max-w-[400px]" title={currentPath}>{currentPath}</span>
+                            <span className="text-[7px] opacity-70 uppercase tracking-widest">Path</span>
+                            <span className="text-[9px] font-mono text-white/80 truncate max-w-[500px]" title={currentPath}>{currentPath}</span>
                         </div>
                     </div>
                     <div className="flex gap-3">
                         {filter === 'folder' && (
                             <button
                                 onClick={() => onSelect(currentPath)}
-                                className="px-6 py-2 border-2 text-[9px] font-mono uppercase tracking-widest transition-all bg-white text-black border-white hover:bg-white/80"
-                                style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#000' }}
+                                className="px-6 py-2 border-2 text-[9px] font-bold uppercase tracking-widest transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                                style={{ backgroundColor: accentColor, borderColor: accentColor, color: getContrastColor(accentColor) }}
                             >
-                                SELECT_CURRENT_DIRECTORY
+                                [ SELECT_CURRENT_DIRECTORY ]
                             </button>
                         )}
-                        <button onClick={onClose} className="px-6 py-2 border-2 border-white/10 text-[9px] font-mono uppercase tracking-widest hover:bg-white/5 transition-all">ABORT_PROTOCOL</button>
                     </div>
                 </div>
                 {/* Fixed Scrollbars */}
-                <CyberScrollbar containerRef={sidebarRef} accentColor={accentColor} top="160px" bottom="80px" right="auto" left="212px" width="12px" />
-                <CyberScrollbar containerRef={listRef} accentColor={accentColor} top="215px" bottom="80px" right="2px" />
+                <CyberScrollbar containerRef={sidebarRef} accentColor={accentColor} top="150px" bottom="80px" right="auto" left="232px" width="10px" />
+                <CyberScrollbar containerRef={listRef} accentColor={accentColor} top="195px" bottom="80px" right="8px" width="12px" />
             </div>
         </div>
     );

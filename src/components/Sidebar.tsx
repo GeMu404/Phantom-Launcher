@@ -13,11 +13,12 @@ interface SidebarProps {
   isSecretUnlocked?: boolean;
   performanceMode?: string;
   resolveColor: (raw: string) => string;
+  onOpenModularTest?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = React.memo(({
   categories, activeIndex, onSelect, onOpenManagement, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false,
-  performanceMode = 'normal', resolveColor
+  performanceMode = 'normal', resolveColor, onOpenModularTest
 }) => {
   const visibleCategories = categories.filter(c => c.enabled !== false && (c.id !== 'hidden' || isSecretUnlocked));
   const systemCategory = categories.find(c => c.id === 'all');
@@ -109,6 +110,32 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
             );
           })()}
           <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        </div>
+      </div>
+
+      {/* Modular Reconstruction Trigger */}
+      <div
+        onClick={onOpenModularTest}
+        className="w-full border-t border-white/5 pt-2 flex flex-col items-center cursor-pointer group"
+      >
+        <div
+          className="relative flex items-center justify-center p-1 opacity-40 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ width: 'calc(24px + 1vh)', height: 'calc(24px + 1vh)' }}
+        >
+          <div
+            className="w-full h-full bg-white transition-opacity duration-300"
+            style={{
+              maskImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Crect x=\'3\' y=\'3\' width=\'7\' height=\'7\'/%3E%3Crect x=\'14\' y=\'3\' width=\'7\' height=\'7\'/%3E%3Crect x=\'14\' y=\'14\' width=\'7\' height=\'7\'/%3E%3Crect x=\'3\' y=\'14\' width=\'7\' height=\'7\'/%3E%3C/svg%3E")',
+              WebkitMaskImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Crect x=\'3\' y=\'3\' width=\'7\' height=\'7\'/%3E%3Crect x=\'14\' y=\'3\' width=\'7\' height=\'7\'/%3E%3Crect x=\'14\' y=\'14\' width=\'7\' height=\'7\'/%3E%3Crect x=\'3\' y=\'14\' width=\'7\' height=\'7\'/%3E%3C/svg%3E")',
+              maskSize: '60%',
+              WebkitMaskSize: '60%',
+              maskPosition: 'center',
+              WebkitMaskPosition: 'center',
+              maskRepeat: 'no-repeat',
+              WebkitMaskRepeat: 'no-repeat',
+              opacity: 0.6
+            }}
+          />
         </div>
       </div>
 

@@ -7,7 +7,7 @@ export interface Game {
   logo: string;
   execPath?: string; // Path to .exe or a URL
   execArgs?: string; // Command line arguments
-  source?: 'manual' | 'steam' | 'imported';
+  source?: 'manual' | 'steam' | 'imported' | 'xbox' | 'emu';
   lastPlayed?: string;
   playtime?: string;
   wallpaper?: string;
@@ -43,6 +43,8 @@ export interface Category {
   nodeColor?: string;
   syncColor?: string;
   coreColor?: string;
+  explorerColor?: string;
+  sgdbColor?: string;
   slimModeEnabled?: boolean;
   monochromeModeEnabled?: boolean;
   primingAnimation?: 'waterfill' | 'scanline' | 'ignition' | 'charge' | 'shockwave' | 'glow_pulse';

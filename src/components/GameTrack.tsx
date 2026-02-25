@@ -18,6 +18,8 @@ interface GameTrackProps {
   outerGlowEnabled?: boolean;
   slimModeEnabled?: boolean;
   primingAnimation?: 'waterfill' | 'scanline' | 'ignition' | 'charge' | 'shockwave' | 'glow_pulse';
+  onSelect: (index: number) => void;
+  onLaunch: () => void;
 }
 
 const GameTrack: React.FC<GameTrackProps> = React.memo(({

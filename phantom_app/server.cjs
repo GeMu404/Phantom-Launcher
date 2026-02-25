@@ -15308,11 +15308,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path6) {
-      if (!path6 || typeof path6 !== "string") {
+    function lookup(path12) {
+      if (!path12 || typeof path12 !== "string") {
         return false;
       }
-      var extension2 = extname2("x." + path6).toLowerCase().slice(1);
+      var extension2 = extname2("x." + path12).toLowerCase().slice(1);
       if (!extension2) {
         return false;
       }
@@ -18780,13 +18780,13 @@ var require_view = __commonJS({
   "node_modules/express/lib/view.js"(exports2, module2) {
     "use strict";
     var debug = require_src()("express:view");
-    var path6 = require("node:path");
-    var fs6 = require("node:fs");
-    var dirname3 = path6.dirname;
-    var basename3 = path6.basename;
-    var extname2 = path6.extname;
-    var join3 = path6.join;
-    var resolve3 = path6.resolve;
+    var path12 = require("node:path");
+    var fs13 = require("node:fs");
+    var dirname3 = path12.dirname;
+    var basename3 = path12.basename;
+    var extname2 = path12.extname;
+    var join3 = path12.join;
+    var resolve3 = path12.resolve;
     module2.exports = View;
     function View(name, options) {
       var opts = options || {};
@@ -18815,17 +18815,17 @@ var require_view = __commonJS({
       this.path = this.lookup(fileName);
     }
     View.prototype.lookup = function lookup(name) {
-      var path7;
+      var path13;
       var roots = [].concat(this.root);
       debug('lookup "%s"', name);
-      for (var i = 0; i < roots.length && !path7; i++) {
+      for (var i = 0; i < roots.length && !path13; i++) {
         var root = roots[i];
         var loc = resolve3(root, name);
         var dir = dirname3(loc);
         var file = basename3(loc);
-        path7 = this.resolve(dir, file);
+        path13 = this.resolve(dir, file);
       }
-      return path7;
+      return path13;
     };
     View.prototype.render = function render(options, callback) {
       var sync = true;
@@ -18847,21 +18847,21 @@ var require_view = __commonJS({
     };
     View.prototype.resolve = function resolve4(dir, file) {
       var ext = this.ext;
-      var path7 = join3(dir, file);
-      var stat4 = tryStat(path7);
+      var path13 = join3(dir, file);
+      var stat4 = tryStat(path13);
       if (stat4 && stat4.isFile()) {
-        return path7;
+        return path13;
       }
-      path7 = join3(dir, basename3(file, ext), "index" + ext);
-      stat4 = tryStat(path7);
+      path13 = join3(dir, basename3(file, ext), "index" + ext);
+      stat4 = tryStat(path13);
       if (stat4 && stat4.isFile()) {
-        return path7;
+        return path13;
       }
     };
-    function tryStat(path7) {
-      debug('stat "%s"', path7);
+    function tryStat(path13) {
+      debug('stat "%s"', path13);
       try {
-        return fs6.statSync(path7);
+        return fs13.statSync(path13);
       } catch (e) {
         return void 0;
       }
@@ -20059,15 +20059,15 @@ var require_dist = __commonJS({
           if (token.type === endType)
             break;
           if (token.type === "char" || token.type === "escape") {
-            let path6 = token.value;
+            let path12 = token.value;
             let cur = tokens[pos];
             while (cur.type === "char" || cur.type === "escape") {
-              path6 += cur.value;
+              path12 += cur.value;
               cur = tokens[++pos];
             }
             output.push({
               type: "text",
-              value: encodePath(path6)
+              value: encodePath(path12)
             });
             continue;
           }
@@ -20091,16 +20091,16 @@ var require_dist = __commonJS({
       }
       return new TokenData(consumeUntil("end"), str);
     }
-    function compile(path6, options = {}) {
+    function compile(path12, options = {}) {
       const { encode = encodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const data = typeof path6 === "object" ? path6 : parse(path6, options);
+      const data = typeof path12 === "object" ? path12 : parse(path12, options);
       const fn = tokensToFunction(data.tokens, delimiter, encode);
-      return function path7(params = {}) {
-        const [path8, ...missing] = fn(params);
+      return function path13(params = {}) {
+        const [path14, ...missing] = fn(params);
         if (missing.length) {
           throw new TypeError(`Missing parameters: ${missing.join(", ")}`);
         }
-        return path8;
+        return path14;
       };
     }
     function tokensToFunction(tokens, delimiter, encode) {
@@ -20156,9 +20156,9 @@ var require_dist = __commonJS({
         return [encodeValue(value)];
       };
     }
-    function match(path6, options = {}) {
+    function match(path12, options = {}) {
       const { decode = decodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const { regexp, keys } = pathToRegexp(path6, options);
+      const { regexp, keys } = pathToRegexp(path12, options);
       const decoders = keys.map((key) => {
         if (decode === false)
           return NOOP_VALUE;
@@ -20170,7 +20170,7 @@ var require_dist = __commonJS({
         const m = regexp.exec(input);
         if (!m)
           return false;
-        const path7 = m[0];
+        const path13 = m[0];
         const params = /* @__PURE__ */ Object.create(null);
         for (let i = 1; i < m.length; i++) {
           if (m[i] === void 0)
@@ -20179,15 +20179,15 @@ var require_dist = __commonJS({
           const decoder = decoders[i - 1];
           params[key.name] = decoder(m[i]);
         }
-        return { path: path7, params };
+        return { path: path13, params };
       };
     }
-    function pathToRegexp(path6, options = {}) {
+    function pathToRegexp(path12, options = {}) {
       const { delimiter = DEFAULT_DELIMITER, end = true, sensitive = false, trailing = true } = options;
       const keys = [];
       const flags = sensitive ? "" : "i";
       const sources = [];
-      for (const input of pathsToArray(path6, [])) {
+      for (const input of pathsToArray(path12, [])) {
         const data = typeof input === "object" ? input : parse(input, options);
         for (const tokens of flatten(data.tokens, 0, [])) {
           sources.push(toRegExpSource(tokens, delimiter, keys, data.originalPath));
@@ -20317,18 +20317,18 @@ var require_layer = __commonJS({
     var TRAILING_SLASH_REGEXP = /\/+$/;
     var MATCHING_GROUP_REGEXP = /\((?:\?<(.*?)>)?(?!\?)/g;
     module2.exports = Layer;
-    function Layer(path6, options, fn) {
+    function Layer(path12, options, fn) {
       if (!(this instanceof Layer)) {
-        return new Layer(path6, options, fn);
+        return new Layer(path12, options, fn);
       }
-      debug("new %o", path6);
+      debug("new %o", path12);
       const opts = options || {};
       this.handle = fn;
       this.keys = [];
       this.name = fn.name || "<anonymous>";
       this.params = void 0;
       this.path = void 0;
-      this.slash = path6 === "/" && opts.end === false;
+      this.slash = path12 === "/" && opts.end === false;
       function matcher(_path) {
         if (_path instanceof RegExp) {
           const keys = [];
@@ -20367,7 +20367,7 @@ var require_layer = __commonJS({
           decode: decodeParam
         });
       }
-      this.matchers = Array.isArray(path6) ? path6.map(matcher) : [matcher(path6)];
+      this.matchers = Array.isArray(path12) ? path12.map(matcher) : [matcher(path12)];
     }
     Layer.prototype.handleError = function handleError(error, req, res, next) {
       const fn = this.handle;
@@ -20407,9 +20407,9 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.match = function match(path6) {
+    Layer.prototype.match = function match(path12) {
       let match2;
-      if (path6 != null) {
+      if (path12 != null) {
         if (this.slash) {
           this.params = {};
           this.path = "";
@@ -20417,7 +20417,7 @@ var require_layer = __commonJS({
         }
         let i = 0;
         while (!match2 && i < this.matchers.length) {
-          match2 = this.matchers[i](path6);
+          match2 = this.matchers[i](path12);
           i++;
         }
       }
@@ -20445,13 +20445,13 @@ var require_layer = __commonJS({
         throw err;
       }
     }
-    function loosen(path6) {
-      if (path6 instanceof RegExp || path6 === "/") {
-        return path6;
+    function loosen(path12) {
+      if (path12 instanceof RegExp || path12 === "/") {
+        return path12;
       }
-      return Array.isArray(path6) ? path6.map(function(p) {
+      return Array.isArray(path12) ? path12.map(function(p) {
         return loosen(p);
-      }) : String(path6).replace(TRAILING_SLASH_REGEXP, "");
+      }) : String(path12).replace(TRAILING_SLASH_REGEXP, "");
     }
   }
 });
@@ -20467,9 +20467,9 @@ var require_route = __commonJS({
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
     module2.exports = Route;
-    function Route(path6) {
-      debug("new %o", path6);
-      this.path = path6;
+    function Route(path12) {
+      debug("new %o", path12);
+      this.path = path12;
       this.stack = [];
       this.methods = /* @__PURE__ */ Object.create(null);
     }
@@ -20590,11 +20590,11 @@ var require_router = __commonJS({
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
-    module2.exports = Router;
+    module2.exports = Router8;
     module2.exports.Route = Route;
-    function Router(options) {
-      if (!(this instanceof Router)) {
-        return new Router(options);
+    function Router8(options) {
+      if (!(this instanceof Router8)) {
+        return new Router8(options);
       }
       const opts = options || {};
       function router(req, res, next) {
@@ -20608,9 +20608,9 @@ var require_router = __commonJS({
       router.stack = [];
       return router;
     }
-    Router.prototype = function() {
+    Router8.prototype = function() {
     };
-    Router.prototype.param = function param(name, fn) {
+    Router8.prototype.param = function param(name, fn) {
       if (!name) {
         throw new TypeError("argument name is required");
       }
@@ -20630,7 +20630,7 @@ var require_router = __commonJS({
       params.push(fn);
       return this;
     };
-    Router.prototype.handle = function handle(req, res, callback) {
+    Router8.prototype.handle = function handle(req, res, callback) {
       if (!callback) {
         throw new TypeError("argument callback is required");
       }
@@ -20677,8 +20677,8 @@ var require_router = __commonJS({
         if (++sync > 100) {
           return setImmediate(next, err);
         }
-        const path6 = getPathname(req);
-        if (path6 == null) {
+        const path12 = getPathname(req);
+        if (path12 == null) {
           return done(layerError);
         }
         let layer;
@@ -20686,7 +20686,7 @@ var require_router = __commonJS({
         let route;
         while (match !== true && idx < stack.length) {
           layer = stack[idx++];
-          match = matchLayer(layer, path6);
+          match = matchLayer(layer, path12);
           route = layer.route;
           if (typeof match !== "boolean") {
             layerError = layerError || match;
@@ -20724,18 +20724,18 @@ var require_router = __commonJS({
           } else if (route) {
             layer.handleRequest(req, res, next);
           } else {
-            trimPrefix(layer, layerError, layerPath, path6);
+            trimPrefix(layer, layerError, layerPath, path12);
           }
           sync = 0;
         });
       }
-      function trimPrefix(layer, layerError, layerPath, path6) {
+      function trimPrefix(layer, layerError, layerPath, path12) {
         if (layerPath.length !== 0) {
-          if (layerPath !== path6.substring(0, layerPath.length)) {
+          if (layerPath !== path12.substring(0, layerPath.length)) {
             next(layerError);
             return;
           }
-          const c = path6[layerPath.length];
+          const c = path12[layerPath.length];
           if (c && c !== "/") {
             next(layerError);
             return;
@@ -20757,9 +20757,9 @@ var require_router = __commonJS({
         }
       }
     };
-    Router.prototype.use = function use(handler) {
+    Router8.prototype.use = function use(handler) {
       let offset = 0;
-      let path6 = "/";
+      let path12 = "/";
       if (typeof handler !== "function") {
         let arg = handler;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -20767,7 +20767,7 @@ var require_router = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path6 = handler;
+          path12 = handler;
         }
       }
       const callbacks = flatten.call(slice.call(arguments, offset), Infinity);
@@ -20779,8 +20779,8 @@ var require_router = __commonJS({
         if (typeof fn !== "function") {
           throw new TypeError("argument handler must be a function");
         }
-        debug("use %o %s", path6, fn.name || "<anonymous>");
-        const layer = new Layer(path6, {
+        debug("use %o %s", path12, fn.name || "<anonymous>");
+        const layer = new Layer(path12, {
           sensitive: this.caseSensitive,
           strict: false,
           end: false
@@ -20790,9 +20790,9 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router.prototype.route = function route(path6) {
-      const route2 = new Route(path6);
-      const layer = new Layer(path6, {
+    Router8.prototype.route = function route(path12) {
+      const route2 = new Route(path12);
+      const layer = new Layer(path12, {
         sensitive: this.caseSensitive,
         strict: this.strict,
         end: true
@@ -20805,8 +20805,8 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router.prototype[method] = function(path6) {
-        const route = this.route(path6);
+      Router8.prototype[method] = function(path12) {
+        const route = this.route(path12);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
@@ -20835,9 +20835,9 @@ var require_router = __commonJS({
       const fqdnIndex = url.substring(0, pathLength).indexOf("://");
       return fqdnIndex !== -1 ? url.substring(0, url.indexOf("/", 3 + fqdnIndex)) : void 0;
     }
-    function matchLayer(layer, path6) {
+    function matchLayer(layer, path12) {
       try {
-        return layer.match(path6);
+        return layer.match(path12);
       } catch (err) {
         return err;
       }
@@ -20988,7 +20988,7 @@ var require_application = __commonJS({
     var compileTrust = require_utils3().compileTrust;
     var resolve3 = require("node:path").resolve;
     var once = require_once();
-    var Router = require_router();
+    var Router8 = require_router();
     var slice = Array.prototype.slice;
     var flatten = Array.prototype.flat;
     var app2 = exports2 = module2.exports = {};
@@ -21004,7 +21004,7 @@ var require_application = __commonJS({
         enumerable: true,
         get: function getrouter() {
           if (router === null) {
-            router = new Router({
+            router = new Router8({
               caseSensitive: this.enabled("case sensitive routing"),
               strict: this.enabled("strict routing")
             });
@@ -21065,7 +21065,7 @@ var require_application = __commonJS({
     };
     app2.use = function use(fn) {
       var offset = 0;
-      var path6 = "/";
+      var path12 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -21073,7 +21073,7 @@ var require_application = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path6 = fn;
+          path12 = fn;
         }
       }
       var fns = flatten.call(slice.call(arguments, offset), Infinity);
@@ -21083,12 +21083,12 @@ var require_application = __commonJS({
       var router = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router.use(path6, fn2);
+          return router.use(path12, fn2);
         }
-        debug(".use app under %s", path6);
-        fn2.mountpath = path6;
+        debug(".use app under %s", path12);
+        fn2.mountpath = path12;
         fn2.parent = this;
-        router.use(path6, function mounted_app(req, res, next) {
+        router.use(path12, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -21100,8 +21100,8 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app2.route = function route(path6) {
-      return this.router.route(path6);
+    app2.route = function route(path12) {
+      return this.router.route(path12);
     };
     app2.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
@@ -21144,7 +21144,7 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app2.path = function path6() {
+    app2.path = function path12() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
     app2.enabled = function enabled(setting) {
@@ -21160,17 +21160,17 @@ var require_application = __commonJS({
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app2[method] = function(path6) {
+      app2[method] = function(path12) {
         if (method === "get" && arguments.length === 1) {
-          return this.set(path6);
+          return this.set(path12);
         }
-        var route = this.route(path6);
+        var route = this.route(path12);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
     });
-    app2.all = function all(path6) {
-      var route = this.route(path6);
+    app2.all = function all(path12) {
+      var route = this.route(path12);
       var args = slice.call(arguments, 1);
       for (var i = 0; i < methods.length; i++) {
         route[methods[i]].apply(route, args);
@@ -22080,7 +22080,7 @@ var require_request = __commonJS({
       var subdomains2 = !isIP(hostname) ? hostname.split(".").reverse() : [hostname];
       return subdomains2.slice(offset);
     });
-    defineGetter(req, "path", function path6() {
+    defineGetter(req, "path", function path12() {
       return parse(this).pathname;
     });
     defineGetter(req, "host", function host() {
@@ -22487,32 +22487,32 @@ var require_send = __commonJS({
     var escapeHtml = require_escape_html();
     var etag = require_etag();
     var fresh = require_fresh();
-    var fs6 = require("fs");
+    var fs13 = require("fs");
     var mime = require_mime_types();
     var ms = require_ms();
     var onFinished = require_on_finished();
     var parseRange = require_range_parser();
-    var path6 = require("path");
+    var path12 = require("path");
     var statuses = require_statuses();
     var Stream = require("stream");
     var util = require("util");
-    var extname2 = path6.extname;
-    var join3 = path6.join;
-    var normalize2 = path6.normalize;
-    var resolve3 = path6.resolve;
-    var sep = path6.sep;
+    var extname2 = path12.extname;
+    var join3 = path12.join;
+    var normalize2 = path12.normalize;
+    var resolve3 = path12.resolve;
+    var sep = path12.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
     module2.exports = send;
-    function send(req, path7, options) {
-      return new SendStream(req, path7, options);
+    function send(req, path13, options) {
+      return new SendStream(req, path13, options);
     }
-    function SendStream(req, path7, options) {
+    function SendStream(req, path13, options) {
       Stream.call(this);
       var opts = options || {};
       this.options = opts;
-      this.path = path7;
+      this.path = path13;
       this.req = req;
       this._acceptRanges = opts.acceptRanges !== void 0 ? Boolean(opts.acceptRanges) : true;
       this._cacheControl = opts.cacheControl !== void 0 ? Boolean(opts.cacheControl) : true;
@@ -22626,10 +22626,10 @@ var require_send = __commonJS({
       var lastModified = this.res.getHeader("Last-Modified");
       return parseHttpDate(lastModified) <= parseHttpDate(ifRange);
     };
-    SendStream.prototype.redirect = function redirect(path7) {
+    SendStream.prototype.redirect = function redirect(path13) {
       var res = this.res;
       if (hasListeners(this, "directory")) {
-        this.emit("directory", res, path7);
+        this.emit("directory", res, path13);
         return;
       }
       if (this.hasTrailingSlash()) {
@@ -22649,38 +22649,38 @@ var require_send = __commonJS({
     SendStream.prototype.pipe = function pipe(res) {
       var root = this._root;
       this.res = res;
-      var path7 = decode(this.path);
-      if (path7 === -1) {
+      var path13 = decode(this.path);
+      if (path13 === -1) {
         this.error(400);
         return res;
       }
-      if (~path7.indexOf("\0")) {
+      if (~path13.indexOf("\0")) {
         this.error(400);
         return res;
       }
       var parts;
       if (root !== null) {
-        if (path7) {
-          path7 = normalize2("." + sep + path7);
+        if (path13) {
+          path13 = normalize2("." + sep + path13);
         }
-        if (UP_PATH_REGEXP.test(path7)) {
-          debug('malicious path "%s"', path7);
+        if (UP_PATH_REGEXP.test(path13)) {
+          debug('malicious path "%s"', path13);
           this.error(403);
           return res;
         }
-        parts = path7.split(sep);
-        path7 = normalize2(join3(root, path7));
+        parts = path13.split(sep);
+        path13 = normalize2(join3(root, path13));
       } else {
-        if (UP_PATH_REGEXP.test(path7)) {
-          debug('malicious path "%s"', path7);
+        if (UP_PATH_REGEXP.test(path13)) {
+          debug('malicious path "%s"', path13);
           this.error(403);
           return res;
         }
-        parts = normalize2(path7).split(sep);
-        path7 = resolve3(path7);
+        parts = normalize2(path13).split(sep);
+        path13 = resolve3(path13);
       }
       if (containsDotFile(parts)) {
-        debug('%s dotfile "%s"', this._dotfiles, path7);
+        debug('%s dotfile "%s"', this._dotfiles, path13);
         switch (this._dotfiles) {
           case "allow":
             break;
@@ -22694,13 +22694,13 @@ var require_send = __commonJS({
         }
       }
       if (this._index.length && this.hasTrailingSlash()) {
-        this.sendIndex(path7);
+        this.sendIndex(path13);
         return res;
       }
-      this.sendFile(path7);
+      this.sendFile(path13);
       return res;
     };
-    SendStream.prototype.send = function send2(path7, stat4) {
+    SendStream.prototype.send = function send2(path13, stat4) {
       var len = stat4.size;
       var options = this.options;
       var opts = {};
@@ -22712,9 +22712,9 @@ var require_send = __commonJS({
         this.headersAlreadySent();
         return;
       }
-      debug('pipe "%s"', path7);
-      this.setHeader(path7, stat4);
-      this.type(path7);
+      debug('pipe "%s"', path13);
+      this.setHeader(path13, stat4);
+      this.type(path13);
       if (this.isConditionalGET()) {
         if (this.isPreconditionFailure()) {
           this.error(412);
@@ -22763,30 +22763,30 @@ var require_send = __commonJS({
         res.end();
         return;
       }
-      this.stream(path7, opts);
+      this.stream(path13, opts);
     };
-    SendStream.prototype.sendFile = function sendFile(path7) {
+    SendStream.prototype.sendFile = function sendFile(path13) {
       var i = 0;
       var self = this;
-      debug('stat "%s"', path7);
-      fs6.stat(path7, function onstat(err, stat4) {
-        var pathEndsWithSep = path7[path7.length - 1] === sep;
-        if (err && err.code === "ENOENT" && !extname2(path7) && !pathEndsWithSep) {
+      debug('stat "%s"', path13);
+      fs13.stat(path13, function onstat(err, stat4) {
+        var pathEndsWithSep = path13[path13.length - 1] === sep;
+        if (err && err.code === "ENOENT" && !extname2(path13) && !pathEndsWithSep) {
           return next(err);
         }
         if (err) return self.onStatError(err);
-        if (stat4.isDirectory()) return self.redirect(path7);
+        if (stat4.isDirectory()) return self.redirect(path13);
         if (pathEndsWithSep) return self.error(404);
-        self.emit("file", path7, stat4);
-        self.send(path7, stat4);
+        self.emit("file", path13, stat4);
+        self.send(path13, stat4);
       });
       function next(err) {
         if (self._extensions.length <= i) {
           return err ? self.onStatError(err) : self.error(404);
         }
-        var p = path7 + "." + self._extensions[i++];
+        var p = path13 + "." + self._extensions[i++];
         debug('stat "%s"', p);
-        fs6.stat(p, function(err2, stat4) {
+        fs13.stat(p, function(err2, stat4) {
           if (err2) return next(err2);
           if (stat4.isDirectory()) return next();
           self.emit("file", p, stat4);
@@ -22794,7 +22794,7 @@ var require_send = __commonJS({
         });
       }
     };
-    SendStream.prototype.sendIndex = function sendIndex(path7) {
+    SendStream.prototype.sendIndex = function sendIndex(path13) {
       var i = -1;
       var self = this;
       function next(err) {
@@ -22802,9 +22802,9 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join3(path7, self._index[i]);
+        var p = join3(path13, self._index[i]);
         debug('stat "%s"', p);
-        fs6.stat(p, function(err2, stat4) {
+        fs13.stat(p, function(err2, stat4) {
           if (err2) return next(err2);
           if (stat4.isDirectory()) return next();
           self.emit("file", p, stat4);
@@ -22813,10 +22813,10 @@ var require_send = __commonJS({
       }
       next();
     };
-    SendStream.prototype.stream = function stream(path7, options) {
+    SendStream.prototype.stream = function stream(path13, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs6.createReadStream(path7, options);
+      var stream2 = fs13.createReadStream(path13, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -22831,17 +22831,17 @@ var require_send = __commonJS({
         self.emit("end");
       });
     };
-    SendStream.prototype.type = function type(path7) {
+    SendStream.prototype.type = function type(path13) {
       var res = this.res;
       if (res.getHeader("Content-Type")) return;
-      var ext = extname2(path7);
+      var ext = extname2(path13);
       var type2 = mime.contentType(ext) || "application/octet-stream";
       debug("content-type %s", type2);
       res.setHeader("Content-Type", type2);
     };
-    SendStream.prototype.setHeader = function setHeader(path7, stat4) {
+    SendStream.prototype.setHeader = function setHeader(path13, stat4) {
       var res = this.res;
-      this.emit("headers", res, path7, stat4);
+      this.emit("headers", res, path13, stat4);
       if (this._acceptRanges && !res.getHeader("Accept-Ranges")) {
         debug("accept ranges");
         res.setHeader("Accept-Ranges", "bytes");
@@ -22899,9 +22899,9 @@ var require_send = __commonJS({
       }
       return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
-    function decode(path7) {
+    function decode(path13) {
       try {
-        return decodeURIComponent(path7);
+        return decodeURIComponent(path13);
       } catch (err) {
         return -1;
       }
@@ -23045,7 +23045,7 @@ var require_response = __commonJS({
     var http = require("node:http");
     var onFinished = require_on_finished();
     var mime = require_mime_types();
-    var path6 = require("node:path");
+    var path12 = require("node:path");
     var pathIsAbsolute = require("node:path").isAbsolute;
     var statuses = require_statuses();
     var sign = require_cookie_signature().sign;
@@ -23054,8 +23054,8 @@ var require_response = __commonJS({
     var setCharset = require_utils3().setCharset;
     var cookie = require_cookie();
     var send = require_send();
-    var extname2 = path6.extname;
-    var resolve3 = path6.resolve;
+    var extname2 = path12.extname;
+    var resolve3 = path12.resolve;
     var vary = require_vary();
     var { Buffer: Buffer2 } = require("node:buffer");
     var res = Object.create(http.ServerResponse.prototype);
@@ -23201,26 +23201,26 @@ var require_response = __commonJS({
       this.type("txt");
       return this.send(body);
     };
-    res.sendFile = function sendFile(path7, options, callback) {
+    res.sendFile = function sendFile(path13, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
       var next = req.next;
       var opts = options || {};
-      if (!path7) {
+      if (!path13) {
         throw new TypeError("path argument is required to res.sendFile");
       }
-      if (typeof path7 !== "string") {
+      if (typeof path13 !== "string") {
         throw new TypeError("path must be a string to res.sendFile");
       }
       if (typeof options === "function") {
         done = options;
         opts = {};
       }
-      if (!opts.root && !pathIsAbsolute(path7)) {
+      if (!opts.root && !pathIsAbsolute(path13)) {
         throw new TypeError("path must be absolute or specify root to res.sendFile");
       }
-      var pathname = encodeURI(path7);
+      var pathname = encodeURI(path13);
       opts.etag = this.app.enabled("etag");
       var file = send(req, pathname, opts);
       sendfile(res2, file, opts, function(err) {
@@ -23231,7 +23231,7 @@ var require_response = __commonJS({
         }
       });
     };
-    res.download = function download(path7, filename, options, callback) {
+    res.download = function download(path13, filename, options, callback) {
       var done = callback;
       var name = filename;
       var opts = options || null;
@@ -23248,7 +23248,7 @@ var require_response = __commonJS({
         opts = filename;
       }
       var headers = {
-        "Content-Disposition": contentDisposition(name || path7)
+        "Content-Disposition": contentDisposition(name || path13)
       };
       if (opts && opts.headers) {
         var keys = Object.keys(opts.headers);
@@ -23261,7 +23261,7 @@ var require_response = __commonJS({
       }
       opts = Object.create(opts);
       opts.headers = headers;
-      var fullPath = !opts.root ? resolve3(path7) : path7;
+      var fullPath = !opts.root ? resolve3(path13) : path13;
       return this.sendFile(fullPath, opts, done);
     };
     res.contentType = res.type = function contentType(type) {
@@ -23544,11 +23544,11 @@ var require_serve_static = __commonJS({
         }
         var forwardError = !fallthrough;
         var originalUrl = parseUrl.original(req);
-        var path6 = parseUrl(req).pathname;
-        if (path6 === "/" && originalUrl.pathname.substr(-1) !== "/") {
-          path6 = "";
+        var path12 = parseUrl(req).pathname;
+        if (path12 === "/" && originalUrl.pathname.substr(-1) !== "/") {
+          path12 = "";
         }
-        var stream = send(req, path6, opts);
+        var stream = send(req, path12, opts);
         stream.on("directory", onDirectory);
         if (setHeaders) {
           stream.on("headers", setHeaders);
@@ -23615,7 +23615,7 @@ var require_express = __commonJS({
     var EventEmitter2 = require("node:events").EventEmitter;
     var mixin = require_merge_descriptors();
     var proto = require_application();
-    var Router = require_router();
+    var Router8 = require_router();
     var req = require_request();
     var res = require_response();
     exports2 = module2.exports = createApplication;
@@ -23637,8 +23637,8 @@ var require_express = __commonJS({
     exports2.application = proto;
     exports2.request = req;
     exports2.response = res;
-    exports2.Route = Router.Route;
-    exports2.Router = Router;
+    exports2.Route = Router8.Route;
+    exports2.Router = Router8;
     exports2.json = bodyParser.json;
     exports2.raw = bodyParser.raw;
     exports2.static = require_serve_static();
@@ -23934,12 +23934,11 @@ var require_lib3 = __commonJS({
 });
 
 // server.ts
-var import_express = __toESM(require_express2(), 1);
+var import_express8 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
-var import_child_process2 = require("child_process");
-var import_fs5 = __toESM(require("fs"), 1);
-var import_path5 = __toESM(require("path"), 1);
-var import_https2 = __toESM(require("https"), 1);
+var import_child_process6 = require("child_process");
+var import_fs12 = __toESM(require("fs"), 1);
+var import_path11 = __toESM(require("path"), 1);
 
 // database.ts
 var import_fs = __toESM(require("fs"), 1);
@@ -24232,6 +24231,1172 @@ var AppDatabase = class {
   }
 };
 
+// server/launchUtils.ts
+var import_child_process = require("child_process");
+var import_path2 = __toESM(require("path"), 1);
+function launchViaShell(execPath, execArgs = "") {
+  const dir = import_path2.default.dirname(execPath);
+  const psScript = `$shell = New-Object -ComObject Shell.Application; $shell.ShellExecute('${execPath.replace(/'/g, "''")}', '${(execArgs || "").replace(/'/g, "''")}', '${dir.replace(/'/g, "''")}', 'open', 1)`;
+  const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+  (0, import_child_process.exec)(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (error) => {
+    if (error) {
+      console.error("[Launch] Shell.Application failed, fallback:", error.message);
+      (0, import_child_process.exec)(`start "" "${execPath}" ${execArgs}`);
+    }
+  });
+}
+
+// server/routes/steamRoutes.ts
+var import_express = __toESM(require_express2(), 1);
+var import_fs4 = __toESM(require("fs"), 1);
+var import_path5 = __toESM(require("path"), 1);
+
+// server/steamUtils.ts
+var import_fs2 = __toESM(require("fs"), 1);
+var import_path3 = __toESM(require("path"), 1);
+var isPkg = typeof process.pkg !== "undefined";
+var BASE_DIR = isPkg ? import_path3.default.dirname(process.execPath) : process.cwd();
+var TAGS_CACHE_FILE = import_path3.default.join(BASE_DIR, "tags_cache.json");
+var steamTagCache = {};
+var isTagCacheLoaded = false;
+var loadTagCache = () => {
+  if (isTagCacheLoaded) return;
+  try {
+    if (import_fs2.default.existsSync(TAGS_CACHE_FILE)) {
+      steamTagCache = JSON.parse(import_fs2.default.readFileSync(TAGS_CACHE_FILE, "utf-8"));
+    }
+    isTagCacheLoaded = true;
+  } catch (e) {
+  }
+};
+var saveTagCache = () => {
+  try {
+    import_fs2.default.writeFileSync(TAGS_CACHE_FILE, JSON.stringify(steamTagCache, null, 2));
+  } catch (e) {
+  }
+};
+var getStoreTags = async (appId) => {
+  loadTagCache();
+  if (steamTagCache[appId]) return steamTagCache[appId];
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3e3);
+    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.status === 429) {
+      console.log(`[Steam] Rate limit hit fetching tags for app ${appId}`);
+      return [];
+    }
+    const json = await res.json();
+    if (json[appId]?.success) {
+      const data = json[appId].data;
+      const genres = (data.genres || []).map((g) => g.description.toLowerCase());
+      const categories = (data.categories || []).map((c) => c.description.toLowerCase());
+      const adult = data.content_descriptors?.ids?.includes(3) || data.required_age >= 18 ? ["adultonly"] : [];
+      const isSoftware = data.type === "software" || data.type === "tool" || data.type === "application" ? ["software"] : [];
+      const tags = [...genres, ...categories, ...adult, ...isSoftware];
+      steamTagCache[appId] = tags;
+      return tags;
+    }
+  } catch (e) {
+  }
+  steamTagCache[appId] = [];
+  return [];
+};
+var heaviestSteamUserCache = null;
+var getHeaviestSteamUser = (userdataDir) => {
+  if (heaviestSteamUserCache) return heaviestSteamUserCache;
+  let heaviestUser = "";
+  let maxFiles = -1;
+  try {
+    if (!import_fs2.default.existsSync(userdataDir)) return null;
+    const users = import_fs2.default.readdirSync(userdataDir);
+    for (const user of users) {
+      const gridDir = import_path3.default.join(userdataDir, user, "config", "grid");
+      if (import_fs2.default.existsSync(gridDir)) {
+        const fileCount = import_fs2.default.readdirSync(gridDir).length;
+        if (fileCount > maxFiles) {
+          maxFiles = fileCount;
+          heaviestUser = user;
+        }
+      }
+    }
+    if (heaviestUser) heaviestSteamUserCache = heaviestUser;
+  } catch (e) {
+  }
+  return heaviestSteamUserCache;
+};
+var findLocalSteamAsset = (appId, type) => {
+  const steamPath = "C:\\Program Files (x86)\\Steam";
+  const suffixes = {
+    cover: ["p.png", "p.jpg"],
+    banner: [".png", ".jpg"],
+    logo: ["_logo.png", "_logo.jpg"],
+    hero: ["_hero.png", "_hero.jpg"]
+  };
+  const userdataDir = import_path3.default.join(steamPath, "userdata");
+  const heaviestUser = getHeaviestSteamUser(userdataDir);
+  if (heaviestUser) {
+    const gridDir = import_path3.default.join(userdataDir, heaviestUser, "config", "grid");
+    for (const suffix of suffixes[type]) {
+      const localPath = import_path3.default.join(gridDir, `${appId}${suffix}`);
+      if (import_fs2.default.existsSync(localPath)) return localPath;
+    }
+  }
+  if (import_fs2.default.existsSync(userdataDir)) {
+    try {
+      const users = import_fs2.default.readdirSync(userdataDir);
+      for (const user of users) {
+        if (user === heaviestUser) continue;
+        const gridDir = import_path3.default.join(userdataDir, user, "config", "grid");
+        for (const suffix of suffixes[type]) {
+          const localPath = import_path3.default.join(gridDir, `${appId}${suffix}`);
+          if (import_fs2.default.existsSync(localPath)) return localPath;
+        }
+      }
+    } catch (e) {
+    }
+  }
+  const legacyFilenameMap = {
+    cover: `${appId}_library_600x900.jpg`,
+    banner: `${appId}_header.jpg`,
+    logo: `${appId}_logo.png`,
+    hero: `${appId}_library_hero.jpg`
+  };
+  const libraryCache = import_path3.default.join(steamPath, "appcache", "librarycache", legacyFilenameMap[type]);
+  if (import_fs2.default.existsSync(libraryCache)) return libraryCache;
+  return null;
+};
+
+// server/imageUtils.ts
+var import_fs3 = __toESM(require("fs"), 1);
+var import_https = __toESM(require("https"), 1);
+var import_node_module2 = require("node:module");
+var import_path4 = __toESM(require("path"), 1);
+var isExe2 = process.execPath.toLowerCase().endsWith("phantomserver.exe");
+var requireFunc2 = isExe2 ? (0, import_node_module2.createRequire)(process.execPath) : typeof require !== "undefined" ? require : eval("require");
+var sharp = null;
+try {
+  const exeDir = isExe2 ? import_path4.default.dirname(process.execPath) : process.cwd();
+  const sharpPath = import_path4.default.join(exeDir, "node_modules", "sharp");
+  sharp = requireFunc2(sharpPath);
+} catch (e) {
+  console.error("FATAL: First absolute load failed for sharp:", e);
+  try {
+    sharp = requireFunc2("sharp");
+  } catch (e2) {
+    console.error("FATAL: Could not load sharp module.", e2);
+  }
+}
+var processImage = async (input, dest, type) => {
+  console.log(`[Sharp] Processing ${type} -> ${dest}`);
+  try {
+    const metadata = await sharp(input).metadata();
+    const isAnimated = metadata.pages && metadata.pages > 1;
+    if (isAnimated) {
+      console.log(`[Sharp] Animation detected (frames: ${metadata.pages}). Bypassing processing for ${dest}`);
+      if (typeof input === "string") {
+        import_fs3.default.copyFileSync(input, dest);
+      } else {
+        import_fs3.default.writeFileSync(dest, input);
+      }
+      return dest;
+    }
+    let sharpInstance = sharp(input, { animated: true });
+    if (type === "cover") {
+      sharpInstance = sharpInstance.resize(600, 900, { fit: "cover" });
+    } else if (type === "banner") {
+      sharpInstance = sharpInstance.resize(920, 430, { fit: "cover" });
+    } else if (type === "icon") {
+      sharpInstance = sharpInstance.resize(256, 246, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } });
+    } else if (type === "logo") {
+      if (isAnimated) {
+        sharpInstance = sharpInstance.resize(800, 320, { fit: "inside" }).webp({ effort: 0 });
+      } else {
+        sharpInstance = sharpInstance.trim().resize(800, 320, { fit: "inside" });
+        const buffer = await sharpInstance.png().toBuffer();
+        sharpInstance = sharp({
+          create: {
+            width: 800,
+            height: 320,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 0 }
+          }
+        }).composite([{ input: buffer, gravity: "center" }]);
+      }
+    }
+    await sharpInstance.toFile(dest);
+    return dest;
+  } catch (e) {
+    console.error(`[Sharp] Final error on ${dest}:`, e.message);
+    if (typeof input === "string" && import_fs3.default.existsSync(input) && input !== dest) {
+      import_fs3.default.copyFileSync(input, dest);
+    }
+    return dest;
+  }
+};
+var downloadImage = (url, dest) => {
+  return new Promise((resolve3, reject) => {
+    if (dest.includes("steam_") && import_fs3.default.existsSync(dest)) return resolve3(dest);
+    import_https.default.get(url, (response) => {
+      if (response.statusCode !== 200) {
+        return reject(new Error(`Failed to download: ${response.statusCode}`));
+      }
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => {
+        const buffer = Buffer.concat(chunks);
+        import_fs3.default.writeFileSync(dest, buffer);
+        resolve3(dest);
+      });
+    }).on("error", reject);
+  });
+};
+
+// server/routes/steamRoutes.ts
+function parseVdfPaths(content) {
+  const paths = [];
+  const regex = /"path"\s*"([^"]+)"/gi;
+  let match;
+  while ((match = regex.exec(content)) !== null) paths.push(match[1].replace(/\\\\/g, "\\"));
+  return paths;
+}
+function parseAcfManifest(content) {
+  const appidMatch = content.match(/"appid"\s*"(\d+)"/);
+  const nameMatch = content.match(/"name"\s*"([^"]+)"/);
+  const lastUpdatedMatch = content.match(/"LastUpdated"\s*"(\d+)"/);
+  if (appidMatch && nameMatch) {
+    return { appid: appidMatch[1], name: nameMatch[1], lastUpdated: lastUpdatedMatch ? parseInt(lastUpdatedMatch[1]) : 0 };
+  }
+  return null;
+}
+function createSteamRoutes(ctx2) {
+  const router = (0, import_express.Router)();
+  router.all("/scan", async (req, res) => {
+    console.log("[Server] Scanning Steam libraries...");
+    try {
+      const { includeHidden = false, includeSoftware = false, includeAdultOnly = false } = req.body || {};
+      const vdfPath = "C:\\Program Files (x86)\\Steam\\config\\libraryfolders.vdf";
+      if (!import_fs4.default.existsSync(vdfPath)) {
+        return res.status(404).json({ error: "Steam config not found at default location" });
+      }
+      const hiddenAppIds = /* @__PURE__ */ new Set();
+      const lastPlayedMap = /* @__PURE__ */ new Map();
+      const softwareAppIds = /* @__PURE__ */ new Set([
+        "214850",
+        "250820",
+        "365670",
+        "1486350",
+        "431960",
+        "388080",
+        "993090",
+        "331200",
+        "228980"
+      ]);
+      try {
+        const userdataRoot = "C:\\Program Files (x86)\\Steam\\userdata";
+        if (import_fs4.default.existsSync(userdataRoot)) {
+          const users = import_fs4.default.readdirSync(userdataRoot);
+          for (const user of users) {
+            const configPaths = [
+              import_path5.default.join(userdataRoot, user, "7", "remote", "sharedconfig.vdf"),
+              import_path5.default.join(userdataRoot, user, "config", "localconfig.vdf")
+            ];
+            for (const configPath of configPaths) {
+              if (import_fs4.default.existsSync(configPath)) {
+                const content = import_fs4.default.readFileSync(configPath, "utf-8");
+                const hiddenTagRegex = /"(\d+)"\s*\{[^}]*"tags"\s*\{[^}]*"hidden"/gi;
+                let match;
+                while ((match = hiddenTagRegex.exec(content)) !== null) {
+                  hiddenAppIds.add(match[1]);
+                }
+                const hiddenKeyRegex = /"(\d+)"\s*\{[^}]*"Hidden"\s*"1"/gi;
+                while ((match = hiddenKeyRegex.exec(content)) !== null) {
+                  hiddenAppIds.add(match[1]);
+                }
+                const lastPlayedRegex = /"([^"]+)"\s*\{[^}]*"LastPlayed"\s*"(\d+)"/gi;
+                while ((match = lastPlayedRegex.exec(content)) !== null) {
+                  lastPlayedMap.set(match[1], parseInt(match[2]));
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[Server] Failed to parse local configs:", e);
+      }
+      const vdfContent = import_fs4.default.readFileSync(vdfPath, "utf-8");
+      const libraryPaths = parseVdfPaths(vdfContent);
+      const games = [];
+      const softwareKeywords = ["Steamworks", "Redistributable", "Soundtrack", "Artbook", "SDK", "Dedicated Server", "Benchmark", "Tool", "Utility", "Studio", "Editor", "Engine", "Framework", "Application", "Software", "Demo", "Player", "Workshop", "Server", "Client", "Driver", "Config"];
+      for (const libPath of libraryPaths) {
+        const appsPath = import_path5.default.join(libPath, "steamapps");
+        if (import_fs4.default.existsSync(appsPath)) {
+          const files = import_fs4.default.readdirSync(appsPath);
+          for (const file of files) {
+            if (file.startsWith("appmanifest_") && file.endsWith(".acf")) {
+              try {
+                const manifestContent = import_fs4.default.readFileSync(import_path5.default.join(appsPath, file), "utf-8");
+                const info = parseAcfManifest(manifestContent);
+                if (info) {
+                  let isSoftware = softwareAppIds.has(info.appid) || softwareKeywords.some((kw) => info.name.toLowerCase().includes(kw.toLowerCase())) || softwareKeywords.some((kw) => file.toLowerCase().includes(kw.toLowerCase()));
+                  const tags = await getStoreTags(info.appid);
+                  if (tags.includes("software") || tags.includes("audio production") || tags.includes("utilities")) {
+                    isSoftware = true;
+                  }
+                  const isAdultOnly = tags.includes("adultonly") || tags.includes("nsfw");
+                  if (!includeSoftware && isSoftware) continue;
+                  if (!includeAdultOnly && isAdultOnly) continue;
+                  const isHidden = hiddenAppIds.has(info.appid);
+                  if (!includeHidden && isHidden) continue;
+                  const gameId = `steam_${info.appid}`;
+                  const steamAssets = [
+                    { type: "cover", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_600x900.jpg`, local: findLocalSteamAsset(info.appid, "cover") },
+                    { type: "banner", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/header.jpg`, local: findLocalSteamAsset(info.appid, "banner") },
+                    { type: "logo", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/logo.png`, local: findLocalSteamAsset(info.appid, "logo") },
+                    { type: "hero", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_hero.jpg`, local: findLocalSteamAsset(info.appid, "hero") }
+                  ];
+                  const gameObj = {
+                    id: gameId,
+                    title: info.name,
+                    execPath: `steam://rungameid/${info.appid}`,
+                    source: "steam",
+                    lastUpdated: lastPlayedMap.get(info.appid) || info.lastUpdated || 0
+                  };
+                  for (const asset of steamAssets) {
+                    const source = asset.local || asset.remote;
+                    const ext = source.toLowerCase().includes(".png") ? ".png" : ".jpg";
+                    const assetSubDir = import_path5.default.join("steam", info.appid.toString());
+                    const fullAssetDir = import_path5.default.join(ctx2.ASSETS_DIR, assetSubDir);
+                    if (!import_fs4.default.existsSync(fullAssetDir)) import_fs4.default.mkdirSync(fullAssetDir, { recursive: true });
+                    const dest = import_path5.default.join(fullAssetDir, `${asset.type}${ext}`);
+                    gameObj[asset.type] = import_path5.default.resolve(dest);
+                    (async () => {
+                      if (source.startsWith("http")) {
+                        if (!import_fs4.default.existsSync(dest)) await downloadImage(source, dest).catch(() => {
+                        });
+                      } else {
+                        try {
+                          if (!import_fs4.default.existsSync(dest)) import_fs4.default.copyFileSync(source, dest);
+                        } catch (e) {
+                        }
+                      }
+                    })();
+                  }
+                  games.push(gameObj);
+                }
+              } catch (e) {
+              }
+            }
+          }
+        }
+      }
+      saveTagCache();
+      res.json({ games: games.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0)) });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  return router;
+}
+
+// server/routes/xboxRoutes.ts
+var import_express2 = __toESM(require_express2(), 1);
+var import_fs5 = __toESM(require("fs"), 1);
+var import_path6 = __toESM(require("path"), 1);
+var import_child_process2 = require("child_process");
+function createXboxRoutes(ctx2) {
+  const router = (0, import_express2.Router)();
+  router.all("/scan", async (req, res) => {
+    console.log("[Server] Scanning Xbox/Store games...");
+    try {
+      const assetsDirPs = ctx2.ASSETS_DIR.replace(/\\/g, "\\\\");
+      const psScript = `
+$ErrorActionPreference = 'SilentlyContinue'
+$assetsDir = "${assetsDirPs}"
+$WScript = New-Object -ComObject WScript.Shell
+
+$packages = Get-AppxPackage | Where-Object { $_.IsFramework -eq $false -and $_.SignatureKind -eq "Store" }
+$packageMap = @{}
+foreach ($p in $packages) {
+    if ($p.PackageFamilyName) { $packageMap[$p.PackageFamilyName] = $p }
+}
+
+$startApps = Get-StartApps
+$games = @()
+
+foreach ($app in $startApps) {
+    if (-not $app.AppID.Contains("!")) { continue }
+    
+    $pfn = $app.AppID.Split("!")[0]
+    $pkg = $packageMap[$pfn]
+    
+    if ($pkg) {
+        $installLoc = $pkg.InstallLocation
+        $isGame = $false
+        
+        if ($installLoc -and (Test-Path $installLoc)) {
+            $manifestPath = Join-Path $installLoc "AppxManifest.xml"
+            if (Test-Path $manifestPath) {
+                try {
+                    $content = Get-Content $manifestPath -Raw
+                    if ($content -match "ms-xbl-[a-f0-9]+" -or $content -match "uap:GameMode" -or $content -match "Category=\`"windows.game\`"") { 
+                        $isGame = $true 
+                    }
+                } catch {}
+            }
+        }
+
+        if ($isGame) {
+             $logoPath = ""
+            if ($pkg.Logo -and $installLoc) {
+                $possibleLogo = Join-Path $installLoc $pkg.Logo
+                if (Test-Path $possibleLogo) { $logoPath = $possibleLogo }
+            }
+            
+            # Create Shortcut
+            $gameId = "xbox_" + $pkg.Name
+            $gameDir = Join-Path $assetsDir $gameId
+            if (-not (Test-Path $gameDir)) { New-Item -ItemType Directory -Path $gameDir -Force | Out-Null }
+            
+            $lnkPath = Join-Path $gameDir "launch.lnk"
+            try {
+                $s = $WScript.CreateShortcut($lnkPath)
+                $s.TargetPath = "explorer.exe"
+                $s.Arguments = "shell:AppsFolder\\\\" + $app.AppID
+                $s.IconLocation = "$logoPath,0"
+                $s.Save()
+            } catch {
+                Write-Host "Failed to create shortcut for $($app.Name): $_"
+            }
+
+            $games += [PSCustomObject]@{
+                Title = $app.Name
+                Id = $gameId
+                ExecPath = $lnkPath
+                Logo = $logoPath
+                InstallDate = (Get-Item $installLoc).CreationTime.ToString("yyyy-MM-dd HH:mm:ss")
+            }
+        }
+    }
+}
+$games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
+`;
+      const encodedCommand = Buffer.from(psScript, "utf16le").toString("base64");
+      const command = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
+      (0, import_child_process2.exec)(command, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout) => {
+        if (error) return res.status(500).json({ error: "Failed to scan Xbox games" });
+        try {
+          const rawGames = JSON.parse(stdout || "[]");
+          const psGames = Array.isArray(rawGames) ? rawGames : [rawGames];
+          const games = [];
+          for (const g of psGames) {
+            if (!g.Id) continue;
+            const gameId = g.Id;
+            let localLogoPath = null;
+            if (g.Logo && import_fs5.default.existsSync(g.Logo)) {
+              const assetSubDir = import_path6.default.join("xbox", gameId);
+              const fullAssetDir = import_path6.default.join(ctx2.ASSETS_DIR, assetSubDir);
+              if (!import_fs5.default.existsSync(fullAssetDir)) import_fs5.default.mkdirSync(fullAssetDir, { recursive: true });
+              const logoDestPng = import_path6.default.join(fullAssetDir, "logo.png");
+              try {
+                import_fs5.default.copyFileSync(g.Logo, logoDestPng);
+                localLogoPath = import_path6.default.resolve(logoDestPng);
+              } catch (e) {
+              }
+            }
+            games.push({
+              id: gameId,
+              title: g.Title,
+              execPath: g.ExecPath,
+              source: "xbox",
+              logo: localLogoPath || ""
+            });
+          }
+          res.json({ games });
+        } catch (parseError) {
+          res.json({ games: [] });
+        }
+      });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  return router;
+}
+
+// server/routes/emuRoutes.ts
+var import_express3 = __toESM(require_express2(), 1);
+var import_fs7 = __toESM(require("fs"), 1);
+var import_path7 = __toESM(require("path"), 1);
+var import_child_process3 = require("child_process");
+
+// server/emuUtils.ts
+var import_fs6 = __toESM(require("fs"), 1);
+var PLATFORM_NAMES = {
+  "3ds": "NINTENDO 3DS",
+  "n64": "NINTENDO 64",
+  "nds": "NINTENDO DS",
+  "ngc": "NINTENDO GAMECUBE",
+  "nsw": "NINTENDO SWITCH",
+  "wii": "NINTENDO WII",
+  "wiu": "NINTENDO WII U",
+  "ps2": "PLAYSTATION 2",
+  "ps3": "PLAYSTATION 3",
+  "ps4": "PLAYSTATION 4",
+  "psp": "PLAYSTATION PORTABLE",
+  "psv": "PLAYSTATION VITA"
+};
+var EMU_PLATFORMS = {
+  "3ds": { extensions: [".3ds", ".cia"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "n64": { extensions: [".z64", ".n64", ".v64"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "nds": { extensions: [".nds"], mode: "FILE", defaultArgs: "-f" },
+  "ngc": { extensions: [".iso", ".gcm", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
+  "nsw": { extensions: [".nsp", ".xci"], mode: "FILE", defaultArgs: "-f" },
+  "wii": { extensions: [".iso", ".wbfs", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
+  "wiu": { extensions: [".wud", ".wux", ".rpx"], mode: "FILE", defaultArgs: "-f" },
+  "ps2": { extensions: [".iso", ".bin", ".chd"], mode: "FILE", defaultArgs: "--fullscreen --no-gui" },
+  "ps3": { extensions: [], mode: "FOLDER", defaultArgs: "--fullscreen" },
+  "ps4": { extensions: [], mode: "FOLDER", defaultArgs: "" },
+  "psp": { extensions: [".iso", ".cso"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "psv": { extensions: [".vpk"], mode: "FILE", defaultArgs: "" }
+};
+function cleanEmuTitle(filename) {
+  let name = filename.replace(/\.[^/.]+$/, "");
+  name = name.replace(/\s*\(.*?\)/g, "");
+  name = name.replace(/\s*\[.*?\]/g, "");
+  name = name.replace(/_/g, " ");
+  name = name.replace(/^\d+\s*-\s*/, "");
+  return name.trim();
+}
+function extractTitleFromSFO(sfoPath) {
+  try {
+    if (!import_fs6.default.existsSync(sfoPath)) return null;
+    const buffer = import_fs6.default.readFileSync(sfoPath);
+    const titleIndex = buffer.indexOf(Buffer.from("TITLE\0"));
+    if (titleIndex === -1) return null;
+    const header = {
+      keyOffset: buffer.readUInt32LE(8),
+      dataOffset: buffer.readUInt32LE(12),
+      count: buffer.readUInt32LE(16)
+    };
+    for (let i = 0; i < header.count; i++) {
+      const entryOffset = 20 + i * 16;
+      const keyStart = header.keyOffset + buffer.readUInt16LE(entryOffset);
+      let keyEnd = keyStart;
+      while (keyEnd < buffer.length && buffer[keyEnd] !== 0) keyEnd++;
+      const key = buffer.toString("utf8", keyStart, keyEnd);
+      if (key === "TITLE") {
+        const dataStart = header.dataOffset + buffer.readUInt32LE(entryOffset + 12);
+        const dataLen = buffer.readUInt32LE(entryOffset + 8);
+        let actualLen = 0;
+        while (actualLen < dataLen && buffer[dataStart + actualLen] !== 0) actualLen++;
+        return buffer.toString("utf8", dataStart, dataStart + actualLen).trim();
+      }
+    }
+  } catch (e) {
+    console.error("[SFO] Failed to parse title", e);
+  }
+  return null;
+}
+
+// server/routes/emuRoutes.ts
+function createEmuRoutes(ctx2) {
+  const router = (0, import_express3.Router)();
+  router.post("/scan", async (req, res) => {
+    try {
+      const { platformId, romsDir, emuExe, execArgs } = req.body;
+      if (!platformId || !romsDir || !emuExe) {
+        return res.status(400).json({ error: "Missing platformId, romsDir or emuExe" });
+      }
+      const config = EMU_PLATFORMS[platformId];
+      if (!config) return res.status(400).json({ error: "Invalid platformId" });
+      if (!import_fs7.default.existsSync(romsDir)) return res.status(404).json({ error: "ROMs directory not found" });
+      const games = [];
+      const shortcutTasks = [];
+      const scan = (dir) => {
+        if (!import_fs7.default.existsSync(dir)) return;
+        const files = import_fs7.default.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = import_path7.default.join(dir, file);
+          const stat4 = import_fs7.default.statSync(fullPath);
+          if (config.mode === "FILE" && !stat4.isDirectory()) {
+            const ext = import_path7.default.extname(file).toLowerCase();
+            if (config.extensions.includes(ext)) {
+              if (platformId === "nsw" && (file.includes("[UPD]") || file.includes("[v"))) continue;
+              const gameId = `emu_${platformId}_${ctx2.slugify(file)}`;
+              const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, gameId);
+              if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
+              const lnkPath = import_path7.default.join(gameDir, "launch.lnk");
+              const finalArgs = execArgs ? `${execArgs} "${fullPath}"` : `${config.defaultArgs} "${fullPath}"`;
+              shortcutTasks.push({ lnkPath, targetExe: emuExe, args: finalArgs });
+              games.push({
+                id: gameId,
+                title: cleanEmuTitle(file),
+                execPath: import_path7.default.resolve(lnkPath),
+                source: "emulator",
+                sourceId: platformId,
+                platform: platformId,
+                category: PLATFORM_NAMES[platformId] || platformId.toUpperCase()
+              });
+            }
+          } else if (config.mode === "FOLDER" && stat4.isDirectory()) {
+            let folderArgs = `"${fullPath}"`;
+            let detectedTitle = cleanEmuTitle(file);
+            if (platformId === "ps3") {
+              const sfoPath = import_path7.default.join(fullPath, "PS3_GAME", "PARAM.SFO");
+              const sfoTitle = extractTitleFromSFO(sfoPath);
+              if (sfoTitle) detectedTitle = sfoTitle;
+              const eboot = import_path7.default.join(fullPath, "PS3_GAME", "USRDIR", "EBOOT.BIN");
+              if (import_fs7.default.existsSync(eboot)) folderArgs = `"${eboot}"`;
+            } else if (platformId === "ps4") {
+              const sfoPath = import_path7.default.join(fullPath, "sce_sys", "param.sfo");
+              const sfoTitle = extractTitleFromSFO(sfoPath);
+              if (sfoTitle) detectedTitle = sfoTitle;
+            }
+            const gameId = `emu_${platformId}_${ctx2.slugify(file)}`;
+            const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, gameId);
+            if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
+            const lnkPath = import_path7.default.join(gameDir, "launch.lnk");
+            shortcutTasks.push({ lnkPath, targetExe: emuExe, args: folderArgs });
+            games.push({
+              id: gameId,
+              title: detectedTitle,
+              execPath: import_path7.default.resolve(lnkPath),
+              source: "emulator",
+              platform: platformId
+            });
+          } else if (stat4.isDirectory()) {
+            scan(fullPath);
+          }
+        }
+      };
+      scan(romsDir);
+      if (shortcutTasks.length > 0) {
+        console.log(`[EmuScan] Creating ${shortcutTasks.length} shortcuts...`);
+        const psLines = shortcutTasks.map((t) => {
+          const lnk = t.lnkPath.replace(/'/g, "''");
+          const target = t.targetExe.replace(/'/g, "''");
+          const args = t.args.replace(/'/g, "''");
+          return `$s=$w.CreateShortcut('${lnk}');$s.TargetPath='${target}';$s.Arguments='${args}';$s.Save()`;
+        });
+        const psScript = `$w=New-Object -ComObject WScript.Shell
+${psLines.join("\n")}`;
+        const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+        await new Promise((resolve3, reject) => {
+          (0, import_child_process3.exec)(
+            `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
+            { maxBuffer: 1024 * 1024 * 10 },
+            (err) => {
+              if (err) {
+                console.error("[EmuScan] Shortcut creation failed:", err.message);
+                reject(err);
+              } else {
+                console.log(`[EmuScan] ${shortcutTasks.length} shortcuts created`);
+                resolve3();
+              }
+            }
+          );
+        });
+      }
+      res.json({ games });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  return router;
+}
+
+// server/routes/dataRoutes.ts
+var import_express4 = __toESM(require_express2(), 1);
+var import_fs8 = __toESM(require("fs"), 1);
+var import_https2 = __toESM(require("https"), 1);
+function createDataRoutes(ctx2) {
+  const router = (0, import_express4.Router)();
+  const getSGDBKey = () => {
+    try {
+      if (!import_fs8.default.existsSync(ctx2.CONFIG_FILE)) return null;
+      const cfg = JSON.parse(import_fs8.default.readFileSync(ctx2.CONFIG_FILE, "utf-8"));
+      return cfg.sgdbKey || null;
+    } catch {
+      return null;
+    }
+  };
+  router.get("/sgdb/key", (req, res) => {
+    try {
+      let config = { sgdbKey: "", sgdbEnabled: false };
+      if (import_fs8.default.existsSync(ctx2.CONFIG_FILE)) {
+        config = JSON.parse(import_fs8.default.readFileSync(ctx2.CONFIG_FILE, "utf-8"));
+      }
+      res.json({ key: config.sgdbKey || "", enabled: config.sgdbEnabled || false });
+    } catch (e) {
+      res.status(500).json({ error: "Failed to retrieve SGDB settings" });
+    }
+  });
+  router.post("/sgdb/key", (req, res) => {
+    try {
+      const { key, enabled } = req.body;
+      let config = {};
+      if (import_fs8.default.existsSync(ctx2.CONFIG_FILE)) {
+        config = JSON.parse(import_fs8.default.readFileSync(ctx2.CONFIG_FILE, "utf-8"));
+      }
+      if (key !== void 0) config.sgdbKey = key;
+      if (enabled !== void 0) config.sgdbEnabled = enabled;
+      import_fs8.default.writeFileSync(ctx2.CONFIG_FILE, JSON.stringify(config, null, 2));
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "Failed to save SGDB settings" });
+    }
+  });
+  router.get("/data", (req, res) => {
+    try {
+      res.json(ctx2.db.getCategories());
+    } catch (e) {
+      console.error("[Data] Load error:", e);
+      res.status(500).json({ error: "Failed to read data" });
+    }
+  });
+  router.post("/data", (req, res) => {
+    try {
+      const categories = req.body;
+      if (!Array.isArray(categories)) {
+        return res.status(400).json({ error: "Body must be a categories array" });
+      }
+      ctx2.db.saveCategories(categories);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: "Failed to save data" });
+    }
+  });
+  router.get("/sgdb/search/:query", (req, res) => {
+    const key = getSGDBKey();
+    if (!key) return res.status(401).json({ error: "No API Key" });
+    const url = `https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(req.params.query)}`;
+    const options = { headers: { "Authorization": `Bearer ${key}` } };
+    import_https2.default.get(url, options, (response) => {
+      let data = "";
+      response.on("data", (chunk) => data += chunk);
+      response.on("end", () => {
+        try {
+          res.json(JSON.parse(data));
+        } catch (e) {
+          res.status(500).json({ error: "Failed to parse SGDB response" });
+        }
+      });
+    }).on("error", (e) => res.status(500).json({ error: e.message }));
+  });
+  router.get("/sgdb/grids/:gameId/:type", (req, res) => {
+    const key = getSGDBKey();
+    if (!key) return res.status(401).json({ error: "No API Key" });
+    const { gameId, type } = req.params;
+    let endpointType = "grids";
+    let styleQuery = "?styles=alternate,blurred,material";
+    if (type === "hero") {
+      endpointType = "heroes";
+    } else if (type === "logo") {
+      endpointType = "logos";
+      styleQuery = "";
+    } else if (type === "icon") {
+      endpointType = "icons";
+      styleQuery = "";
+    } else if (type === "banner") {
+      endpointType = "grids";
+    }
+    const url = `https://www.steamgriddb.com/api/v2/${endpointType}/game/${gameId}${styleQuery}`;
+    const options = { headers: { "Authorization": `Bearer ${key}` } };
+    import_https2.default.get(url, options, (response) => {
+      let data = "";
+      response.on("data", (chunk) => data += chunk);
+      response.on("end", () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.success && json.data) {
+            if (type === "grid") {
+              json.data = json.data.filter((asset) => asset.height > asset.width);
+            } else if (type === "banner") {
+              json.data = json.data.filter((asset) => asset.width > asset.height);
+            }
+          }
+          res.json(json);
+        } catch (e) {
+          res.status(500).json({ error: "Failed to parse SGDB response" });
+        }
+      });
+    }).on("error", (e) => res.status(500).json({ error: e.message }));
+  });
+  return router;
+}
+
+// server/routes/assetRoutes.ts
+var import_express5 = __toESM(require_express2(), 1);
+var import_fs9 = __toESM(require("fs"), 1);
+var import_path8 = __toESM(require("path"), 1);
+var import_child_process4 = require("child_process");
+function createAssetRoutes(ctx2) {
+  const router = (0, import_express5.Router)();
+  router.post("/import", async (req, res) => {
+    const { sourcePath, gameId, assetType } = req.body;
+    if (!sourcePath || !gameId || !assetType) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+    try {
+      const gameDir = import_path8.default.join(ctx2.ASSETS_DIR, gameId);
+      if (!import_fs9.default.existsSync(gameDir)) import_fs9.default.mkdirSync(gameDir, { recursive: true });
+      const sourceExt = import_path8.default.extname(sourcePath).toLowerCase();
+      const processedExt = assetType === "logo" || assetType === "icon" || sourceExt === ".png" || sourceExt === ".gif" || sourceExt === ".apng" ? sourceExt : ".jpg";
+      const targetPath = import_path8.default.join(gameDir, `${assetType}${processedExt}`);
+      const tempPath = import_path8.default.join(gameDir, `_temp_${assetType}${processedExt}`);
+      if (assetType === "launch") {
+        const internalLnk = import_path8.default.join(gameDir, "launch.lnk");
+        if (sourcePath.toLowerCase().endsWith(".lnk")) {
+          import_fs9.default.copyFileSync(sourcePath, internalLnk);
+          res.json({ path: import_path8.default.resolve(internalLnk) });
+        } else {
+          const combinedScript = `
+$targetPath = '${internalLnk.replace(/'/g, "''")}';
+$finalTarget = '${sourcePath.replace(/'/g, "''")}';
+if ($finalTarget -like '*.url') {
+    if (Test-Path $finalTarget) {
+        $content = Get-Content $finalTarget -Raw;
+        if ($content -match 'URL=(.*)') { $finalTarget = $matches[1].Trim() }
+    }
+}
+$WScript = New-Object -ComObject WScript.Shell;
+$newS = $WScript.CreateShortcut($targetPath);
+$newS.TargetPath = $finalTarget;
+$newS.Save();
+`;
+          const encoded = Buffer.from(combinedScript, "utf16le").toString("base64");
+          (0, import_child_process4.exec)(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err) => {
+            if (err) return res.status(500).json({ error: "Shortcut creation failed" });
+            if (import_fs9.default.existsSync(internalLnk)) {
+              res.json({ path: import_path8.default.resolve(internalLnk) });
+            } else {
+              res.status(500).json({ error: "Verification failed: launch.lnk not found" });
+            }
+          });
+        }
+        return;
+      }
+      if (sourcePath.startsWith("http")) {
+        await downloadImage(sourcePath, tempPath);
+        await processImage(tempPath, targetPath, assetType);
+        if (import_fs9.default.existsSync(tempPath)) import_fs9.default.unlinkSync(tempPath);
+        res.json({ path: import_path8.default.resolve(targetPath) });
+      } else if ([".exe", ".lnk", ".bat", ".url"].includes(import_path8.default.extname(sourcePath).toLowerCase())) {
+        const lnkPath = import_path8.default.join(gameDir, `launch${import_path8.default.extname(sourcePath).toLowerCase() === ".lnk" ? "" : ".lnk"}`);
+        const psCommand = `$s=(New-Object -COM WScript.Shell).CreateShortcut('${lnkPath}');$s.TargetPath='${sourcePath}';$s.Save()`;
+        (0, import_child_process4.exec)(`powershell -Command "${psCommand}"`, (err) => {
+          if (err) return res.status(500).json({ error: "Shortcut creation failed" });
+          res.json({ path: import_path8.default.resolve(lnkPath) });
+        });
+      } else {
+        await processImage(sourcePath, targetPath, assetType);
+        res.json({ path: import_path8.default.resolve(targetPath) });
+      }
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/delete", (req, res) => {
+    const { gameId } = req.body;
+    if (!gameId) return res.status(400).json({ error: "gameId required" });
+    try {
+      ctx2.db.deleteGame(gameId);
+      const gameDir = import_path8.default.join(ctx2.ASSETS_DIR, gameId);
+      if (import_fs9.default.existsSync(gameDir)) {
+        import_fs9.default.rmSync(gameDir, { recursive: true, force: true });
+      }
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/verify-integrity", (req, res) => {
+    try {
+      const brokenIds = [];
+      const gamesMap = /* @__PURE__ */ new Map();
+      const categories = ctx2.db.getCategories();
+      categories.forEach((cat) => {
+        cat.games?.forEach((g) => {
+          if (!gamesMap.has(g.id)) gamesMap.set(g.id, g);
+        });
+      });
+      gamesMap.forEach((game, id) => {
+        if (game.execPath) {
+          if (game.execPath.startsWith("http") || game.execPath.startsWith("steam:") || game.execPath.startsWith("com.epicgames")) return;
+          if (!import_fs9.default.existsSync(game.execPath)) brokenIds.push(id);
+        }
+      });
+      res.json({ brokenIds });
+    } catch (e) {
+      res.status(500).json({ error: "Integrity check failed" });
+    }
+  });
+  router.post("/fetch-missing", async (req, res) => {
+    try {
+      const { categoryId } = req.body;
+      const categories = ctx2.db.getCategories();
+      const cat = categories.find((c) => c.id === categoryId);
+      if (!cat) return res.status(404).json({ error: "Category not found" });
+      res.json({ success: true, count: cat.games.filter((g) => !g.logo || !g.cover || !g.banner).length });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/wipe", (req, res) => {
+    try {
+      ctx2.db.wipeData();
+      if (import_fs9.default.existsSync(ctx2.STORAGE_DIR)) {
+        import_fs9.default.rmSync(ctx2.STORAGE_DIR, { recursive: true, force: true });
+        import_fs9.default.mkdirSync(ctx2.ASSETS_DIR, { recursive: true });
+      }
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  return router;
+}
+
+// server/routes/fileRoutes.ts
+var import_express6 = __toESM(require_express2(), 1);
+var import_fs10 = __toESM(require("fs"), 1);
+var import_path9 = __toESM(require("path"), 1);
+var import_child_process5 = require("child_process");
+function createFileRoutes(ctx2) {
+  const router = (0, import_express6.Router)();
+  router.get("/drives", (req, res) => {
+    try {
+      const drives = [];
+      for (let i = 65; i <= 90; i++) {
+        const drive = String.fromCharCode(i) + ":\\";
+        try {
+          if (import_fs10.default.existsSync(drive)) drives.push(drive);
+        } catch (e) {
+        }
+      }
+      const psScript = `
+                $folders = @{
+                    Desktop = [Environment]::GetFolderPath('Desktop');
+                    Documents = [Environment]::GetFolderPath('MyDocuments');
+                    Pictures = [Environment]::GetFolderPath('MyPictures');
+                    Music = [Environment]::GetFolderPath('MyMusic');
+                    Videos = [Environment]::GetFolderPath('MyVideos');
+                    Downloads = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
+                };
+                $folders | ConvertTo-Json
+            `.replace(/\n/g, " ").trim();
+      (0, import_child_process5.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
+        let libraries = [];
+        if (!err && stdout) {
+          try {
+            const paths = JSON.parse(stdout);
+            libraries = Object.entries(paths).map(([name, p]) => {
+              if (!p) return null;
+              const pathStr = p;
+              return {
+                name,
+                path: pathStr.endsWith("\\") ? pathStr : pathStr + "\\"
+              };
+            }).filter((lib) => lib !== null && import_fs10.default.existsSync(lib.path));
+          } catch (e) {
+            console.error("Failed to parse PS output:", e);
+          }
+        }
+        if (libraries.length === 0) {
+          const userProfile = process.env.USERPROFILE || "";
+          const checkPath = (folderName) => {
+            const stdPath = import_path9.default.join(userProfile, folderName) + "\\";
+            return import_fs10.default.existsSync(stdPath) ? stdPath : null;
+          };
+          libraries = [
+            { name: "Desktop", path: checkPath("Desktop") },
+            { name: "Documents", path: checkPath("Documents") },
+            { name: "Pictures", path: checkPath("Pictures") },
+            { name: "Music", path: checkPath("Music") },
+            { name: "Videos", path: checkPath("Videos") },
+            { name: "Downloads", path: checkPath("Downloads") }
+          ].filter((lib) => lib.path !== null);
+        }
+        res.json({ drives, libraries });
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to list drives" });
+    }
+  });
+  router.post("/list", (req, res) => {
+    const { dirPath } = req.body;
+    if (!dirPath) return res.status(400).json({ error: "dirPath is required" });
+    try {
+      const resolvedPath = import_path9.default.resolve(dirPath);
+      let items = import_fs10.default.readdirSync(resolvedPath, { withFileTypes: true });
+      const contents = items.map((item) => {
+        const fullPath = import_path9.default.join(resolvedPath, item.name);
+        try {
+          const stats = import_fs10.default.statSync(fullPath);
+          return {
+            name: item.name,
+            path: fullPath,
+            isDir: item.isDirectory(),
+            size: stats.size,
+            ext: import_path9.default.extname(item.name).toLowerCase()
+          };
+        } catch (e) {
+          return null;
+        }
+      }).filter((item) => item !== null).sort((a, b) => a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1);
+      res.json({ path: resolvedPath, contents });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  router.post("/info", (req, res) => {
+    const { filePath } = req.body;
+    if (!filePath) return res.status(400).json({ error: "filePath is required" });
+    const ext = import_path9.default.extname(filePath).toLowerCase();
+    if (ext === ".lnk") {
+      const psScript = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${filePath.replace(/'/g, "''")}'); $obj = @{ TargetPath = $s.TargetPath; Arguments = $s.Arguments; WorkingDirectory = $s.WorkingDirectory }; $obj | ConvertTo-Json`;
+      (0, import_child_process5.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
+        if (err) return res.status(500).json({ error: "Failed to read shortcut" });
+        try {
+          res.json(JSON.parse(stdout));
+        } catch (e) {
+          res.status(500).json({ error: "Parse failed" });
+        }
+      });
+    } else if (ext === ".url") {
+      try {
+        const content = import_fs10.default.readFileSync(filePath, "utf-8");
+        const match = content.match(/URL=(.*)/);
+        res.json({ TargetPath: match ? match[1].trim() : filePath, Arguments: "" });
+      } catch (e) {
+        res.status(500).json({ error: "Read failed" });
+      }
+    } else {
+      res.json({ TargetPath: filePath, Arguments: "" });
+    }
+  });
+  router.post("/select-folder", (req, res) => {
+    const psScript = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; if($f.ShowDialog() -eq 'OK'){ $f.SelectedPath }`;
+    (0, import_child_process5.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
+      if (err) return res.status(500).json({ error: "Failed to open dialog" });
+      res.json({ path: stdout.trim() || null });
+    });
+  });
+  router.post("/select-file", (req, res) => {
+    const { filter = "exe", returnBase64 = false } = req.body;
+    const fileFilter = filter === "exe" ? "Executables (*.exe;*.lnk;*.bat;*.url)|*.exe;*.lnk;*.bat;*.url" : "Images|*.jpg;*.jpeg;*.png;*.webp;*.gif;*.apng";
+    const psScript = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "${fileFilter}"; $f.DereferenceLinks = $false; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
+    const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+    (0, import_child_process5.exec)(`powershell -NoProfile -Sta -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err, stdout) => {
+      if (err) return res.status(500).json({ error: "Failed" });
+      const p = stdout.trim();
+      if (p && returnBase64) {
+        try {
+          res.json({ path: p, base64: import_fs10.default.readFileSync(p).toString("base64") });
+        } catch (e) {
+          res.status(500).json({ error: "B64 failed" });
+        }
+      } else {
+        res.json({ path: p || null });
+      }
+    });
+  });
+  return router;
+}
+
+// server/routes/proxyRoutes.ts
+var import_express7 = __toESM(require_express2(), 1);
+var import_fs11 = __toESM(require("fs"), 1);
+var import_path10 = __toESM(require("path"), 1);
+function createProxyRoutes(ctx2) {
+  const router = (0, import_express7.Router)();
+  const PROXY_CACHE_VERSION = "v4";
+  router.get("/proxy-image", async (req, res) => {
+    const filePath = req.query.path;
+    if (!filePath) return res.status(400).send("No path provided");
+    const width = req.query.w ? parseInt(req.query.w) : null;
+    const height = req.query.h ? parseInt(req.query.h) : null;
+    let candidates = [filePath];
+    try {
+      if (filePath.includes("\\")) candidates.push(filePath.replace(/\\/g, "/"));
+      if (filePath.includes("/")) candidates.push(filePath.replace(/\//g, "\\"));
+    } catch (e) {
+    }
+    if (filePath.includes("%")) candidates.push(unescape(filePath));
+    candidates = [...new Set(candidates.filter(Boolean))];
+    let finalPath = "";
+    for (const p of candidates) {
+      if (import_fs11.default.existsSync(p)) {
+        finalPath = p;
+        break;
+      }
+      if (p.includes("/storage/assets/")) {
+        const altPath = import_path10.default.join(ctx2.BASE_DIR, p.split("/storage/assets/")[1]);
+        if (import_fs11.default.existsSync(altPath)) {
+          finalPath = altPath;
+          break;
+        }
+      }
+    }
+    if (!finalPath) {
+      for (const p of candidates) {
+        if (p.includes("storage") && p.includes("assets") && !p.includes("PhantomLauncher")) {
+          try {
+            const parts = p.split(/[\\/]/);
+            const assetsIdx = parts.lastIndexOf("assets");
+            const subPath = parts.slice(assetsIdx + 1).join(import_path10.default.sep);
+            const dir = import_path10.default.join(ctx2.BASE_DIR, "storage", "assets");
+            const gameId = parts[assetsIdx + 1];
+            const assetName = parts[parts.length - 1];
+            const targetDir = import_path10.default.join(dir, gameId);
+            if (import_fs11.default.existsSync(targetDir)) {
+              const files = import_fs11.default.readdirSync(targetDir);
+              const match = files.find((f) => f.toLowerCase().startsWith(assetName.split(".")[0].toLowerCase()));
+              if (match) {
+                finalPath = import_path10.default.join(targetDir, match);
+                break;
+              }
+            }
+          } catch (e) {
+          }
+        }
+      }
+    }
+    if (!finalPath || !import_fs11.default.existsSync(finalPath)) {
+      const fallbackType = width && width >= 800 ? "hero" : "cover";
+      finalPath = import_path10.default.join(ctx2.BASE_DIR, "front", "assets", `fallback_${fallbackType}.jpg`);
+      if (!import_fs11.default.existsSync(finalPath)) return res.status(404).send("Not Found");
+    }
+    if (width || height) {
+      const ext = import_path10.default.extname(finalPath) || ".png";
+      const stats = import_fs11.default.statSync(finalPath);
+      const cacheKey = `${ctx2.slugify(finalPath)}_${stats.mtimeMs}_${stats.size}_w${width}_h${height}_${PROXY_CACHE_VERSION}`;
+      const cacheDir = import_path10.default.join(ctx2.STORAGE_DIR, "cache");
+      const cachePath = import_path10.default.join(cacheDir, `${cacheKey}${ext}`);
+      if (import_fs11.default.existsSync(cachePath)) return res.sendFile(cachePath);
+      if (!import_fs11.default.existsSync(cacheDir)) import_fs11.default.mkdirSync(cacheDir, { recursive: true });
+      try {
+        if (!sharp) throw new Error("sharp is undefined");
+        const metadata = await sharp(finalPath).metadata();
+        const isAnimated = metadata.pages && metadata.pages > 1;
+        if (isAnimated) {
+          await sharp(finalPath, { animated: true }).resize(width, height, { fit: "cover", position: "center" }).webp({ effort: 0 }).toFile(cachePath);
+        } else {
+          await sharp(finalPath).resize(width, height, { fit: "cover", position: "center" }).toFile(cachePath);
+        }
+        return res.sendFile(cachePath);
+      } catch (err) {
+        console.error("[Proxy] Resize failed:", err);
+        return res.sendFile(finalPath);
+      }
+    }
+    res.sendFile(finalPath);
+  });
+  return router;
+}
+
 // node_modules/chokidar/index.js
 var import_node_events = require("node:events");
 var import_node_fs2 = require("node:fs");
@@ -24322,7 +25487,7 @@ var ReaddirpStream = class extends import_node_stream.Readable {
     this._directoryFilter = normalizeFilter(opts.directoryFilter);
     const statMethod = opts.lstat ? import_promises.lstat : import_promises.stat;
     if (wantBigintFsStats) {
-      this._stat = (path6) => statMethod(path6, { bigint: true });
+      this._stat = (path12) => statMethod(path12, { bigint: true });
     } else {
       this._stat = statMethod;
     }
@@ -24347,8 +25512,8 @@ var ReaddirpStream = class extends import_node_stream.Readable {
         const par = this.parent;
         const fil = par && par.files;
         if (fil && fil.length > 0) {
-          const { path: path6, depth } = par;
-          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path6));
+          const { path: path12, depth } = par;
+          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path12));
           const awaited = await Promise.all(slice);
           for (const entry of awaited) {
             if (!entry)
@@ -24388,20 +25553,20 @@ var ReaddirpStream = class extends import_node_stream.Readable {
       this.reading = false;
     }
   }
-  async _exploreDir(path6, depth) {
+  async _exploreDir(path12, depth) {
     let files;
     try {
-      files = await (0, import_promises.readdir)(path6, this._rdOptions);
+      files = await (0, import_promises.readdir)(path12, this._rdOptions);
     } catch (error) {
       this._onError(error);
     }
-    return { files, depth, path: path6 };
+    return { files, depth, path: path12 };
   }
-  async _formatEntry(dirent, path6) {
+  async _formatEntry(dirent, path12) {
     let entry;
     const basename3 = this._isDirent ? dirent.name : dirent;
     try {
-      const fullPath = (0, import_node_path.resolve)((0, import_node_path.join)(path6, basename3));
+      const fullPath = (0, import_node_path.resolve)((0, import_node_path.join)(path12, basename3));
       entry = { path: (0, import_node_path.relative)(this._root, fullPath), fullPath, basename: basename3 };
       entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
     } catch (err) {
@@ -24801,16 +25966,16 @@ var delFromSet = (main, prop, item) => {
 };
 var isEmptySet = (val) => val instanceof Set ? val.size === 0 : !val;
 var FsWatchInstances = /* @__PURE__ */ new Map();
-function createFsWatchInstance(path6, options, listener, errHandler, emitRaw) {
+function createFsWatchInstance(path12, options, listener, errHandler, emitRaw) {
   const handleEvent = (rawEvent, evPath) => {
-    listener(path6);
-    emitRaw(rawEvent, evPath, { watchedPath: path6 });
-    if (evPath && path6 !== evPath) {
-      fsWatchBroadcast(sp.resolve(path6, evPath), KEY_LISTENERS, sp.join(path6, evPath));
+    listener(path12);
+    emitRaw(rawEvent, evPath, { watchedPath: path12 });
+    if (evPath && path12 !== evPath) {
+      fsWatchBroadcast(sp.resolve(path12, evPath), KEY_LISTENERS, sp.join(path12, evPath));
     }
   };
   try {
-    return (0, import_node_fs.watch)(path6, {
+    return (0, import_node_fs.watch)(path12, {
       persistent: options.persistent
     }, handleEvent);
   } catch (error) {
@@ -24826,12 +25991,12 @@ var fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
     listener(val1, val2, val3);
   });
 };
-var setFsWatchListener = (path6, fullPath, options, handlers) => {
+var setFsWatchListener = (path12, fullPath, options, handlers) => {
   const { listener, errHandler, rawEmitter } = handlers;
   let cont = FsWatchInstances.get(fullPath);
   let watcher;
   if (!options.persistent) {
-    watcher = createFsWatchInstance(path6, options, listener, errHandler, rawEmitter);
+    watcher = createFsWatchInstance(path12, options, listener, errHandler, rawEmitter);
     if (!watcher)
       return;
     return watcher.close.bind(watcher);
@@ -24842,7 +26007,7 @@ var setFsWatchListener = (path6, fullPath, options, handlers) => {
     addAndConvert(cont, KEY_RAW, rawEmitter);
   } else {
     watcher = createFsWatchInstance(
-      path6,
+      path12,
       options,
       fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
       errHandler,
@@ -24857,7 +26022,7 @@ var setFsWatchListener = (path6, fullPath, options, handlers) => {
         cont.watcherUnusable = true;
       if (isWindows && error.code === "EPERM") {
         try {
-          const fd = await (0, import_promises2.open)(path6, "r");
+          const fd = await (0, import_promises2.open)(path12, "r");
           await fd.close();
           broadcastErr(error);
         } catch (err) {
@@ -24888,7 +26053,7 @@ var setFsWatchListener = (path6, fullPath, options, handlers) => {
   };
 };
 var FsWatchFileInstances = /* @__PURE__ */ new Map();
-var setFsWatchFileListener = (path6, fullPath, options, handlers) => {
+var setFsWatchFileListener = (path12, fullPath, options, handlers) => {
   const { listener, rawEmitter } = handlers;
   let cont = FsWatchFileInstances.get(fullPath);
   const copts = cont && cont.options;
@@ -24910,7 +26075,7 @@ var setFsWatchFileListener = (path6, fullPath, options, handlers) => {
         });
         const currmtime = curr.mtimeMs;
         if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
-          foreach(cont.listeners, (listener2) => listener2(path6, curr));
+          foreach(cont.listeners, (listener2) => listener2(path12, curr));
         }
       })
     };
@@ -24940,13 +26105,13 @@ var NodeFsHandler = class {
    * @param listener on fs change
    * @returns closer for the watcher instance
    */
-  _watchWithNodeFs(path6, listener) {
+  _watchWithNodeFs(path12, listener) {
     const opts = this.fsw.options;
-    const directory = sp.dirname(path6);
-    const basename3 = sp.basename(path6);
+    const directory = sp.dirname(path12);
+    const basename3 = sp.basename(path12);
     const parent = this.fsw._getWatchedDir(directory);
     parent.add(basename3);
-    const absolutePath = sp.resolve(path6);
+    const absolutePath = sp.resolve(path12);
     const options = {
       persistent: opts.persistent
     };
@@ -24956,12 +26121,12 @@ var NodeFsHandler = class {
     if (opts.usePolling) {
       const enableBin = opts.interval !== opts.binaryInterval;
       options.interval = enableBin && isBinaryPath(basename3) ? opts.binaryInterval : opts.interval;
-      closer = setFsWatchFileListener(path6, absolutePath, options, {
+      closer = setFsWatchFileListener(path12, absolutePath, options, {
         listener,
         rawEmitter: this.fsw._emitRaw
       });
     } else {
-      closer = setFsWatchListener(path6, absolutePath, options, {
+      closer = setFsWatchListener(path12, absolutePath, options, {
         listener,
         errHandler: this._boundHandleError,
         rawEmitter: this.fsw._emitRaw
@@ -24983,7 +26148,7 @@ var NodeFsHandler = class {
     let prevStats = stats;
     if (parent.has(basename3))
       return;
-    const listener = async (path6, newStats) => {
+    const listener = async (path12, newStats) => {
       if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
         return;
       if (!newStats || newStats.mtimeMs === 0) {
@@ -24997,11 +26162,11 @@ var NodeFsHandler = class {
             this.fsw._emit(EV.CHANGE, file, newStats2);
           }
           if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
-            this.fsw._closeFile(path6);
+            this.fsw._closeFile(path12);
             prevStats = newStats2;
             const closer2 = this._watchWithNodeFs(file, listener);
             if (closer2)
-              this.fsw._addPathCloser(path6, closer2);
+              this.fsw._addPathCloser(path12, closer2);
           } else {
             prevStats = newStats2;
           }
@@ -25033,7 +26198,7 @@ var NodeFsHandler = class {
    * @param item basename of this item
    * @returns true if no more processing is needed for this entry.
    */
-  async _handleSymlink(entry, directory, path6, item) {
+  async _handleSymlink(entry, directory, path12, item) {
     if (this.fsw.closed) {
       return;
     }
@@ -25043,7 +26208,7 @@ var NodeFsHandler = class {
       this.fsw._incrReadyCount();
       let linkPath;
       try {
-        linkPath = await (0, import_promises2.realpath)(path6);
+        linkPath = await (0, import_promises2.realpath)(path12);
       } catch (e) {
         this.fsw._emitReady();
         return true;
@@ -25053,12 +26218,12 @@ var NodeFsHandler = class {
       if (dir.has(item)) {
         if (this.fsw._symlinkPaths.get(full) !== linkPath) {
           this.fsw._symlinkPaths.set(full, linkPath);
-          this.fsw._emit(EV.CHANGE, path6, entry.stats);
+          this.fsw._emit(EV.CHANGE, path12, entry.stats);
         }
       } else {
         dir.add(item);
         this.fsw._symlinkPaths.set(full, linkPath);
-        this.fsw._emit(EV.ADD, path6, entry.stats);
+        this.fsw._emit(EV.ADD, path12, entry.stats);
       }
       this.fsw._emitReady();
       return true;
@@ -25088,9 +26253,9 @@ var NodeFsHandler = class {
         return;
       }
       const item = entry.path;
-      let path6 = sp.join(directory, item);
+      let path12 = sp.join(directory, item);
       current.add(item);
-      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path6, item)) {
+      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path12, item)) {
         return;
       }
       if (this.fsw.closed) {
@@ -25099,8 +26264,8 @@ var NodeFsHandler = class {
       }
       if (item === target || !target && !previous.has(item)) {
         this.fsw._incrReadyCount();
-        path6 = sp.join(dir, sp.relative(dir, path6));
-        this._addToNodeFs(path6, initialAdd, wh, depth + 1);
+        path12 = sp.join(dir, sp.relative(dir, path12));
+        this._addToNodeFs(path12, initialAdd, wh, depth + 1);
       }
     }).on(EV.ERROR, this._boundHandleError);
     return new Promise((resolve3, reject) => {
@@ -25169,13 +26334,13 @@ var NodeFsHandler = class {
    * @param depth Child path actually targeted for watch
    * @param target Child path actually targeted for watch
    */
-  async _addToNodeFs(path6, initialAdd, priorWh, depth, target) {
+  async _addToNodeFs(path12, initialAdd, priorWh, depth, target) {
     const ready = this.fsw._emitReady;
-    if (this.fsw._isIgnored(path6) || this.fsw.closed) {
+    if (this.fsw._isIgnored(path12) || this.fsw.closed) {
       ready();
       return false;
     }
-    const wh = this.fsw._getWatchHelpers(path6);
+    const wh = this.fsw._getWatchHelpers(path12);
     if (priorWh) {
       wh.filterPath = (entry) => priorWh.filterPath(entry);
       wh.filterDir = (entry) => priorWh.filterDir(entry);
@@ -25191,8 +26356,8 @@ var NodeFsHandler = class {
       const follow = this.fsw.options.followSymlinks;
       let closer;
       if (stats.isDirectory()) {
-        const absPath = sp.resolve(path6);
-        const targetPath = follow ? await (0, import_promises2.realpath)(path6) : path6;
+        const absPath = sp.resolve(path12);
+        const targetPath = follow ? await (0, import_promises2.realpath)(path12) : path12;
         if (this.fsw.closed)
           return;
         closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
@@ -25202,29 +26367,29 @@ var NodeFsHandler = class {
           this.fsw._symlinkPaths.set(absPath, targetPath);
         }
       } else if (stats.isSymbolicLink()) {
-        const targetPath = follow ? await (0, import_promises2.realpath)(path6) : path6;
+        const targetPath = follow ? await (0, import_promises2.realpath)(path12) : path12;
         if (this.fsw.closed)
           return;
         const parent = sp.dirname(wh.watchPath);
         this.fsw._getWatchedDir(parent).add(wh.watchPath);
         this.fsw._emit(EV.ADD, wh.watchPath, stats);
-        closer = await this._handleDir(parent, stats, initialAdd, depth, path6, wh, targetPath);
+        closer = await this._handleDir(parent, stats, initialAdd, depth, path12, wh, targetPath);
         if (this.fsw.closed)
           return;
         if (targetPath !== void 0) {
-          this.fsw._symlinkPaths.set(sp.resolve(path6), targetPath);
+          this.fsw._symlinkPaths.set(sp.resolve(path12), targetPath);
         }
       } else {
         closer = this._handleFile(wh.watchPath, stats, initialAdd);
       }
       ready();
       if (closer)
-        this.fsw._addPathCloser(path6, closer);
+        this.fsw._addPathCloser(path12, closer);
       return false;
     } catch (error) {
       if (this.fsw._handleError(error)) {
         ready();
-        return path6;
+        return path12;
       }
     }
   }
@@ -25267,24 +26432,24 @@ function createPattern(matcher) {
   }
   return () => false;
 }
-function normalizePath(path6) {
-  if (typeof path6 !== "string")
+function normalizePath(path12) {
+  if (typeof path12 !== "string")
     throw new Error("string expected");
-  path6 = sp2.normalize(path6);
-  path6 = path6.replace(/\\/g, "/");
+  path12 = sp2.normalize(path12);
+  path12 = path12.replace(/\\/g, "/");
   let prepend = false;
-  if (path6.startsWith("//"))
+  if (path12.startsWith("//"))
     prepend = true;
-  path6 = path6.replace(DOUBLE_SLASH_RE, "/");
+  path12 = path12.replace(DOUBLE_SLASH_RE, "/");
   if (prepend)
-    path6 = "/" + path6;
-  return path6;
+    path12 = "/" + path12;
+  return path12;
 }
 function matchPatterns(patterns, testString, stats) {
-  const path6 = normalizePath(testString);
+  const path12 = normalizePath(testString);
   for (let index = 0; index < patterns.length; index++) {
     const pattern = patterns[index];
-    if (pattern(path6, stats)) {
+    if (pattern(path12, stats)) {
       return true;
     }
   }
@@ -25322,19 +26487,19 @@ var toUnix = (string) => {
   }
   return str;
 };
-var normalizePathToUnix = (path6) => toUnix(sp2.normalize(toUnix(path6)));
-var normalizeIgnored = (cwd = "") => (path6) => {
-  if (typeof path6 === "string") {
-    return normalizePathToUnix(sp2.isAbsolute(path6) ? path6 : sp2.join(cwd, path6));
+var normalizePathToUnix = (path12) => toUnix(sp2.normalize(toUnix(path12)));
+var normalizeIgnored = (cwd = "") => (path12) => {
+  if (typeof path12 === "string") {
+    return normalizePathToUnix(sp2.isAbsolute(path12) ? path12 : sp2.join(cwd, path12));
   } else {
-    return path6;
+    return path12;
   }
 };
-var getAbsolutePath = (path6, cwd) => {
-  if (sp2.isAbsolute(path6)) {
-    return path6;
+var getAbsolutePath = (path12, cwd) => {
+  if (sp2.isAbsolute(path12)) {
+    return path12;
   }
-  return sp2.join(cwd, path6);
+  return sp2.join(cwd, path12);
 };
 var EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
 var DirEntry = class {
@@ -25399,10 +26564,10 @@ var WatchHelper = class {
   dirParts;
   followSymlinks;
   statMethod;
-  constructor(path6, follow, fsw) {
+  constructor(path12, follow, fsw) {
     this.fsw = fsw;
-    const watchPath = path6;
-    this.path = path6 = path6.replace(REPLACER_RE, "");
+    const watchPath = path12;
+    this.path = path12 = path12.replace(REPLACER_RE, "");
     this.watchPath = watchPath;
     this.fullWatchPath = sp2.resolve(watchPath);
     this.dirParts = [];
@@ -25542,20 +26707,20 @@ var FSWatcher = class extends import_node_events.EventEmitter {
     this._closePromise = void 0;
     let paths = unifyPaths(paths_);
     if (cwd) {
-      paths = paths.map((path6) => {
-        const absPath = getAbsolutePath(path6, cwd);
+      paths = paths.map((path12) => {
+        const absPath = getAbsolutePath(path12, cwd);
         return absPath;
       });
     }
-    paths.forEach((path6) => {
-      this._removeIgnoredPath(path6);
+    paths.forEach((path12) => {
+      this._removeIgnoredPath(path12);
     });
     this._userIgnored = void 0;
     if (!this._readyCount)
       this._readyCount = 0;
     this._readyCount += paths.length;
-    Promise.all(paths.map(async (path6) => {
-      const res = await this._nodeFsHandler._addToNodeFs(path6, !_internal, void 0, 0, _origAdd);
+    Promise.all(paths.map(async (path12) => {
+      const res = await this._nodeFsHandler._addToNodeFs(path12, !_internal, void 0, 0, _origAdd);
       if (res)
         this._emitReady();
       return res;
@@ -25577,17 +26742,17 @@ var FSWatcher = class extends import_node_events.EventEmitter {
       return this;
     const paths = unifyPaths(paths_);
     const { cwd } = this.options;
-    paths.forEach((path6) => {
-      if (!sp2.isAbsolute(path6) && !this._closers.has(path6)) {
+    paths.forEach((path12) => {
+      if (!sp2.isAbsolute(path12) && !this._closers.has(path12)) {
         if (cwd)
-          path6 = sp2.join(cwd, path6);
-        path6 = sp2.resolve(path6);
+          path12 = sp2.join(cwd, path12);
+        path12 = sp2.resolve(path12);
       }
-      this._closePath(path6);
-      this._addIgnoredPath(path6);
-      if (this._watched.has(path6)) {
+      this._closePath(path12);
+      this._addIgnoredPath(path12);
+      if (this._watched.has(path12)) {
         this._addIgnoredPath({
-          path: path6,
+          path: path12,
           recursive: true
         });
       }
@@ -25651,38 +26816,38 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param stats arguments to be passed with event
    * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
    */
-  async _emit(event, path6, stats) {
+  async _emit(event, path12, stats) {
     if (this.closed)
       return;
     const opts = this.options;
     if (isWindows)
-      path6 = sp2.normalize(path6);
+      path12 = sp2.normalize(path12);
     if (opts.cwd)
-      path6 = sp2.relative(opts.cwd, path6);
-    const args = [path6];
+      path12 = sp2.relative(opts.cwd, path12);
+    const args = [path12];
     if (stats != null)
       args.push(stats);
     const awf = opts.awaitWriteFinish;
     let pw;
-    if (awf && (pw = this._pendingWrites.get(path6))) {
+    if (awf && (pw = this._pendingWrites.get(path12))) {
       pw.lastChange = /* @__PURE__ */ new Date();
       return this;
     }
     if (opts.atomic) {
       if (event === EVENTS.UNLINK) {
-        this._pendingUnlinks.set(path6, [event, ...args]);
+        this._pendingUnlinks.set(path12, [event, ...args]);
         setTimeout(() => {
-          this._pendingUnlinks.forEach((entry, path7) => {
+          this._pendingUnlinks.forEach((entry, path13) => {
             this.emit(...entry);
             this.emit(EVENTS.ALL, ...entry);
-            this._pendingUnlinks.delete(path7);
+            this._pendingUnlinks.delete(path13);
           });
         }, typeof opts.atomic === "number" ? opts.atomic : 100);
         return this;
       }
-      if (event === EVENTS.ADD && this._pendingUnlinks.has(path6)) {
+      if (event === EVENTS.ADD && this._pendingUnlinks.has(path12)) {
         event = EVENTS.CHANGE;
-        this._pendingUnlinks.delete(path6);
+        this._pendingUnlinks.delete(path12);
       }
     }
     if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
@@ -25700,16 +26865,16 @@ var FSWatcher = class extends import_node_events.EventEmitter {
           this.emitWithAll(event, args);
         }
       };
-      this._awaitWriteFinish(path6, awf.stabilityThreshold, event, awfEmit);
+      this._awaitWriteFinish(path12, awf.stabilityThreshold, event, awfEmit);
       return this;
     }
     if (event === EVENTS.CHANGE) {
-      const isThrottled = !this._throttle(EVENTS.CHANGE, path6, 50);
+      const isThrottled = !this._throttle(EVENTS.CHANGE, path12, 50);
       if (isThrottled)
         return this;
     }
     if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
-      const fullPath = opts.cwd ? sp2.join(opts.cwd, path6) : path6;
+      const fullPath = opts.cwd ? sp2.join(opts.cwd, path12) : path12;
       let stats2;
       try {
         stats2 = await (0, import_promises3.stat)(fullPath);
@@ -25740,23 +26905,23 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param timeout duration of time to suppress duplicate actions
    * @returns tracking object or false if action should be suppressed
    */
-  _throttle(actionType, path6, timeout) {
+  _throttle(actionType, path12, timeout) {
     if (!this._throttled.has(actionType)) {
       this._throttled.set(actionType, /* @__PURE__ */ new Map());
     }
     const action = this._throttled.get(actionType);
     if (!action)
       throw new Error("invalid throttle");
-    const actionPath = action.get(path6);
+    const actionPath = action.get(path12);
     if (actionPath) {
       actionPath.count++;
       return false;
     }
     let timeoutObject;
     const clear = () => {
-      const item = action.get(path6);
+      const item = action.get(path12);
       const count = item ? item.count : 0;
-      action.delete(path6);
+      action.delete(path12);
       clearTimeout(timeoutObject);
       if (item)
         clearTimeout(item.timeoutObject);
@@ -25764,7 +26929,7 @@ var FSWatcher = class extends import_node_events.EventEmitter {
     };
     timeoutObject = setTimeout(clear, timeout);
     const thr = { timeoutObject, clear, count: 0 };
-    action.set(path6, thr);
+    action.set(path12, thr);
     return thr;
   }
   _incrReadyCount() {
@@ -25778,44 +26943,44 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param event
    * @param awfEmit Callback to be called when ready for event to be emitted.
    */
-  _awaitWriteFinish(path6, threshold, event, awfEmit) {
+  _awaitWriteFinish(path12, threshold, event, awfEmit) {
     const awf = this.options.awaitWriteFinish;
     if (typeof awf !== "object")
       return;
     const pollInterval = awf.pollInterval;
     let timeoutHandler;
-    let fullPath = path6;
-    if (this.options.cwd && !sp2.isAbsolute(path6)) {
-      fullPath = sp2.join(this.options.cwd, path6);
+    let fullPath = path12;
+    if (this.options.cwd && !sp2.isAbsolute(path12)) {
+      fullPath = sp2.join(this.options.cwd, path12);
     }
     const now = /* @__PURE__ */ new Date();
     const writes = this._pendingWrites;
     function awaitWriteFinishFn(prevStat) {
       (0, import_node_fs2.stat)(fullPath, (err, curStat) => {
-        if (err || !writes.has(path6)) {
+        if (err || !writes.has(path12)) {
           if (err && err.code !== "ENOENT")
             awfEmit(err);
           return;
         }
         const now2 = Number(/* @__PURE__ */ new Date());
         if (prevStat && curStat.size !== prevStat.size) {
-          writes.get(path6).lastChange = now2;
+          writes.get(path12).lastChange = now2;
         }
-        const pw = writes.get(path6);
+        const pw = writes.get(path12);
         const df = now2 - pw.lastChange;
         if (df >= threshold) {
-          writes.delete(path6);
+          writes.delete(path12);
           awfEmit(void 0, curStat);
         } else {
           timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
         }
       });
     }
-    if (!writes.has(path6)) {
-      writes.set(path6, {
+    if (!writes.has(path12)) {
+      writes.set(path12, {
         lastChange: now,
         cancelWait: () => {
-          writes.delete(path6);
+          writes.delete(path12);
           clearTimeout(timeoutHandler);
           return event;
         }
@@ -25826,8 +26991,8 @@ var FSWatcher = class extends import_node_events.EventEmitter {
   /**
    * Determines whether user has asked to ignore this path.
    */
-  _isIgnored(path6, stats) {
-    if (this.options.atomic && DOT_RE.test(path6))
+  _isIgnored(path12, stats) {
+    if (this.options.atomic && DOT_RE.test(path12))
       return true;
     if (!this._userIgnored) {
       const { cwd } = this.options;
@@ -25837,17 +27002,17 @@ var FSWatcher = class extends import_node_events.EventEmitter {
       const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
       this._userIgnored = anymatch(list, void 0);
     }
-    return this._userIgnored(path6, stats);
+    return this._userIgnored(path12, stats);
   }
-  _isntIgnored(path6, stat4) {
-    return !this._isIgnored(path6, stat4);
+  _isntIgnored(path12, stat4) {
+    return !this._isIgnored(path12, stat4);
   }
   /**
    * Provides a set of common helpers and properties relating to symlink handling.
    * @param path file or directory pattern being watched
    */
-  _getWatchHelpers(path6) {
-    return new WatchHelper(path6, this.options.followSymlinks, this);
+  _getWatchHelpers(path12) {
+    return new WatchHelper(path12, this.options.followSymlinks, this);
   }
   // Directory helpers
   // -----------------
@@ -25879,63 +27044,63 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param item      base path of item/directory
    */
   _remove(directory, item, isDirectory) {
-    const path6 = sp2.join(directory, item);
-    const fullPath = sp2.resolve(path6);
-    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path6) || this._watched.has(fullPath);
-    if (!this._throttle("remove", path6, 100))
+    const path12 = sp2.join(directory, item);
+    const fullPath = sp2.resolve(path12);
+    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path12) || this._watched.has(fullPath);
+    if (!this._throttle("remove", path12, 100))
       return;
     if (!isDirectory && this._watched.size === 1) {
       this.add(directory, item, true);
     }
-    const wp = this._getWatchedDir(path6);
+    const wp = this._getWatchedDir(path12);
     const nestedDirectoryChildren = wp.getChildren();
-    nestedDirectoryChildren.forEach((nested) => this._remove(path6, nested));
+    nestedDirectoryChildren.forEach((nested) => this._remove(path12, nested));
     const parent = this._getWatchedDir(directory);
     const wasTracked = parent.has(item);
     parent.remove(item);
     if (this._symlinkPaths.has(fullPath)) {
       this._symlinkPaths.delete(fullPath);
     }
-    let relPath = path6;
+    let relPath = path12;
     if (this.options.cwd)
-      relPath = sp2.relative(this.options.cwd, path6);
+      relPath = sp2.relative(this.options.cwd, path12);
     if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
       const event = this._pendingWrites.get(relPath).cancelWait();
       if (event === EVENTS.ADD)
         return;
     }
-    this._watched.delete(path6);
+    this._watched.delete(path12);
     this._watched.delete(fullPath);
     const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
-    if (wasTracked && !this._isIgnored(path6))
-      this._emit(eventName, path6);
-    this._closePath(path6);
+    if (wasTracked && !this._isIgnored(path12))
+      this._emit(eventName, path12);
+    this._closePath(path12);
   }
   /**
    * Closes all watchers for a path
    */
-  _closePath(path6) {
-    this._closeFile(path6);
-    const dir = sp2.dirname(path6);
-    this._getWatchedDir(dir).remove(sp2.basename(path6));
+  _closePath(path12) {
+    this._closeFile(path12);
+    const dir = sp2.dirname(path12);
+    this._getWatchedDir(dir).remove(sp2.basename(path12));
   }
   /**
    * Closes only file-specific watchers
    */
-  _closeFile(path6) {
-    const closers = this._closers.get(path6);
+  _closeFile(path12) {
+    const closers = this._closers.get(path12);
     if (!closers)
       return;
     closers.forEach((closer) => closer());
-    this._closers.delete(path6);
+    this._closers.delete(path12);
   }
-  _addPathCloser(path6, closer) {
+  _addPathCloser(path12, closer) {
     if (!closer)
       return;
-    let list = this._closers.get(path6);
+    let list = this._closers.get(path12);
     if (!list) {
       list = [];
-      this._closers.set(path6, list);
+      this._closers.set(path12, list);
     }
     list.push(closer);
   }
@@ -25964,313 +27129,67 @@ function watch(paths, options = {}) {
 }
 var chokidar_default = { watch, FSWatcher };
 
-// server/imageUtils.ts
-var import_fs2 = __toESM(require("fs"), 1);
-var import_https = __toESM(require("https"), 1);
-var import_node_module2 = require("node:module");
-var import_path2 = __toESM(require("path"), 1);
-var isExe2 = process.execPath.toLowerCase().endsWith("phantomserver.exe");
-var requireFunc2 = isExe2 ? (0, import_node_module2.createRequire)(process.execPath) : typeof require !== "undefined" ? require : eval("require");
-var sharp = null;
-try {
-  const exeDir = isExe2 ? import_path2.default.dirname(process.execPath) : process.cwd();
-  const sharpPath = import_path2.default.join(exeDir, "node_modules", "sharp");
-  sharp = requireFunc2(sharpPath);
-} catch (e) {
-  console.error("FATAL: First absolute load failed for sharp:", e);
-  try {
-    sharp = requireFunc2("sharp");
-  } catch (e2) {
-    console.error("FATAL: Could not load sharp module.", e2);
-  }
-}
-var processImage = async (input, dest, type) => {
-  console.log(`[Sharp] Processing ${type} -> ${dest}`);
-  try {
-    const metadata = await sharp(input).metadata();
-    const isAnimated = metadata.pages && metadata.pages > 1;
-    if (isAnimated) {
-      console.log(`[Sharp] Animation detected (frames: ${metadata.pages}). Bypassing processing for ${dest}`);
-      if (typeof input === "string") {
-        import_fs2.default.copyFileSync(input, dest);
-      } else {
-        import_fs2.default.writeFileSync(dest, input);
-      }
-      return dest;
-    }
-    let sharpInstance = sharp(input, { animated: true });
-    if (type === "cover") {
-      sharpInstance = sharpInstance.resize(600, 900, { fit: "cover" });
-    } else if (type === "banner") {
-      sharpInstance = sharpInstance.resize(920, 430, { fit: "cover" });
-    } else if (type === "icon") {
-      sharpInstance = sharpInstance.resize(256, 246, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } });
-    } else if (type === "logo") {
-      if (isAnimated) {
-        sharpInstance = sharpInstance.resize(800, 320, { fit: "inside" }).webp({ effort: 0 });
-      } else {
-        sharpInstance = sharpInstance.trim().resize(800, 320, { fit: "inside" });
-        const buffer = await sharpInstance.png().toBuffer();
-        sharpInstance = sharp({
-          create: {
-            width: 800,
-            height: 320,
-            channels: 4,
-            background: { r: 0, g: 0, b: 0, alpha: 0 }
-          }
-        }).composite([{ input: buffer, gravity: "center" }]);
-      }
-    }
-    await sharpInstance.toFile(dest);
-    return dest;
-  } catch (e) {
-    console.error(`[Sharp] Final error on ${dest}:`, e.message);
-    if (typeof input === "string" && import_fs2.default.existsSync(input) && input !== dest) {
-      import_fs2.default.copyFileSync(input, dest);
-    }
-    return dest;
-  }
-};
-var downloadImage = (url, dest) => {
-  return new Promise((resolve3, reject) => {
-    if (dest.includes("steam_") && import_fs2.default.existsSync(dest)) return resolve3(dest);
-    import_https.default.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        return reject(new Error(`Failed to download: ${response.statusCode}`));
-      }
-      const chunks = [];
-      response.on("data", (chunk) => chunks.push(chunk));
-      response.on("end", () => {
-        const buffer = Buffer.concat(chunks);
-        import_fs2.default.writeFileSync(dest, buffer);
-        resolve3(dest);
-      });
-    }).on("error", reject);
+// server/syncEngine.ts
+function setupSyncEngine(ctx2, app2) {
+  let sseClients = [];
+  app2.get("/api/sync/events", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+    sseClients.push(res);
+    req.on("close", () => {
+      sseClients = sseClients.filter((client) => client !== res);
+    });
   });
-};
+  const broadcastSyncEvent = (eventData) => {
+    sseClients.forEach((client) => client.write(`data: ${JSON.stringify(eventData)}
 
-// server/steamUtils.ts
-var import_fs3 = __toESM(require("fs"), 1);
-var import_path3 = __toESM(require("path"), 1);
-var isPkg = typeof process.pkg !== "undefined";
-var BASE_DIR = isPkg ? import_path3.default.dirname(process.execPath) : process.cwd();
-var TAGS_CACHE_FILE = import_path3.default.join(BASE_DIR, "tags_cache.json");
-var steamTagCache = {};
-var isTagCacheLoaded = false;
-var loadTagCache = () => {
-  if (isTagCacheLoaded) return;
+`));
+  };
   try {
-    if (import_fs3.default.existsSync(TAGS_CACHE_FILE)) {
-      steamTagCache = JSON.parse(import_fs3.default.readFileSync(TAGS_CACHE_FILE, "utf-8"));
-    }
-    isTagCacheLoaded = true;
-  } catch (e) {
-  }
-};
-var saveTagCache = () => {
-  try {
-    import_fs3.default.writeFileSync(TAGS_CACHE_FILE, JSON.stringify(steamTagCache, null, 2));
-  } catch (e) {
-  }
-};
-var getStoreTags = async (appId) => {
-  loadTagCache();
-  if (steamTagCache[appId]) return steamTagCache[appId];
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3e3);
-    const res = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (res.status === 429) {
-      console.log(`[Steam] Rate limit hit fetching tags for app ${appId}`);
-      return [];
-    }
-    const json = await res.json();
-    if (json[appId]?.success) {
-      const data = json[appId].data;
-      const genres = (data.genres || []).map((g) => g.description.toLowerCase());
-      const categories = (data.categories || []).map((c) => c.description.toLowerCase());
-      const adult = data.content_descriptors?.ids?.includes(3) || data.required_age >= 18 ? ["adultonly"] : [];
-      const isSoftware = data.type === "software" || data.type === "tool" || data.type === "application" ? ["software"] : [];
-      const tags = [...genres, ...categories, ...adult, ...isSoftware];
-      steamTagCache[appId] = tags;
-      return tags;
-    }
-  } catch (e) {
-  }
-  steamTagCache[appId] = [];
-  return [];
-};
-var heaviestSteamUserCache = null;
-var getHeaviestSteamUser = (userdataDir) => {
-  if (heaviestSteamUserCache) return heaviestSteamUserCache;
-  let heaviestUser = "";
-  let maxFiles = -1;
-  try {
-    if (!import_fs3.default.existsSync(userdataDir)) return null;
-    const users = import_fs3.default.readdirSync(userdataDir);
-    for (const user of users) {
-      const gridDir = import_path3.default.join(userdataDir, user, "config", "grid");
-      if (import_fs3.default.existsSync(gridDir)) {
-        const fileCount = import_fs3.default.readdirSync(gridDir).length;
-        if (fileCount > maxFiles) {
-          maxFiles = fileCount;
-          heaviestUser = user;
+    const steamConfigPath = "C:/Program Files (x86)/Steam/userdata/*/config/grid";
+    const watchPaths = [ctx2.ASSETS_DIR, steamConfigPath];
+    console.log(`[Sync] Mounting Chokidar Sentry on watch paths...`);
+    chokidar_default.watch(watchPaths, {
+      ignored: /(^|[\/\\])\../,
+      ignoreInitial: true,
+      depth: 5
+    }).on("all", (event, filePath) => {
+      if (["add", "change", "unlink"].includes(event)) {
+        if (filePath.match(/\.(png|jpg|jpeg|webp)$/i)) {
+          broadcastSyncEvent({ type: "ASSET_CHANGED", path: filePath, event });
         }
       }
-    }
-    if (heaviestUser) heaviestSteamUserCache = heaviestUser;
+    }).on("error", (error) => {
+      console.error(`[Sync] Chokidar Watcher Error:`, error.message);
+    });
   } catch (e) {
+    console.error("[Sync] Sentry mount failed:", e.message);
   }
-  return heaviestSteamUserCache;
-};
-var findLocalSteamAsset = (appId, type) => {
-  const steamPath = "C:\\Program Files (x86)\\Steam";
-  const suffixes = {
-    cover: ["p.png", "p.jpg"],
-    banner: [".png", ".jpg"],
-    logo: ["_logo.png", "_logo.jpg"],
-    hero: ["_hero.png", "_hero.jpg"]
-  };
-  const userdataDir = import_path3.default.join(steamPath, "userdata");
-  const heaviestUser = getHeaviestSteamUser(userdataDir);
-  if (heaviestUser) {
-    const gridDir = import_path3.default.join(userdataDir, heaviestUser, "config", "grid");
-    for (const suffix of suffixes[type]) {
-      const localPath = import_path3.default.join(gridDir, `${appId}${suffix}`);
-      if (import_fs3.default.existsSync(localPath)) return localPath;
-    }
-  }
-  if (import_fs3.default.existsSync(userdataDir)) {
-    try {
-      const users = import_fs3.default.readdirSync(userdataDir);
-      for (const user of users) {
-        if (user === heaviestUser) continue;
-        const gridDir = import_path3.default.join(userdataDir, user, "config", "grid");
-        for (const suffix of suffixes[type]) {
-          const localPath = import_path3.default.join(gridDir, `${appId}${suffix}`);
-          if (import_fs3.default.existsSync(localPath)) return localPath;
-        }
-      }
-    } catch (e) {
-    }
-  }
-  const legacyFilenameMap = {
-    cover: `${appId}_library_600x900.jpg`,
-    banner: `${appId}_header.jpg`,
-    logo: `${appId}_logo.png`,
-    hero: `${appId}_library_hero.jpg`
-  };
-  const libraryCache = import_path3.default.join(steamPath, "appcache", "librarycache", legacyFilenameMap[type]);
-  if (import_fs3.default.existsSync(libraryCache)) return libraryCache;
-  return null;
-};
-
-// server/emuUtils.ts
-var import_fs4 = __toESM(require("fs"), 1);
-var PLATFORM_NAMES = {
-  "3ds": "NINTENDO 3DS",
-  "n64": "NINTENDO 64",
-  "nds": "NINTENDO DS",
-  "ngc": "NINTENDO GAMECUBE",
-  "nsw": "NINTENDO SWITCH",
-  "wii": "NINTENDO WII",
-  "wiu": "NINTENDO WII U",
-  "ps2": "PLAYSTATION 2",
-  "ps3": "PLAYSTATION 3",
-  "ps4": "PLAYSTATION 4",
-  "psp": "PLAYSTATION PORTABLE",
-  "psv": "PLAYSTATION VITA"
-};
-var EMU_PLATFORMS = {
-  "3ds": { extensions: [".3ds", ".cia"], mode: "FILE", defaultArgs: "--fullscreen" },
-  "n64": { extensions: [".z64", ".n64", ".v64"], mode: "FILE", defaultArgs: "--fullscreen" },
-  "nds": { extensions: [".nds"], mode: "FILE", defaultArgs: "-f" },
-  "ngc": { extensions: [".iso", ".gcm", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
-  "nsw": { extensions: [".nsp", ".xci"], mode: "FILE", defaultArgs: "-f" },
-  "wii": { extensions: [".iso", ".wbfs", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
-  "wiu": { extensions: [".wud", ".wux", ".rpx"], mode: "FILE", defaultArgs: "-f" },
-  "ps2": { extensions: [".iso", ".bin", ".chd"], mode: "FILE", defaultArgs: "--fullscreen --no-gui" },
-  "ps3": { extensions: [], mode: "FOLDER", defaultArgs: "--fullscreen" },
-  "ps4": { extensions: [], mode: "FOLDER", defaultArgs: "" },
-  "psp": { extensions: [".iso", ".cso"], mode: "FILE", defaultArgs: "--fullscreen" },
-  "psv": { extensions: [".vpk"], mode: "FILE", defaultArgs: "" }
-};
-function cleanEmuTitle(filename) {
-  let name = filename.replace(/\.[^/.]+$/, "");
-  name = name.replace(/\s*\(.*?\)/g, "");
-  name = name.replace(/\s*\[.*?\]/g, "");
-  name = name.replace(/_/g, " ");
-  name = name.replace(/^\d+\s*-\s*/, "");
-  return name.trim();
-}
-function extractTitleFromSFO(sfoPath) {
-  try {
-    if (!import_fs4.default.existsSync(sfoPath)) return null;
-    const buffer = import_fs4.default.readFileSync(sfoPath);
-    const titleIndex = buffer.indexOf(Buffer.from("TITLE\0"));
-    if (titleIndex === -1) return null;
-    const header = {
-      keyOffset: buffer.readUInt32LE(8),
-      dataOffset: buffer.readUInt32LE(12),
-      count: buffer.readUInt32LE(16)
-    };
-    for (let i = 0; i < header.count; i++) {
-      const entryOffset = 20 + i * 16;
-      const keyStart = header.keyOffset + buffer.readUInt16LE(entryOffset);
-      let keyEnd = keyStart;
-      while (keyEnd < buffer.length && buffer[keyEnd] !== 0) keyEnd++;
-      const key = buffer.toString("utf8", keyStart, keyEnd);
-      if (key === "TITLE") {
-        const dataStart = header.dataOffset + buffer.readUInt32LE(entryOffset + 12);
-        const dataLen = buffer.readUInt32LE(entryOffset + 8);
-        let actualLen = 0;
-        while (actualLen < dataLen && buffer[dataStart + actualLen] !== 0) actualLen++;
-        return buffer.toString("utf8", dataStart, dataStart + actualLen).trim();
-      }
-    }
-  } catch (e) {
-    console.error("[SFO] Failed to parse title", e);
-  }
-  return null;
-}
-
-// server/launchUtils.ts
-var import_child_process = require("child_process");
-var import_path4 = __toESM(require("path"), 1);
-function launchViaShell(execPath, execArgs = "") {
-  const dir = import_path4.default.dirname(execPath);
-  const psScript = `$shell = New-Object -ComObject Shell.Application; $shell.ShellExecute('${execPath.replace(/'/g, "''")}', '${(execArgs || "").replace(/'/g, "''")}', '${dir.replace(/'/g, "''")}', 'open', 1)`;
-  const encoded = Buffer.from(psScript, "utf16le").toString("base64");
-  (0, import_child_process.exec)(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (error) => {
-    if (error) {
-      console.error("[Launch] Shell.Application failed, fallback:", error.message);
-      (0, import_child_process.exec)(`start "" "${execPath}" ${execArgs}`);
-    }
-  });
 }
 
 // server.ts
 var slugify = (text) => {
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
 };
-var app = (0, import_express.default)();
+var app = (0, import_express8.default)();
 var port = 3e3;
 app.use((0, import_cors.default)());
-app.use(import_express.default.json());
-var isPkg2 = typeof process.pkg !== "undefined";
-var BASE_DIR2 = isPkg2 ? import_path5.default.dirname(process.execPath) : process.cwd();
-var DATA_FILE = import_path5.default.join(BASE_DIR2, "data.json");
-var STORAGE_DIR = import_path5.default.join(BASE_DIR2, "storage");
-var ASSETS_DIR = import_path5.default.join(STORAGE_DIR, "assets");
-var CONFIG_FILE = import_path5.default.join(BASE_DIR2, "config.json");
-console.log(`[Server] Environment: ${isPkg2 ? "PORTABLE_EXE" : "NODE_DEV"}`);
+app.use(import_express8.default.json());
+var isExe3 = process.execPath.toLowerCase().endsWith("phantomserver.exe");
+var BASE_DIR2 = isExe3 ? import_path11.default.dirname(process.execPath) : process.cwd();
+var DATA_FILE = import_path11.default.join(BASE_DIR2, "data.json");
+var STORAGE_DIR = import_path11.default.join(BASE_DIR2, "storage");
+var ASSETS_DIR = import_path11.default.join(STORAGE_DIR, "assets");
+var CONFIG_FILE = import_path11.default.join(BASE_DIR2, "config.json");
+console.log(`[Server] Environment: ${isExe3 ? "PACKAGE_EXE" : "NODE_DEV"}`);
 console.log(`[Server] Base Storage: ${BASE_DIR2}`);
-app.use("/res/storage", import_express.default.static(STORAGE_DIR));
+app.use("/res/storage", import_express8.default.static(STORAGE_DIR));
 [STORAGE_DIR, ASSETS_DIR].forEach((dir) => {
-  if (!import_fs5.default.existsSync(dir)) import_fs5.default.mkdirSync(dir, { recursive: true });
+  if (!import_fs12.default.existsSync(dir)) import_fs12.default.mkdirSync(dir, { recursive: true });
 });
-var DB_FILE = import_path5.default.join(BASE_DIR2, "phantom.db");
+var DB_FILE = import_path11.default.join(BASE_DIR2, "phantom.db");
 var db = new AppDatabase(DB_FILE);
 db.migrateFromJson(DATA_FILE);
 if (db.getCategories().length === 0) {
@@ -26280,960 +27199,19 @@ if (db.getCategories().length === 0) {
     { id: "favorites", name: "FAVORITES", icon: "heart", color: "#ff4444", games: [], enabled: true }
   ]);
 }
-app.get("/api/sgdb/key", (req, res) => {
-  try {
-    let config = { sgdbKey: "", sgdbEnabled: false };
-    if (import_fs5.default.existsSync(CONFIG_FILE)) {
-      config = JSON.parse(import_fs5.default.readFileSync(CONFIG_FILE, "utf-8"));
-    }
-    res.json({ key: config.sgdbKey || "", enabled: config.sgdbEnabled || false });
-  } catch (e) {
-    res.status(500).json({ error: "Failed to retrieve SGDB settings" });
-  }
-});
-app.post("/api/sgdb/key", (req, res) => {
-  try {
-    const { key, enabled } = req.body;
-    let config = {};
-    if (import_fs5.default.existsSync(CONFIG_FILE)) {
-      config = JSON.parse(import_fs5.default.readFileSync(CONFIG_FILE, "utf-8"));
-    }
-    if (key !== void 0) config.sgdbKey = key;
-    if (enabled !== void 0) config.sgdbEnabled = enabled;
-    import_fs5.default.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: "Failed to save SGDB settings" });
-  }
-});
-app.get("/api/data", (req, res) => {
-  try {
-    res.json(db.getCategories());
-  } catch (e) {
-    console.error("[Data] Load error:", e);
-    res.status(500).json({ error: "Failed to read data" });
-  }
-});
-app.post("/api/data", (req, res) => {
-  try {
-    const categories = req.body;
-    if (!Array.isArray(categories)) {
-      return res.status(400).json({ error: "Body must be a categories array" });
-    }
-    db.saveCategories(categories);
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: "Failed to save data" });
-  }
-});
-var getSGDBKey = () => {
-  try {
-    if (!import_fs5.default.existsSync(CONFIG_FILE)) return null;
-    const cfg = JSON.parse(import_fs5.default.readFileSync(CONFIG_FILE, "utf-8"));
-    return cfg.sgdbKey || null;
-  } catch {
-    return null;
-  }
-};
-app.get("/api/sgdb/search/:query", (req, res) => {
-  const key = getSGDBKey();
-  if (!key) return res.status(401).json({ error: "No API Key" });
-  const url = `https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(req.params.query)}`;
-  const options = {
-    headers: { "Authorization": `Bearer ${key}` }
-  };
-  import_https2.default.get(url, options, (response) => {
-    let data = "";
-    response.on("data", (chunk) => data += chunk);
-    response.on("end", () => {
-      try {
-        res.json(JSON.parse(data));
-      } catch (e) {
-        res.status(500).json({ error: "Failed to parse SGDB response" });
-      }
-    });
-  }).on("error", (e) => res.status(500).json({ error: e.message }));
-});
-app.get("/api/sgdb/grids/:gameId/:type", (req, res) => {
-  const key = getSGDBKey();
-  if (!key) return res.status(401).json({ error: "No API Key" });
-  const { gameId, type } = req.params;
-  let endpointType = "grids";
-  let styleQuery = "?styles=alternate,blurred,material";
-  if (type === "hero") {
-    endpointType = "heroes";
-  } else if (type === "logo") {
-    endpointType = "logos";
-    styleQuery = "";
-  } else if (type === "icon") {
-    endpointType = "icons";
-    styleQuery = "";
-  } else if (type === "banner") {
-    endpointType = "grids";
-  }
-  const url = `https://www.steamgriddb.com/api/v2/${endpointType}/game/${gameId}${styleQuery}`;
-  console.log(`[SGDB] Fetching: ${url}`);
-  const options = {
-    headers: { "Authorization": `Bearer ${key}` }
-  };
-  import_https2.default.get(url, options, (response) => {
-    let data = "";
-    response.on("data", (chunk) => data += chunk);
-    response.on("end", () => {
-      try {
-        const json = JSON.parse(data);
-        if (json.success && json.data) {
-          if (type === "grid") {
-            json.data = json.data.filter((asset) => asset.height > asset.width);
-          } else if (type === "banner") {
-            json.data = json.data.filter((asset) => asset.width > asset.height);
-          }
-        }
-        res.json(json);
-      } catch (e) {
-        res.status(500).json({ error: "Failed to parse SGDB response" });
-      }
-    });
-  }).on("error", (e) => res.status(500).json({ error: e.message }));
-});
-app.post("/api/assets/import", async (req, res) => {
-  const { sourcePath, gameId, assetType } = req.body;
-  if (!sourcePath || !gameId || !assetType) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-  try {
-    const gameDir = import_path5.default.join(ASSETS_DIR, gameId);
-    if (!import_fs5.default.existsSync(gameDir)) import_fs5.default.mkdirSync(gameDir, { recursive: true });
-    const sourceExt = import_path5.default.extname(sourcePath).toLowerCase();
-    const processedExt = assetType === "logo" || assetType === "icon" || sourceExt === ".png" || sourceExt === ".gif" || sourceExt === ".apng" ? sourceExt : ".jpg";
-    const targetPath = import_path5.default.join(gameDir, `${assetType}${processedExt}`);
-    const tempPath = import_path5.default.join(gameDir, `_temp_${assetType}${processedExt}`);
-    if (assetType === "launch") {
-      console.log(`[Assets] Creating/Copying Launch Shortcut for: ${sourcePath}`);
-      const internalLnk = import_path5.default.join(gameDir, "launch.lnk");
-      if (sourcePath.toLowerCase().endsWith(".lnk")) {
-        import_fs5.default.copyFileSync(sourcePath, internalLnk);
-        res.json({ path: import_path5.default.resolve(internalLnk) });
-      } else {
-        const combinedScript = `
-$targetPath = '${internalLnk.replace(/'/g, "''")}';
-$finalTarget = '${sourcePath.replace(/'/g, "''")}';
-
-if ($finalTarget -like '*.url') {
-    if (Test-Path $finalTarget) {
-        $content = Get-Content $finalTarget -Raw;
-        if ($content -match 'URL=(.*)') { $finalTarget = $matches[1].Trim() }
-    }
-}
-
-$WScript = New-Object -ComObject WScript.Shell;
-$newS = $WScript.CreateShortcut($targetPath);
-$newS.TargetPath = $finalTarget;
-$newS.Save();
-`;
-        const encoded = Buffer.from(combinedScript, "utf16le").toString("base64");
-        (0, import_child_process2.exec)(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err) => {
-          if (err) {
-            console.error("[Assets] Shortcut creation failed:", err);
-            return res.status(500).json({ error: "Shortcut creation failed" });
-          }
-          if (import_fs5.default.existsSync(internalLnk)) {
-            res.json({ path: import_path5.default.resolve(internalLnk) });
-          } else {
-            res.status(500).json({ error: "Verification failed: launch.lnk not found after creation" });
-          }
-        });
-      }
-      return;
-    }
-    if (sourcePath.startsWith("http")) {
-      console.log(`[Assets] Downloading & Resizing URL: ${sourcePath}`);
-      await downloadImage(sourcePath, tempPath);
-      await processImage(tempPath, targetPath, assetType);
-      if (import_fs5.default.existsSync(tempPath)) import_fs5.default.unlinkSync(tempPath);
-      res.json({ path: import_path5.default.resolve(targetPath) });
-    } else if ([".exe", ".lnk", ".bat", ".url"].includes(import_path5.default.extname(sourcePath).toLowerCase())) {
-      const lnkPath = import_path5.default.join(gameDir, `launch${import_path5.default.extname(sourcePath).toLowerCase() === ".lnk" ? "" : ".lnk"}`);
-      const psCommand = `$s=(New-Object -COM WScript.Shell).CreateShortcut('${lnkPath}');$s.TargetPath='${sourcePath}';$s.Save()`;
-      (0, import_child_process2.exec)(`powershell -Command "${psCommand}"`, (err) => {
-        if (err) return res.status(500).json({ error: "Shortcut creation failed" });
-        res.json({ path: import_path5.default.resolve(lnkPath) });
-      });
-    } else {
-      console.log(`[Assets] Importing & Resizing Local: ${sourcePath}`);
-      await processImage(sourcePath, targetPath, assetType);
-      res.json({ path: import_path5.default.resolve(targetPath) });
-    }
-  } catch (e) {
-    console.error(`[Assets] Import/Process failed: ${e.message}`);
-    res.status(500).json({ error: e.message });
-  }
-});
-app.post("/api/games/delete", (req, res) => {
-  const { gameId } = req.body;
-  if (!gameId) return res.status(400).json({ error: "gameId required" });
-  try {
-    db.deleteGame(gameId);
-    const gameDir = import_path5.default.join(ASSETS_DIR, gameId);
-    if (import_fs5.default.existsSync(gameDir)) {
-      import_fs5.default.rmSync(gameDir, { recursive: true, force: true });
-      console.log(`[Assets] Purged assets for game: ${gameId}`);
-    }
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-app.post("/api/games/verify-integrity", (req, res) => {
-  console.log("[Integrity] Verifying game shortcut paths...");
-  try {
-    const brokenIds = [];
-    const gamesMap = /* @__PURE__ */ new Map();
-    const categories = db.getCategories();
-    categories.forEach((cat) => {
-      cat.games?.forEach((g) => {
-        if (!gamesMap.has(g.id)) gamesMap.set(g.id, g);
-      });
-    });
-    gamesMap.forEach((game, id) => {
-      if (game.execPath) {
-        if (game.execPath.startsWith("http") || game.execPath.startsWith("steam:") || game.execPath.startsWith("com.epicgames")) {
-          return;
-        }
-        if (!import_fs5.default.existsSync(game.execPath)) {
-          console.log(`[Integrity] Broken Path: ${game.title} -> ${game.execPath}`);
-          brokenIds.push(id);
-        }
-      }
-    });
-    res.json({ brokenIds });
-  } catch (e) {
-    console.error("[Integrity] Error:", e);
-    res.status(500).json({ error: "Integrity check failed" });
-  }
-});
-app.post("/api/system/wipe", (req, res) => {
-  try {
-    db.wipeData();
-    if (import_fs5.default.existsSync(STORAGE_DIR)) {
-      import_fs5.default.rmSync(STORAGE_DIR, { recursive: true, force: true });
-      import_fs5.default.mkdirSync(ASSETS_DIR, { recursive: true });
-    }
-    console.log("[System] FACTORY_RESET_COMPLETE");
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+var ctx = { db, ASSETS_DIR, STORAGE_DIR, CONFIG_FILE, BASE_DIR: BASE_DIR2, slugify };
+app.use("/api/steam", createSteamRoutes(ctx));
+app.use("/api/xbox", createXboxRoutes(ctx));
+app.use("/api/emu", createEmuRoutes(ctx));
+app.use("/api", createDataRoutes(ctx));
+app.use("/api/assets", createAssetRoutes(ctx));
+app.use("/api/games", createAssetRoutes(ctx));
+app.use("/api/system", createAssetRoutes(ctx));
+app.use("/api/files", createFileRoutes(ctx));
+app.use("/api", createFileRoutes(ctx));
+app.use("/api", createProxyRoutes(ctx));
 app.get("/api/health", (req, res) => {
   res.json({ status: "online", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
-});
-app.get("/api/files/drives", (req, res) => {
-  console.log("[FS_EXPLORER] Listing logical drives natively...");
-  try {
-    const drives = [];
-    for (let i = 65; i <= 90; i++) {
-      const drive = String.fromCharCode(i) + ":\\";
-      try {
-        if (import_fs5.default.existsSync(drive)) drives.push(drive);
-      } catch (e) {
-      }
-    }
-    const userProfile = process.env.USERPROFILE || "";
-    const rawLibraries = {
-      Desktop: import_path5.default.join(userProfile, "Desktop") + "\\",
-      Documents: import_path5.default.join(userProfile, "Documents") + "\\",
-      Pictures: import_path5.default.join(userProfile, "Pictures") + "\\",
-      Music: import_path5.default.join(userProfile, "Music") + "\\",
-      Videos: import_path5.default.join(userProfile, "Videos") + "\\",
-      Downloads: import_path5.default.join(userProfile, "Downloads") + "\\"
-    };
-    const libraries = Object.entries(rawLibraries).map(([name, p]) => {
-      return { name, path: import_fs5.default.existsSync(p) ? p : "" };
-    }).filter((lib) => lib.path && lib.path.length > 1);
-    res.json({ drives, libraries });
-  } catch (error) {
-    console.error("[FS_EXPLORER] Failed to list drives natively:", error.message);
-    res.status(500).json({ error: "Failed to list drives" });
-  }
-});
-app.post("/api/files/list", (req, res) => {
-  const { dirPath } = req.body;
-  if (!dirPath) return res.status(400).json({ error: "dirPath is required" });
-  try {
-    const resolvedPath = import_path5.default.resolve(dirPath);
-    console.log(`[FS_EXPLORER] Listing contents of: ${resolvedPath}`);
-    let items;
-    try {
-      items = import_fs5.default.readdirSync(resolvedPath, { withFileTypes: true });
-    } catch (err) {
-      console.error(`[FS_EXPLORER] Access Denied to directory: ${resolvedPath}`);
-      return res.status(403).json({ error: "ACCESS_DENIED", path: resolvedPath });
-    }
-    const contents = items.map((item) => {
-      const fullPath = import_path5.default.join(resolvedPath, item.name);
-      try {
-        const stats = import_fs5.default.statSync(fullPath);
-        return {
-          name: item.name,
-          path: fullPath,
-          isDir: item.isDirectory(),
-          size: stats.size,
-          ext: import_path5.default.extname(item.name).toLowerCase()
-        };
-      } catch (e) {
-        console.warn(`[FS_EXPLORER] Skipping restricted item: ${fullPath}`);
-        return null;
-      }
-    }).filter((item) => item !== null).sort((a, b) => {
-      if (a.isDir && !b.isDir) return -1;
-      if (!a.isDir && b.isDir) return 1;
-      return a.name.localeCompare(b.name);
-    });
-    res.json({ path: resolvedPath, contents });
-  } catch (e) {
-    console.error(`[FS_EXPLORER] Error listing ${dirPath}: ${e.message}`);
-    res.status(500).json({ error: e.message });
-  }
-});
-app.post("/api/files/info", (req, res) => {
-  const { filePath } = req.body;
-  if (!filePath) return res.status(400).json({ error: "filePath is required" });
-  const ext = import_path5.default.extname(filePath).toLowerCase();
-  if (ext === ".lnk") {
-    const psScript = `
-$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${filePath.replace(/'/g, "''")}');
-$obj = @{
-    TargetPath = $s.TargetPath
-    Arguments = $s.Arguments
-    WorkingDirectory = $s.WorkingDirectory
-}
-$obj | ConvertTo-Json
-`;
-    (0, import_child_process2.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
-      if (err) return res.status(500).json({ error: "Failed to read shortcut" });
-      try {
-        const info = JSON.parse(stdout);
-        res.json(info);
-      } catch (e) {
-        res.status(500).json({ error: "Failed to parse shortcut info" });
-      }
-    });
-  } else if (ext === ".url") {
-    try {
-      const content = import_fs5.default.readFileSync(filePath, "utf-8");
-      const match = content.match(/URL=(.*)/);
-      if (match && match[1]) {
-        res.json({ TargetPath: match[1].trim(), Arguments: "" });
-      } else {
-        res.json({ TargetPath: filePath, Arguments: "" });
-      }
-    } catch (e) {
-      res.status(500).json({ error: "Failed to read .url file" });
-    }
-  } else {
-    res.json({ TargetPath: filePath, Arguments: "" });
-  }
-});
-var PROXY_CACHE_VERSION = "v4";
-app.get("/api/proxy-image", async (req, res) => {
-  const filePath = req.query.path;
-  console.log(`[Proxy] Request: ${req.url}`);
-  console.log(`[Proxy] Query Path: "${filePath}"`);
-  const width = req.query.width ? parseInt(req.query.width) : void 0;
-  const height = req.query.height ? parseInt(req.query.height) : void 0;
-  if (!filePath) return res.status(400).send("Path is required");
-  let candidates = [];
-  candidates.push(filePath);
-  candidates.push(import_path5.default.resolve(filePath));
-  candidates.push(import_path5.default.normalize(filePath));
-  try {
-    const d1 = decodeURIComponent(filePath);
-    candidates.push(d1);
-    candidates.push(import_path5.default.resolve(d1));
-  } catch (e) {
-  }
-  try {
-    const d2 = decodeURIComponent(decodeURIComponent(filePath));
-    candidates.push(d2);
-    candidates.push(import_path5.default.resolve(d2));
-  } catch (e) {
-  }
-  if (filePath.includes("%")) {
-    candidates.push(unescape(filePath));
-  }
-  candidates = [...new Set(candidates.filter(Boolean))];
-  console.log(`[Proxy] Candidates: ${JSON.stringify(candidates)}`);
-  candidates = [...new Set(candidates)];
-  let finalPath = "";
-  for (const p of candidates) {
-    if (import_fs5.default.existsSync(p)) {
-      finalPath = p;
-      break;
-    }
-  }
-  if (!finalPath) {
-    for (const p of candidates) {
-      const ext = import_path5.default.extname(p).toLowerCase();
-      const altExt = ext === ".jpg" ? ".png" : ext === ".png" ? ".jpg" : null;
-      if (altExt) {
-        const altPath = p.slice(0, -ext.length) + altExt;
-        if (import_fs5.default.existsSync(altPath)) {
-          finalPath = altPath;
-          break;
-        }
-      }
-    }
-  }
-  if (!finalPath) {
-    for (const p of candidates) {
-      if (p.includes("storage") && p.includes("assets") && !p.includes("PhantomLauncher")) {
-        try {
-          const possiblePath = import_path5.default.resolve(process.cwd(), "system", "storage", "assets", import_path5.default.basename(import_path5.default.dirname(p)), import_path5.default.basename(p));
-          if (import_fs5.default.existsSync(possiblePath)) {
-            finalPath = possiblePath;
-            console.log(`[Proxy] STORAGE RECOVERY MATCH: ${finalPath}`);
-            break;
-          }
-        } catch (e) {
-        }
-      }
-      if (p.includes("storage\\assets")) {
-        const dir = import_path5.default.dirname(p);
-        const ext = import_path5.default.extname(p);
-        const base = import_path5.default.basename(p, ext);
-        if (import_fs5.default.existsSync(dir)) {
-          const files = import_fs5.default.readdirSync(dir);
-          const match = files.find((f) => f.startsWith(base + "."));
-          if (match) {
-            finalPath = import_path5.default.join(dir, match);
-            break;
-          }
-        }
-      }
-    }
-  }
-  if (!finalPath || !import_fs5.default.existsSync(finalPath)) {
-    console.warn(`[Proxy] Lookup failed for: ${filePath}. Proceeding with fallback image.`);
-    const isWide = width && width >= 800;
-    finalPath = import_path5.default.resolve(process.cwd(), isWide ? "res/templates/banner.png" : "res/templates/cover.png");
-    if (!import_fs5.default.existsSync(finalPath)) {
-      return res.status(404).send("Not Found and no fallback available.");
-    }
-  }
-  if (width || height) {
-    const ext = import_path5.default.extname(finalPath) || ".png";
-    let stats;
-    try {
-      stats = import_fs5.default.statSync(finalPath);
-    } catch (e) {
-      stats = { mtimeMs: 0, size: 0 };
-    }
-    let hash = 5381;
-    const str = `${finalPath}_${stats.mtimeMs}_${stats.size}_${PROXY_CACHE_VERSION}`;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) + hash + str.charCodeAt(i);
-    }
-    const safeHash = (hash >>> 0).toString(36);
-    const safeBase = import_path5.default.basename(finalPath, ext).replace(/[^a-z0-9\-_]/gi, "_");
-    const cacheFilename = `${safeBase}_${safeHash}_${width || "auto"}x${height || "auto"}${ext}`;
-    const cacheDir = import_path5.default.join(import_path5.default.dirname(process.execPath), "phantom_cache");
-    const cachePath = import_path5.default.join(cacheDir, cacheFilename);
-    if (import_fs5.default.existsSync(cachePath)) {
-      return res.sendFile(cachePath);
-    }
-    if (!import_fs5.default.existsSync(cacheDir)) {
-      try {
-        import_fs5.default.mkdirSync(cacheDir, { recursive: true });
-      } catch (e) {
-      }
-    }
-    try {
-      if (!sharp) throw new Error("sharp is undefined");
-      const metadata = await sharp(finalPath).metadata();
-      const isAnimated = metadata.pages && metadata.pages > 1;
-      if (isAnimated) {
-        console.log(`[Proxy] Animation detected (frames: ${metadata.pages}). Bypassing resize for ${finalPath}`);
-        return res.sendFile(finalPath);
-      }
-      let sharpInstance = sharp(finalPath, { animated: true });
-      if (isAnimated) {
-        sharpInstance = sharpInstance.webp({ effort: 0 });
-      }
-      if (width && height) {
-        sharpInstance = sharpInstance.resize(width, height, { fit: "cover" });
-      } else if (width) {
-        sharpInstance = sharpInstance.resize(width, null);
-      } else if (height) {
-        sharpInstance = sharpInstance.resize(null, height);
-      }
-      await sharpInstance.toFile(cachePath);
-      return res.sendFile(cachePath);
-    } catch (e) {
-      console.error(`[Proxy] Read/Resize Failed for ${finalPath}:`, e.message);
-      return res.sendFile(finalPath, (err) => {
-        if (err && !res.headersSent) res.status(404).send(`Not Found: ${finalPath}`);
-      });
-    }
-  } else {
-    return res.sendFile(finalPath, (err) => {
-      if (err && !res.headersSent) res.status(404).send(`Not Found: ${finalPath}`);
-    });
-  }
-  res.sendFile(finalPath);
-});
-var parseVdfPaths = (content) => {
-  const paths = [];
-  const pathRegex = /"path"\s+"(.*?)"/g;
-  let match;
-  while ((match = pathRegex.exec(content)) !== null) {
-    paths.push(match[1].replace(/\\\\/g, "\\"));
-  }
-  return paths;
-};
-var parseAcfManifest = (content) => {
-  const appidMatch = content.match(/"appid"\s+"(\d+)"/);
-  const nameMatch = content.match(/"name"\s+"(.*?)"/);
-  const lastUpdatedMatch = content.match(/"LastUpdated"\s+"(\d+)"/);
-  if (appidMatch && nameMatch) {
-    return {
-      appid: appidMatch[1],
-      name: nameMatch[1],
-      lastUpdated: lastUpdatedMatch ? parseInt(lastUpdatedMatch[1]) : 0
-    };
-  }
-  return null;
-};
-app.post("/api/select-folder", (req, res) => {
-  console.log("[Server] Folder picker requested");
-  const psScript = `
-$ErrorActionPreference = 'Stop'
-try {
-    Add-Type -AssemblyName System.Windows.Forms
-    $f = New-Object System.Windows.Forms.FolderBrowserDialog
-    $f.Description = "Select Folder via Phantom Launcher"
-    $result = $f.ShowDialog()
-    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-        Write-Output $f.SelectedPath
-    }
-} catch {
-    Write-Error $_.Exception.Message
-}
-`;
-  const encodedCommand = Buffer.from(psScript, "utf16le").toString("base64");
-  const command = `powershell -NoProfile -Sta -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
-  (0, import_child_process2.exec)(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error("[Server] Folder picker exec error:", error);
-      return res.status(500).json({ error: "Failed to open dialog" });
-    }
-    const selectedPath = stdout.trim();
-    res.json({ path: selectedPath || null });
-  });
-});
-app.post("/api/select-file", (req, res) => {
-  const { filter = "exe", returnBase64 = false } = req.body;
-  console.log(`[Server] File picker requested (filter: ${filter}, base64: ${returnBase64})`);
-  let fileFilter = "All Files (*.*)|*.*";
-  if (filter === "exe") {
-    fileFilter = "Executables (*.exe;*.bat;*.lnk;*.url)|*.exe;*.bat;*.lnk;*.url|All Files (*.*)|*.*";
-  } else if (filter === "image") {
-    fileFilter = "Images (*.jpg;*.jpeg;*.png;*.webp;*.jfif)|*.jpg;*.jpeg;*.png;*.webp;*.jfif|All Files (*.*)|*.*";
-  }
-  const psScript = `
-$ErrorActionPreference = 'Stop'
-try {
-    Add-Type -AssemblyName System.Windows.Forms
-    $f = New-Object System.Windows.Forms.OpenFileDialog
-    $f.Filter = "${fileFilter}"
-    $f.Title = "Select File via Phantom Launcher"
-    $f.InitialDirectory = [Environment]::GetFolderPath("Desktop")
-    $f.DereferenceLinks = $false
-    
-    $result = $f.ShowDialog()
-    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-        Write-Output $f.FileName
-    }
-} catch {
-    Write-Error $_.Exception.Message
-}
-`;
-  const encodedCommand = Buffer.from(psScript, "utf16le").toString("base64");
-  const command = `powershell -NoProfile -Sta -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
-  (0, import_child_process2.exec)(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error("[Server] File picker exec error:", error);
-      return res.status(500).json({ error: "Failed to open dialog" });
-    }
-    const selectedPath = stdout.trim();
-    if (!selectedPath) return res.json({ path: null });
-    if (returnBase64) {
-      try {
-        const fileBuffer = import_fs5.default.readFileSync(selectedPath);
-        const ext = import_path5.default.extname(selectedPath).toLowerCase().replace(".", "");
-        const mimeType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-        const base64Data = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
-        res.json({ path: selectedPath, base64: base64Data });
-      } catch (readError) {
-        console.error("[Server] Base64 read error:", readError);
-        res.status(500).json({ error: "Failed to read file for Base64" });
-      }
-    } else {
-      res.json({ path: selectedPath });
-    }
-  });
-});
-app.all("/api/steam/scan", async (req, res) => {
-  console.log("[Server] Scanning Steam libraries...");
-  try {
-    const { includeHidden = false, includeSoftware = false, includeAdultOnly = false } = req.body || {};
-    const vdfPath = "C:\\Program Files (x86)\\Steam\\config\\libraryfolders.vdf";
-    if (!import_fs5.default.existsSync(vdfPath)) {
-      return res.status(404).json({ error: "Steam config not found at default location" });
-    }
-    const hiddenAppIds = /* @__PURE__ */ new Set();
-    const lastPlayedMap = /* @__PURE__ */ new Map();
-    const softwareAppIds = /* @__PURE__ */ new Set([
-      "214850",
-      "250820",
-      "365670",
-      "1486350",
-      "431960",
-      "388080",
-      "993090",
-      "331200",
-      "228980"
-    ]);
-    try {
-      const userdataRoot = "C:\\Program Files (x86)\\Steam\\userdata";
-      if (import_fs5.default.existsSync(userdataRoot)) {
-        const users = import_fs5.default.readdirSync(userdataRoot);
-        for (const user of users) {
-          const configPaths = [
-            import_path5.default.join(userdataRoot, user, "7", "remote", "sharedconfig.vdf"),
-            import_path5.default.join(userdataRoot, user, "config", "localconfig.vdf")
-          ];
-          for (const configPath of configPaths) {
-            if (import_fs5.default.existsSync(configPath)) {
-              const content = import_fs5.default.readFileSync(configPath, "utf-8");
-              const hiddenTagRegex = /"(\d+)"\s*\{[^}]*"tags"\s*\{[^}]*"hidden"/gi;
-              let match;
-              while ((match = hiddenTagRegex.exec(content)) !== null) {
-                hiddenAppIds.add(match[1]);
-              }
-              const hiddenKeyRegex = /"(\d+)"\s*\{[^}]*"Hidden"\s*"1"/gi;
-              while ((match = hiddenKeyRegex.exec(content)) !== null) {
-                hiddenAppIds.add(match[1]);
-              }
-              const lastPlayedRegex = /"([^"]+)"\s*\{[^}]*"LastPlayed"\s*"(\d+)"/gi;
-              while ((match = lastPlayedRegex.exec(content)) !== null) {
-                lastPlayedMap.set(match[1], parseInt(match[2]));
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("[Server] Failed to parse local configs:", e);
-    }
-    const vdfContent = import_fs5.default.readFileSync(vdfPath, "utf-8");
-    const libraryPaths = parseVdfPaths(vdfContent);
-    const games = [];
-    const softwareKeywords = ["Steamworks", "Redistributable", "Soundtrack", "Artbook", "SDK", "Dedicated Server", "Benchmark", "Tool", "Utility", "Studio", "Editor", "Engine", "Framework", "Application", "Software", "Demo", "Player", "Workshop", "Server", "Client", "Driver", "Config"];
-    for (const libPath of libraryPaths) {
-      const appsPath = import_path5.default.join(libPath, "steamapps");
-      if (import_fs5.default.existsSync(appsPath)) {
-        const files = import_fs5.default.readdirSync(appsPath);
-        for (const file of files) {
-          if (file.startsWith("appmanifest_") && file.endsWith(".acf")) {
-            try {
-              const manifestContent = import_fs5.default.readFileSync(import_path5.default.join(appsPath, file), "utf-8");
-              const info = parseAcfManifest(manifestContent);
-              if (info) {
-                let isSoftware = softwareAppIds.has(info.appid) || softwareKeywords.some((kw) => info.name.toLowerCase().includes(kw.toLowerCase())) || softwareKeywords.some((kw) => file.toLowerCase().includes(kw.toLowerCase()));
-                const tags = await getStoreTags(info.appid);
-                if (tags.includes("software") || tags.includes("audio production") || tags.includes("utilities")) {
-                  isSoftware = true;
-                }
-                const isAdultOnly = tags.includes("adultonly") || tags.includes("nsfw");
-                if (!includeSoftware && isSoftware) continue;
-                if (!includeAdultOnly && isAdultOnly) continue;
-                const isHidden = hiddenAppIds.has(info.appid);
-                if (!includeHidden && isHidden) continue;
-                const gameId = `steam_${info.appid}`;
-                const steamAssets = [
-                  { type: "cover", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_600x900.jpg`, local: findLocalSteamAsset(info.appid, "cover") },
-                  { type: "banner", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/header.jpg`, local: findLocalSteamAsset(info.appid, "banner") },
-                  { type: "logo", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/logo.png`, local: findLocalSteamAsset(info.appid, "logo") },
-                  { type: "hero", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_hero.jpg`, local: findLocalSteamAsset(info.appid, "hero") }
-                ];
-                const gameObj = {
-                  id: gameId,
-                  title: info.name,
-                  execPath: `steam://rungameid/${info.appid}`,
-                  source: "steam",
-                  lastUpdated: lastPlayedMap.get(info.appid) || info.lastUpdated || 0
-                };
-                for (const asset of steamAssets) {
-                  const source = asset.local || asset.remote;
-                  const ext = source.toLowerCase().includes(".png") ? ".png" : ".jpg";
-                  const assetSubDir = import_path5.default.join("steam", info.appid.toString());
-                  const fullAssetDir = import_path5.default.join(ASSETS_DIR, assetSubDir);
-                  if (!import_fs5.default.existsSync(fullAssetDir)) import_fs5.default.mkdirSync(fullAssetDir, { recursive: true });
-                  const dest = import_path5.default.join(fullAssetDir, `${asset.type}${ext}`);
-                  gameObj[asset.type] = import_path5.default.resolve(dest);
-                  (async () => {
-                    if (source.startsWith("http")) {
-                      if (!import_fs5.default.existsSync(dest)) await downloadImage(source, dest).catch(() => {
-                      });
-                    } else {
-                      try {
-                        if (!import_fs5.default.existsSync(dest)) import_fs5.default.copyFileSync(source, dest);
-                      } catch (e) {
-                      }
-                    }
-                  })();
-                }
-                games.push(gameObj);
-              }
-            } catch (e) {
-            }
-          }
-        }
-      }
-    }
-    saveTagCache();
-    res.json({ games: games.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0)) });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-app.all("/api/xbox/scan", async (req, res) => {
-  console.log("[Server] Scanning Xbox/Store games...");
-  try {
-    const assetsDirPs = ASSETS_DIR.replace(/\\/g, "\\\\");
-    const psScript = `
-$ErrorActionPreference = 'SilentlyContinue'
-$assetsDir = "${assetsDirPs}"
-$WScript = New-Object -ComObject WScript.Shell
-
-$packages = Get-AppxPackage | Where-Object { $_.IsFramework -eq $false -and $_.SignatureKind -eq "Store" }
-$packageMap = @{}
-foreach ($p in $packages) {
-    if ($p.PackageFamilyName) { $packageMap[$p.PackageFamilyName] = $p }
-}
-
-$startApps = Get-StartApps
-$games = @()
-
-foreach ($app in $startApps) {
-    if (-not $app.AppID.Contains("!")) { continue }
-    
-    $pfn = $app.AppID.Split("!")[0]
-    $pkg = $packageMap[$pfn]
-    
-    if ($pkg) {
-        $installLoc = $pkg.InstallLocation
-        $isGame = $false
-        
-        if ($installLoc -and (Test-Path $installLoc)) {
-            $manifestPath = Join-Path $installLoc "AppxManifest.xml"
-            if (Test-Path $manifestPath) {
-                try {
-                    $content = Get-Content $manifestPath -Raw
-                    if ($content -match "ms-xbl-[a-f0-9]+" -or $content -match "uap:GameMode" -or $content -match "Category=\`"windows.game\`"") { 
-                        $isGame = $true 
-                    }
-                } catch {}
-            }
-        }
-
-        if ($isGame) {
-             $logoPath = ""
-            if ($pkg.Logo -and $installLoc) {
-                $possibleLogo = Join-Path $installLoc $pkg.Logo
-                if (Test-Path $possibleLogo) { $logoPath = $possibleLogo }
-            }
-            
-            # Create Shortcut
-            $gameId = "xbox_" + $pkg.Name
-            $gameDir = Join-Path $assetsDir $gameId
-            if (-not (Test-Path $gameDir)) { New-Item -ItemType Directory -Path $gameDir -Force | Out-Null }
-            
-            $lnkPath = Join-Path $gameDir "launch.lnk"
-            try {
-                $s = $WScript.CreateShortcut($lnkPath)
-                $s.TargetPath = "explorer.exe"
-                $s.Arguments = "shell:AppsFolder\\" + $app.AppID
-                $s.IconLocation = "$logoPath,0"
-                $s.Save()
-            } catch {
-                Write-Host "Failed to create shortcut for $($app.Name): $_"
-            }
-
-            $games += [PSCustomObject]@{
-                Title = $app.Name
-                Id = $gameId
-                ExecPath = $lnkPath
-                Logo = $logoPath
-                InstallDate = (Get-Item $installLoc).CreationTime.ToString("yyyy-MM-dd HH:mm:ss")
-            }
-        }
-    }
-}
-$games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
-`;
-    const encodedCommand = Buffer.from(psScript, "utf16le").toString("base64");
-    const command = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
-    (0, import_child_process2.exec)(command, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout) => {
-      if (error) return res.status(500).json({ error: "Failed to scan Xbox games" });
-      try {
-        const rawGames = JSON.parse(stdout || "[]");
-        const psGames = Array.isArray(rawGames) ? rawGames : [rawGames];
-        const games = [];
-        for (const g of psGames) {
-          if (!g.Id) continue;
-          const gameId = g.Id;
-          let localLogoPath = null;
-          if (g.Logo && import_fs5.default.existsSync(g.Logo)) {
-            const assetSubDir = import_path5.default.join("xbox", gameId);
-            const fullAssetDir = import_path5.default.join(ASSETS_DIR, assetSubDir);
-            if (!import_fs5.default.existsSync(fullAssetDir)) import_fs5.default.mkdirSync(fullAssetDir, { recursive: true });
-            const logoDestPng = import_path5.default.join(fullAssetDir, "logo.png");
-            try {
-              import_fs5.default.copyFileSync(g.Logo, logoDestPng);
-              localLogoPath = import_path5.default.resolve(logoDestPng);
-            } catch (e) {
-            }
-          }
-          games.push({
-            id: gameId,
-            title: g.Title,
-            execPath: g.ExecPath,
-            source: "xbox",
-            logo: localLogoPath || ""
-          });
-        }
-        res.json({ games });
-      } catch (parseError) {
-        res.json({ games: [] });
-      }
-    });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-app.post("/api/emu/scan", async (req, res) => {
-  try {
-    const { platformId, romsDir, emuExe, execArgs } = req.body;
-    if (!platformId || !romsDir || !emuExe) {
-      return res.status(400).json({ error: "Missing platformId, romsDir or emuExe" });
-    }
-    const config = EMU_PLATFORMS[platformId];
-    if (!config) return res.status(400).json({ error: "Invalid platformId" });
-    if (!import_fs5.default.existsSync(romsDir)) return res.status(404).json({ error: "ROMs directory not found" });
-    const games = [];
-    const shortcutTasks = [];
-    const scan = (dir) => {
-      if (!import_fs5.default.existsSync(dir)) return;
-      const files = import_fs5.default.readdirSync(dir);
-      for (const file of files) {
-        const fullPath = import_path5.default.join(dir, file);
-        const stat4 = import_fs5.default.statSync(fullPath);
-        if (config.mode === "FILE" && !stat4.isDirectory()) {
-          const ext = import_path5.default.extname(file).toLowerCase();
-          if (config.extensions.includes(ext)) {
-            if (platformId === "nsw" && (file.includes("[UPD]") || file.includes("[v"))) continue;
-            const gameId = `emu_${platformId}_${slugify(file)}`;
-            const gameDir = import_path5.default.join(ASSETS_DIR, gameId);
-            if (!import_fs5.default.existsSync(gameDir)) import_fs5.default.mkdirSync(gameDir, { recursive: true });
-            const lnkPath = import_path5.default.join(gameDir, "launch.lnk");
-            const finalArgs = execArgs ? `${execArgs} "${fullPath}"` : `${config.defaultArgs} "${fullPath}"`;
-            shortcutTasks.push({ lnkPath, targetExe: emuExe, args: finalArgs });
-            games.push({
-              id: gameId,
-              title: cleanEmuTitle(file),
-              execPath: import_path5.default.resolve(lnkPath),
-              source: "emulator",
-              sourceId: platformId,
-              platform: platformId,
-              category: PLATFORM_NAMES[platformId] || platformId.toUpperCase()
-            });
-          }
-        } else if (config.mode === "FOLDER" && stat4.isDirectory()) {
-          let folderArgs = `"${fullPath}"`;
-          let detectedTitle = cleanEmuTitle(file);
-          if (platformId === "ps3") {
-            const sfoPath = import_path5.default.join(fullPath, "PS3_GAME", "PARAM.SFO");
-            const sfoTitle = extractTitleFromSFO(sfoPath);
-            if (sfoTitle) detectedTitle = sfoTitle;
-            const eboot = import_path5.default.join(fullPath, "PS3_GAME", "USRDIR", "EBOOT.BIN");
-            if (import_fs5.default.existsSync(eboot)) folderArgs = `"${eboot}"`;
-          } else if (platformId === "ps4") {
-            const sfoPath = import_path5.default.join(fullPath, "sce_sys", "param.sfo");
-            const sfoTitle = extractTitleFromSFO(sfoPath);
-            if (sfoTitle) detectedTitle = sfoTitle;
-          }
-          const gameId = `emu_${platformId}_${slugify(file)}`;
-          const gameDir = import_path5.default.join(ASSETS_DIR, gameId);
-          if (!import_fs5.default.existsSync(gameDir)) import_fs5.default.mkdirSync(gameDir, { recursive: true });
-          const lnkPath = import_path5.default.join(gameDir, "launch.lnk");
-          shortcutTasks.push({ lnkPath, targetExe: emuExe, args: folderArgs });
-          games.push({
-            id: gameId,
-            title: detectedTitle,
-            execPath: import_path5.default.resolve(lnkPath),
-            source: "emulator",
-            platform: platformId
-          });
-        } else if (stat4.isDirectory()) {
-          scan(fullPath);
-        }
-      }
-    };
-    scan(romsDir);
-    if (shortcutTasks.length > 0) {
-      console.log(`[EmuScan] Creating ${shortcutTasks.length} shortcuts...`);
-      const psLines = shortcutTasks.map((t) => {
-        const lnk = t.lnkPath.replace(/'/g, "''");
-        const target = t.targetExe.replace(/'/g, "''");
-        const args = t.args.replace(/'/g, "''");
-        return `$s=$w.CreateShortcut('${lnk}');$s.TargetPath='${target}';$s.Arguments='${args}';$s.Save()`;
-      });
-      const psScript = `$w=New-Object -ComObject WScript.Shell
-${psLines.join("\n")}`;
-      const encoded = Buffer.from(psScript, "utf16le").toString("base64");
-      await new Promise((resolve3, reject) => {
-        (0, import_child_process2.exec)(
-          `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
-          { maxBuffer: 1024 * 1024 * 10 },
-          (err) => {
-            if (err) {
-              console.error("[EmuScan] Shortcut creation failed:", err.message);
-              reject(err);
-            } else {
-              console.log(`[EmuScan] ${shortcutTasks.length} shortcuts created`);
-              resolve3();
-            }
-          }
-        );
-      });
-    }
-    res.json({ games });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
-app.post("/api/assets/fetch-missing", async (req, res) => {
-  try {
-    const { categoryId } = req.body;
-    const categories = db.getCategories();
-    const cat = categories.find((c) => c.id === categoryId);
-    if (!cat) return res.status(404).json({ error: "Category not found" });
-    res.json({ success: true, count: cat.games.filter((g) => !g.logo || !g.cover || !g.banner).length });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
 });
 app.post("/api/launch", (req, res) => {
   try {
@@ -27249,15 +27227,8 @@ app.post("/api/launch", (req, res) => {
       }
     }
     if (execPath.startsWith("http") || execPath.startsWith("steam://")) {
-      console.log(`[Launch] Protocol URL: ${execPath}`);
-      (0, import_child_process2.exec)(`start "" "${execPath}"`);
-    } else if (execPath.startsWith("shell:AppsFolder")) {
-      console.log(`[Launch] UWP/Store App: ${execPath}`);
-      (0, import_child_process2.exec)(`explorer.exe "${execPath}"`, (error) => {
-        if (error) console.error("[Launch] Explorer failed:", error);
-      });
+      (0, import_child_process6.exec)(`start "" "${execPath}"`);
     } else {
-      console.log(`[Launch] Shell.Application: ${execPath}`);
       launchViaShell(execPath, execArgs);
     }
     res.json({ success: true });
@@ -27267,61 +27238,23 @@ app.post("/api/launch", (req, res) => {
   }
 });
 var findFrontend = () => {
-  const exeDir = import_path5.default.dirname(process.execPath);
-  const localFront = import_path5.default.join(exeDir, "front");
-  const possiblePaths = [localFront, import_path5.default.join(exeDir, "..", "front"), import_path5.default.join(process.cwd(), "phantom_app/front")];
+  const exeDir = import_path11.default.dirname(process.execPath);
+  const localFront = import_path11.default.join(exeDir, "front");
+  const possiblePaths = [localFront, import_path11.default.join(exeDir, "..", "front"), import_path11.default.join(process.cwd(), "phantom_app/front")];
   for (const p of possiblePaths) {
-    if (import_fs5.default.existsSync(p) && import_fs5.default.existsSync(import_path5.default.join(p, "index.html"))) return p;
+    if (import_fs12.default.existsSync(p) && import_fs12.default.existsSync(import_path11.default.join(p, "index.html"))) return p;
   }
   return null;
 };
 var frontPath = findFrontend();
 if (frontPath) {
-  app.use(import_express.default.static(frontPath));
-  app.get(/^(?!\/api).+/, (req, res) => res.sendFile(import_path5.default.join(frontPath, "index.html")));
+  app.use(import_express8.default.static(frontPath));
+  app.get(/^(?!\/api).+/, (req, res) => res.sendFile(import_path11.default.join(frontPath, "index.html")));
 } else {
   app.get("/", (req, res) => res.send(`Phantom Server Running.<br>Frontend NOT FOUND.`));
 }
-var sseClients = [];
-app.get("/api/sync/events", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.flushHeaders();
-  sseClients.push(res);
-  req.on("close", () => {
-    sseClients = sseClients.filter((client) => client !== res);
-  });
-});
-var broadcastSyncEvent = (eventData) => {
-  sseClients.forEach((client) => client.write(`data: ${JSON.stringify(eventData)}
-
-`));
-};
-try {
-  const steamConfigPath = "C:/Program Files (x86)/Steam/userdata/*/config/grid";
-  const watchPaths = [ASSETS_DIR, steamConfigPath];
-  console.log(`[Sync] Mounting Chokidar Sentry on:`);
-  watchPaths.forEach((p) => console.log(`  -> ${p}`));
-  chokidar_default.watch(watchPaths, {
-    ignored: /(^|[\/\\])\../,
-    // ignore dotfiles
-    ignoreInitial: true,
-    depth: 5
-  }).on("all", (event, filePath) => {
-    if (["add", "change", "unlink"].includes(event)) {
-      if (filePath.match(/\.(png|jpg|jpeg|webp)$/i)) {
-        console.log(`[Sync] Triggered SSE Push. File changed: ${filePath}`);
-        broadcastSyncEvent({ type: "ASSET_CHANGED", path: filePath, event });
-      }
-    }
-  }).on("error", (error) => {
-    console.error(`[Sync] Chokidar Watcher Error:`, error.message);
-  });
-} catch (e) {
-  console.error("[Sync] Sentry mount failed:", e.message);
-}
-app.listen(port, "127.0.0.1", () => console.log(`[Server] Phantom Launcher Backend running at http://127.0.0.1:${port} (VERSION: SHORTCUTS ENABLED)`));
+setupSyncEngine(ctx, app);
+app.listen(port, "127.0.0.1", () => console.log(`[Server] Phantom Launcher Backend running at http://127.0.0.1:${port}`));
 /*! Bundled license information:
 
 depd/index.js:

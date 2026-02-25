@@ -425,7 +425,6 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
       setTimeout(() => onNotification?.(null), 3000);
     }
   };
-  streamsync: if (onNotification) onNotification('STEAM::INIT_SYNC_PROTOCOL...');
 
   const handleSyncXboxLibrary = async () => {
     try {
@@ -892,13 +891,14 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-glass fixed inset-0 z-[200] flex items-center justify-center p-4 lg:p-8 bg-black/50 backdrop-blur-md">
+    <div className={`modal-glass fixed inset-0 z-[200] flex items-center justify-center p-4 lg:p-8 transition-none ${(explorer.isOpen || searchModal.isOpen) ? 'bg-transparent backdrop-blur-0' : 'bg-black/50 backdrop-blur-md'
+      }`}>
       <AssetSearchModal
         isOpen={searchModal.isOpen}
         onClose={() => setSearchModal(prev => ({ ...prev, isOpen: false }))}
         onSelect={handleCloudSelect}
         type={searchModal.type}
-        accentColor={activeAccent}
+        accentColor={resolveColor(allGamesCategory.sgdbColor || activeAccent)}
         initialQuery={gameForm.title}
       />
       {confirmData && (
@@ -913,7 +913,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           </div>
         </div>
       )}
-      <div className="relative flex flex-col bg-[#020202]/85 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)]"
+      <div className={`relative flex flex-col bg-[#020202]/85 overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] ${(explorer.isOpen || searchModal.isOpen) ? 'opacity-0 pointer-events-none scale-95' : 'opacity-100 scale-100'
+        }`}
         style={{
           width: 'min(1100px, 95vw)',
           height: 'min(850px, 90vh)',
@@ -934,13 +935,13 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
           <div className="flex items-center gap-6 lg:gap-10">
             <div className="flex flex-col gap-0.5">
               <h2 className="font-['Press_Start_2P'] text-[9px] lg:text-[11px] uppercase tracking-tighter" style={{ color: activeAccent }}>[ TERMINAL_NUCLEO_MOTOR ]</h2>
-              <span className="text-[7px] font-['Space_Mono'] opacity-60 uppercase tracking-[0.5em] text-white">PHANTOM_SHELL_V{APP_VERSION}.SYS</span>
+              <span className="text-[7px] font-['Space_Mono'] opacity-80 uppercase tracking-[0.5em] text-white">PHANTOM_SHELL_V{APP_VERSION}.SYS</span>
             </div>
 
             {/* Master Status Tool */}
             <div className="hidden md:flex items-center gap-4 bg-black/40 border-l-2 border-white/5 pl-6 py-1">
               <div className="flex flex-col gap-1">
-                <span className="text-[6px] text-white/20 uppercase font-mono tracking-widest">Master_Link</span>
+                <span className="text-[6px] text-white/40 uppercase font-mono tracking-widest">Master_Link</span>
                 <div className="flex gap-1.5">
                   <div className="w-1 h-3 bg-emerald-500/40"></div>
                   <div className="w-1 h-3 bg-emerald-500/20"></div>
@@ -958,7 +959,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest border-2 hover:bg-white hover:text-black transition-all active:scale-95 shadow-[0_0_15px_rgba(255,255,255,0.1)]" style={{ borderColor: activeAccent, color: activeAccent }}>{t('nav.disconnect')}</button>
+          <button onClick={onClose} className="px-6 py-2 font-bold text-[8px] uppercase tracking-widest border-2 hover:bg-white hover:text-black transition-all active:scale-95" style={{ borderColor: activeAccent, color: activeAccent }}>{t('nav.disconnect')}</button>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
@@ -1080,6 +1081,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 triggerFileBrowser={triggerFileBrowser}
                 onResolveAsset={onResolveAsset}
                 handleSystemFormat={handleWipeMasterRegistry}
+                resolveColor={resolveColor}
               />
             )}
 
@@ -1154,8 +1156,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
         </div>
         <CyberScrollbar containerRef={scrollContainerRef} accentColor={activeAccent} />
       </div>
-      <FileExplorerModal isOpen={explorer.isOpen} onClose={() => setExplorer(prev => ({ ...prev, isOpen: false }))} onSelect={handleExplorerSelect} filter={explorer.filter} accentColor={activeAccent} initialPath={explorer.initialPath} />
-    </div>
+      <FileExplorerModal isOpen={explorer.isOpen} onClose={() => setExplorer(prev => ({ ...prev, isOpen: false }))} onSelect={handleExplorerSelect} filter={explorer.filter} accentColor={resolveColor(allGamesCategory.explorerColor || activeAccent)} initialPath={explorer.initialPath} />
+    </div >
   );
 };
 

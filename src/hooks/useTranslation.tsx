@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import en from '../locales/en.json';
 import es from '../locales/es.json';
 
@@ -29,10 +29,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         localStorage.setItem('phantom_language', language);
     }, [language]);
 
-    const t = (key: string): string => {
+    const t = useCallback((key: string): string => {
         const translations = language === 'es' ? es : en;
         return getNestedValue(translations, key);
-    };
+    }, [language]);
 
     return (
         <LanguageContext.Provider value={{ language, setLanguage, t }}>
