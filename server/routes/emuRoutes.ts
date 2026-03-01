@@ -10,7 +10,7 @@ export function createEmuRoutes(ctx: ServerContext): Router {
 
     router.post('/scan', async (req, res) => {
         try {
-            const { platformId, romsDir, emuExe, execArgs } = req.body;
+            const { platformId, romsDir, emuExe, execArgs, extension } = req.body;
             if (!platformId || !romsDir || !emuExe) {
                 return res.status(400).json({ error: 'Missing platformId, romsDir or emuExe' });
             }
@@ -23,30 +23,64 @@ export function createEmuRoutes(ctx: ServerContext): Router {
             const games: any[] = [];
             const shortcutTasks: { lnkPath: string, targetExe: string, args: string }[] = [];
 
-            const scan = (dir: string) => {
-                if (!fs.existsSync(dir)) return;
+            const scan = (dir: string, depth = 0) => {
+                if (!fs.existsSync(dir) || depth > 4) return;
                 const files = fs.readdirSync(dir);
                 for (const file of files) {
+                    if (file.startsWith('.')) continue; // Ignore hidden files/folders
                     const fullPath = path.join(dir, file);
                     const stat = fs.statSync(fullPath);
 
                     if (config.mode === 'FILE' && !stat.isDirectory()) {
                         const ext = path.extname(file).toLowerCase();
-                        if (config.extensions.includes(ext)) {
-                            if (platformId === 'nsw' && (file.includes('[UPD]') || file.includes('[v'))) continue;
+                        const targetExtensions = (platformId === 'custom' && extension)
+                            ? extension.split(',').map((e: string) => e.trim().toLowerCase())
+                            : config.extensions;
+
+                        if (targetExtensions.includes(ext)) {
+                            // Smart Switch Filtering: Base Game Detection (Title ID analysis)
+                            if (platformId === 'nsw') {
+                                const lowerFile = file.toLowerCase();
+
+                                // 1. Check for explicit keywords and version tags (more robust)
+                                const versionLimitRegex = /(?:\[v|[\s_]v)([1-9]\d*(\.\d+)*)/i;
+                                const hasUpdateTag = lowerFile.includes('[upd]') || lowerFile.includes('update') || lowerFile.includes('patch') || versionLimitRegex.test(file);
+                                const hasDlcTag = lowerFile.includes('[dlc]') || lowerFile.includes('dlc') || lowerFile.includes('addon');
+
+                                // 2. Protocol Check: Title ID (16 hex chars). 
+                                // Switch Base Games ALMOST ALWAYS end in '000'. 
+                                // Updates end in '800', DLCs end in '001', '002', etc.
+                                const titleIdMatch = file.match(/\[([0-9a-fA-F]{16})\]/);
+                                if (titleIdMatch) {
+                                    const titleId = titleIdMatch[1].toUpperCase();
+                                    if (!titleId.endsWith('000')) continue; // Skip if not base game ID
+                                } else if (hasUpdateTag || hasDlcTag) {
+                                    // Fallback filter if no Title ID is found but keywords/versions are present
+                                    continue;
+                                }
+                            }
 
                             const gameId = `emu_${platformId}_${ctx.slugify(file)}`;
                             const gameDir = path.join(ctx.ASSETS_DIR, gameId);
                             if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
 
                             const lnkPath = path.join(gameDir, 'launch.lnk');
-                            const finalArgs = execArgs ? `${execArgs} "${fullPath}"` : `${config.defaultArgs} "${fullPath}"`;
+
+                            // Argument Replacement Logic: If %ROM% exists, replace it. Otherwise, append at the end.
+                            let finalArgs = execArgs || config.defaultArgs || '"%ROM%"';
+                            if (finalArgs.includes('%ROM%')) {
+                                finalArgs = finalArgs.replace(/%ROM%/g, fullPath);
+                            } else {
+                                finalArgs = `${finalArgs} "${fullPath}"`;
+                            }
+
                             shortcutTasks.push({ lnkPath, targetExe: emuExe, args: finalArgs });
 
                             games.push({
                                 id: gameId,
                                 title: cleanEmuTitle(file),
                                 execPath: path.resolve(lnkPath),
+                                execArgs: '', // Arguments are inside the shortcut
                                 source: 'emulator',
                                 sourceId: platformId,
                                 platform: platformId,
@@ -79,18 +113,20 @@ export function createEmuRoutes(ctx: ServerContext): Router {
                             id: gameId,
                             title: detectedTitle,
                             execPath: path.resolve(lnkPath),
+                            execArgs: '', // Arguments are inside the shortcut
                             source: 'emulator',
                             platform: platformId
                         });
                     } else if (stat.isDirectory()) {
-                        scan(fullPath);
+                        scan(fullPath, depth + 1);
                     }
                 }
             };
 
-            scan(romsDir);
+            scan(romsDir, 0);
 
-            // Batch-create all shortcuts via PowerShell
+            // Batch-create all shortcuts via PowerShell using a temporary script file
+            // This avoids "The command line is too long" error when scanning many ROMs
             if (shortcutTasks.length > 0) {
                 console.log(`[EmuScan] Creating ${shortcutTasks.length} shortcuts...`);
                 const psLines = shortcutTasks.map(t => {
@@ -99,12 +135,18 @@ export function createEmuRoutes(ctx: ServerContext): Router {
                     const args = t.args.replace(/'/g, "''");
                     return `$s=$w.CreateShortcut('${lnk}');$s.TargetPath='${target}';$s.Arguments='${args}';$s.Save()`;
                 });
-                const psScript = `$w=New-Object -ComObject WScript.Shell\n${psLines.join('\n')}`;
-                const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+                const psScript = `$ErrorActionPreference = 'Stop'\n$w=New-Object -ComObject WScript.Shell\n${psLines.join('\n')}`;
+
+                const tempScriptPath = path.join(ctx.ASSETS_DIR, `sync_${Date.now()}.ps1`);
+                // Use UTF-8 with BOM to ensure PowerShell 5.1 reads it correctly
+                fs.writeFileSync(tempScriptPath, '\ufeff' + psScript, 'utf8');
 
                 await new Promise<void>((resolve, reject) => {
-                    exec(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
+                    exec(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tempScriptPath}"`,
                         { maxBuffer: 1024 * 1024 * 10 }, (err) => {
+                            // Cleanup temp file
+                            try { if (fs.existsSync(tempScriptPath)) fs.unlinkSync(tempScriptPath); } catch (e) { }
+
                             if (err) {
                                 console.error('[EmuScan] Shortcut creation failed:', err.message);
                                 reject(err);

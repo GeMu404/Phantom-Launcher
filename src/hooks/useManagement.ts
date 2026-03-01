@@ -24,7 +24,7 @@ const PLATFORM_COLORS: Record<string, string> = {
     'playstation': '#003791', 'playstation_2': '#003791', 'playstation_3': '#000000',
     'playstation_4': '#003791', 'playstation_portable': '#000000',
     'playstation_vita': '#201e1f', 'sega_genesis': '#000000',
-    'sega_dreamcast': '#ff4b00', 'pc': '#66c0f4',
+    'sega_dreamcast': '#ff4b00', 'pc': '#66c0f4', 'shadps4': '#003791',
 };
 
 const slugify = (text: string): string => {
@@ -96,12 +96,16 @@ export function useManagement({
         }
     }, [onUpdateCategories, onNotification, onClose, t, bumpAssetVersion]);
 
-    const handleSyncXboxLibrary = useCallback(async (options?: { quiet?: boolean }) => {
+    const handleSyncXboxLibrary = useCallback(async (options?: { quiet?: boolean; includeAssets?: boolean }) => {
         try {
             onUpdateCategories(prev => prev.map(cat => (cat.id === 'xbox' || cat.id === 'all') ? { ...cat, games: cat.games.filter(g => g.source !== 'xbox') } : cat));
             if (onNotification && !options?.quiet) onNotification(`XBOX::${t('system.init_sync')}...`);
             onClose();
-            const response = await fetch('/api/xbox/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const response = await fetch('/api/xbox/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ includeAssets: options?.includeAssets ?? true })
+            });
             const { games: xboxGames } = await response.json();
             onUpdateCategories(prev => {
                 const xboxCatIndex = prev.findIndex(c => c.id === 'xbox');
@@ -123,6 +127,11 @@ export function useManagement({
                 });
             });
             if (onNotification && !options?.quiet) onNotification(`XBOX::${t('system.sync_success')}`);
+            if (options?.includeAssets) {
+                await handleFetchAssets('xbox', xboxGames, (s) => {
+                    if (onNotification && !options?.quiet) onNotification(`XBOX::${t(`system.${s.toLowerCase()}`) || s}`);
+                });
+            }
             bumpAssetVersion();
             if (!options?.quiet) setTimeout(() => onNotification?.(null), 2000);
         } catch (e: any) {
@@ -132,45 +141,49 @@ export function useManagement({
         }
     }, [onUpdateCategories, onNotification, onClose, t, bumpAssetVersion]);
 
-    const handleFetchMissingAssets = useCallback(async (categoryId: string, onStatus?: (s: string) => void) => {
-        onClose();
-        const cat = categories.find(c => c.id === categoryId);
-        if (!cat) return;
-
-        const gamesToFetch = cat.games.filter(g => !g.logo || !g.cover || !g.banner);
+    const handleFetchAssets = useCallback(async (categoryId: string, games: Game[], onStatus?: (s: string) => void, onProgress?: (p: number) => void) => {
+        const gamesToFetch = games.filter(g => !g.logo || !g.cover || !g.banner);
         if (gamesToFetch.length === 0) {
             if (onStatus) onStatus('SYNC_COMPLETE');
+            if (onProgress) onProgress(100);
             return;
         }
 
         if (onStatus) onStatus('FETCHING_ASSETS');
         let processed = 0;
-        const updatedGames = [...cat.games];
 
-        for (let i = 0; i < updatedGames.length; i++) {
-            const game = updatedGames[i];
-            if (game.logo && game.cover && game.banner) continue;
+        for (const game of gamesToFetch) {
+            const currentProgress = Math.floor((processed / gamesToFetch.length) * 100);
+            if (onProgress) onProgress(currentProgress);
 
             try {
                 if (onStatus) onStatus(`${t('system.syncing')}: (${processed + 1}/${gamesToFetch.length}) ${game.title.length > 20 ? game.title.substring(0, 17) + '...' : game.title}`);
                 const searchRes = await fetch(`/api/sgdb/search/${encodeURIComponent(game.title)}`);
                 const searchData = await searchRes.json();
+
                 if (searchData.success && searchData.data && searchData.data.length > 0) {
                     const sgdbId = searchData.data[0].id;
                     const assetTypes = ['logo', 'cover', 'banner'] as const;
                     const newAssets: any = {};
 
                     for (const type of assetTypes) {
-                        if ((type === 'logo' && game.logo) || (type === 'cover' && game.cover) || (type === 'banner' && game.banner)) continue;
+                        const existingAsset = type === 'logo' ? game.logo : (type === 'cover' ? game.cover : game.banner);
+                        if (existingAsset && !existingAsset.includes('blob:')) continue; // Skip if already has a valid path
+
                         const gridRes = await fetch(`/api/sgdb/grids/${sgdbId}/${type === 'cover' ? 'grid' : type}`);
                         const gridData = await gridRes.json();
+
                         if (gridData.success && gridData.data && gridData.data.length > 0) {
                             const remoteUrl = gridData.data[0].url;
                             const isEmulator = categoryId.startsWith('emu_');
                             const platformId = isEmulator ? categoryId.replace('emu_', '') : '';
-                            const assetSubDir = isEmulator ? `emulator/${platformId}/${game.id.replace(`emu_${platformId}_`, '')}` :
-                                (categoryId === 'steam' ? `steam/${game.id.replace('steam_', '')}` :
-                                    (categoryId === 'xbox' ? `xbox/${game.id.replace('xbox_', '')}` : game.id));
+
+                            // Clean game ID for subfolder naming
+                            const cleanGameId = game.id.replace('steam_', '').replace('xbox_', '').replace(`emu_${platformId}_`, '');
+                            const assetSubDir = isEmulator ? `emulator/${platformId}/${cleanGameId}` :
+                                (categoryId === 'steam' ? `steam/${cleanGameId}` :
+                                    (categoryId === 'xbox' ? `xbox/${cleanGameId}` : cleanGameId));
+
                             const importRes = await fetch('/api/assets/import', {
                                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ sourcePath: remoteUrl, gameId: assetSubDir, assetType: type })
@@ -181,26 +194,44 @@ export function useManagement({
                     }
 
                     if (Object.keys(newAssets).length > 0) {
-                        onUpdateCategories(prev => prev.map(c => c.id === categoryId ? {
-                            ...c, games: c.games.map(g => g.id === game.id ? { ...g, ...newAssets } : g)
-                        } : c));
+                        onUpdateCategories(prev => prev.map(c => {
+                            if (c.id === categoryId || c.id === 'all') {
+                                return { ...c, games: c.games.map(g => g.id === game.id ? { ...g, ...newAssets } : g) };
+                            }
+                            return c;
+                        }));
                         bumpAssetVersion();
                     }
                 }
-                processed++;
             } catch (e) {
-                console.error(`[Fetch] Failed to fetch assets for ${game.title}:`, e);
+                console.error(`[FetchAssets] Failed for ${game.title}:`, e);
+            } finally {
                 processed++;
             }
         }
 
         if (onStatus) onStatus('SYNC_COMPLETE');
+        if (onProgress) onProgress(100);
         bumpAssetVersion();
+    }, [t, onUpdateCategories, bumpAssetVersion]);
+
+    const handleFetchMissingAssets = useCallback(async (categoryId: string, onStatus?: (s: string) => void, onProgress?: (p: number) => void) => {
+        onClose();
+        const cat = categories.find(c => c.id === categoryId);
+        if (!cat) return;
+        await handleFetchAssets(categoryId, cat.games, onStatus, onProgress);
         setTimeout(() => onNotification?.(null), 2000);
-    }, [onClose, categories, t, onUpdateCategories, bumpAssetVersion, onNotification]);
+    }, [onClose, categories, handleFetchAssets, onNotification]);
 
     const handleSyncEmuLibrary = useCallback(async (
-        platformId: string, romsDir: string, emuExe: string, customArgs?: string, customIcon?: string
+        platformId: string,
+        romsDir: string,
+        emuExe: string,
+        customArgs?: string,
+        customIcon?: string,
+        extension?: string,
+        onProgress?: (p: number) => void,
+        includeAssets: boolean = true
     ) => {
         const statusHandler = (s: string) => {
             if (onNotification) onNotification(`${PLATFORM_NAMES[platformId] || platformId.toUpperCase()}::${t(`system.${s.toLowerCase()}`) || s}`);
@@ -211,7 +242,7 @@ export function useManagement({
             statusHandler('DISCOVERING_METADATA');
             const response = await fetch('/api/emu/scan', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ platformId, romsDir, emuExe, execArgs: customArgs })
+                body: JSON.stringify({ platformId, romsDir, emuExe, execArgs: customArgs, extension })
             });
 
             const data = await response.json();
@@ -235,8 +266,19 @@ export function useManagement({
                     return [...filtered, newCat];
                 });
 
-                await handleFetchMissingAssets(catId, statusHandler);
+                if (onProgress) onProgress(10); // Discovery Phase Complete
+
+                if (includeAssets) {
+                    await handleFetchAssets(catId, data.games, statusHandler, (p) => {
+                        if (onProgress) onProgress(10 + (p * 0.9)); // Scale asset fetching to cover remaining 90%
+                    });
+                } else {
+                    statusHandler('SYNC_SUCCESS');
+                    if (onProgress) onProgress(100);
+                }
+
                 statusHandler('SYNC_SUCCESS');
+                if (onProgress) onProgress(100);
                 bumpAssetVersion();
                 setTimeout(() => onNotification?.(null), 2000);
             }
@@ -447,7 +489,7 @@ export function useManagement({
     return {
         PLATFORM_NAMES, PLATFORM_COLORS, NEON_COLORS,
         handleSyncSteamLibrary, handleSyncXboxLibrary, handleSyncEmuLibrary,
-        handleFetchMissingAssets, handleDeleteGame, handleWipeMasterRegistry,
+        handleFetchAssets, handleFetchMissingAssets, handleDeleteGame, handleWipeMasterRegistry,
         handleCreateCategory, handleDeleteCategory, handleMoveCategory,
         handleMoveGameInCategory, handleToggleGameInCategory,
         handleSaveGame, handleImportAsset, slugify

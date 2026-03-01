@@ -24663,7 +24663,7 @@ foreach ($app in $startApps) {
             try {
                 $s = $WScript.CreateShortcut($lnkPath)
                 $s.TargetPath = "explorer.exe"
-                $s.Arguments = "shell:AppsFolder\\\\" + $app.AppID
+                $s.Arguments = 'shell:AppsFolder' + $app.AppID
                 $s.IconLocation = "$logoPath,0"
                 $s.Save()
             } catch {
@@ -24688,13 +24688,14 @@ $games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
         if (error) return res.status(500).json({ error: "Failed to scan Xbox games" });
         try {
           const rawGames = JSON.parse(stdout || "[]");
+          const { includeAssets = true } = req.body || {};
           const psGames = Array.isArray(rawGames) ? rawGames : [rawGames];
           const games = [];
           for (const g of psGames) {
             if (!g.Id) continue;
             const gameId = g.Id;
             let localLogoPath = null;
-            if (g.Logo && import_fs5.default.existsSync(g.Logo)) {
+            if (includeAssets && g.Logo && import_fs5.default.existsSync(g.Logo)) {
               const assetSubDir = import_path6.default.join("xbox", gameId);
               const fullAssetDir = import_path6.default.join(ctx2.ASSETS_DIR, assetSubDir);
               if (!import_fs5.default.existsSync(fullAssetDir)) import_fs5.default.mkdirSync(fullAssetDir, { recursive: true });
@@ -24743,9 +24744,12 @@ var PLATFORM_NAMES = {
   "wiu": "NINTENDO WII U",
   "ps2": "PLAYSTATION 2",
   "ps3": "PLAYSTATION 3",
-  "ps4": "PLAYSTATION 4",
+  "ps1": "PLAYSTATION 1",
   "psp": "PLAYSTATION PORTABLE",
-  "psv": "PLAYSTATION VITA"
+  "psv": "PLAYSTATION VITA",
+  "gba": "GAME BOY ADVANCE",
+  "xbox360": "XBOX 360",
+  "multi": "RETROARCH"
 };
 var EMU_PLATFORMS = {
   "3ds": { extensions: [".3ds", ".cia"], mode: "FILE", defaultArgs: "--fullscreen" },
@@ -24755,11 +24759,16 @@ var EMU_PLATFORMS = {
   "nsw": { extensions: [".nsp", ".xci"], mode: "FILE", defaultArgs: "-f" },
   "wii": { extensions: [".iso", ".wbfs", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
   "wiu": { extensions: [".wud", ".wux", ".rpx"], mode: "FILE", defaultArgs: "-f" },
+  "ps1": { extensions: [".cue", ".iso", ".chd", ".pbp"], mode: "FILE", defaultArgs: "--fullscreen" },
   "ps2": { extensions: [".iso", ".bin", ".chd"], mode: "FILE", defaultArgs: "--fullscreen --no-gui" },
   "ps3": { extensions: [], mode: "FOLDER", defaultArgs: "--fullscreen" },
   "ps4": { extensions: [], mode: "FOLDER", defaultArgs: "" },
   "psp": { extensions: [".iso", ".cso"], mode: "FILE", defaultArgs: "--fullscreen" },
-  "psv": { extensions: [".vpk"], mode: "FILE", defaultArgs: "" }
+  "psv": { extensions: [".vpk"], mode: "FILE", defaultArgs: "" },
+  "gba": { extensions: [".gba", ".zip"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "xbox360": { extensions: [".iso", ".xex"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "multi": { extensions: [".iso", ".zip", ".rom"], mode: "FILE", defaultArgs: '-L "%CORE%" "%ROM%"' },
+  "custom": { extensions: [], mode: "FILE", defaultArgs: "" }
 };
 function cleanEmuTitle(filename) {
   let name = filename.replace(/\.[^/.]+$/, "");
@@ -24805,7 +24814,7 @@ function createEmuRoutes(ctx2) {
   const router = (0, import_express3.Router)();
   router.post("/scan", async (req, res) => {
     try {
-      const { platformId, romsDir, emuExe, execArgs } = req.body;
+      const { platformId, romsDir, emuExe, execArgs, extension } = req.body;
       if (!platformId || !romsDir || !emuExe) {
         return res.status(400).json({ error: "Missing platformId, romsDir or emuExe" });
       }
@@ -24814,26 +24823,47 @@ function createEmuRoutes(ctx2) {
       if (!import_fs7.default.existsSync(romsDir)) return res.status(404).json({ error: "ROMs directory not found" });
       const games = [];
       const shortcutTasks = [];
-      const scan = (dir) => {
-        if (!import_fs7.default.existsSync(dir)) return;
+      const scan = (dir, depth = 0) => {
+        if (!import_fs7.default.existsSync(dir) || depth > 4) return;
         const files = import_fs7.default.readdirSync(dir);
         for (const file of files) {
+          if (file.startsWith(".")) continue;
           const fullPath = import_path7.default.join(dir, file);
           const stat4 = import_fs7.default.statSync(fullPath);
           if (config.mode === "FILE" && !stat4.isDirectory()) {
             const ext = import_path7.default.extname(file).toLowerCase();
-            if (config.extensions.includes(ext)) {
-              if (platformId === "nsw" && (file.includes("[UPD]") || file.includes("[v"))) continue;
+            const targetExtensions = platformId === "custom" && extension ? extension.split(",").map((e) => e.trim().toLowerCase()) : config.extensions;
+            if (targetExtensions.includes(ext)) {
+              if (platformId === "nsw") {
+                const lowerFile = file.toLowerCase();
+                const versionLimitRegex = /(?:\[v|[\s_]v)([1-9]\d*(\.\d+)*)/i;
+                const hasUpdateTag = lowerFile.includes("[upd]") || lowerFile.includes("update") || lowerFile.includes("patch") || versionLimitRegex.test(file);
+                const hasDlcTag = lowerFile.includes("[dlc]") || lowerFile.includes("dlc") || lowerFile.includes("addon");
+                const titleIdMatch = file.match(/\[([0-9a-fA-F]{16})\]/);
+                if (titleIdMatch) {
+                  const titleId = titleIdMatch[1].toUpperCase();
+                  if (!titleId.endsWith("000")) continue;
+                } else if (hasUpdateTag || hasDlcTag) {
+                  continue;
+                }
+              }
               const gameId = `emu_${platformId}_${ctx2.slugify(file)}`;
               const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, gameId);
               if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
               const lnkPath = import_path7.default.join(gameDir, "launch.lnk");
-              const finalArgs = execArgs ? `${execArgs} "${fullPath}"` : `${config.defaultArgs} "${fullPath}"`;
+              let finalArgs = execArgs || config.defaultArgs || '"%ROM%"';
+              if (finalArgs.includes("%ROM%")) {
+                finalArgs = finalArgs.replace(/%ROM%/g, fullPath);
+              } else {
+                finalArgs = `${finalArgs} "${fullPath}"`;
+              }
               shortcutTasks.push({ lnkPath, targetExe: emuExe, args: finalArgs });
               games.push({
                 id: gameId,
                 title: cleanEmuTitle(file),
                 execPath: import_path7.default.resolve(lnkPath),
+                execArgs: "",
+                // Arguments are inside the shortcut
                 source: "emulator",
                 sourceId: platformId,
                 platform: platformId,
@@ -24863,15 +24893,17 @@ function createEmuRoutes(ctx2) {
               id: gameId,
               title: detectedTitle,
               execPath: import_path7.default.resolve(lnkPath),
+              execArgs: "",
+              // Arguments are inside the shortcut
               source: "emulator",
               platform: platformId
             });
           } else if (stat4.isDirectory()) {
-            scan(fullPath);
+            scan(fullPath, depth + 1);
           }
         }
       };
-      scan(romsDir);
+      scan(romsDir, 0);
       if (shortcutTasks.length > 0) {
         console.log(`[EmuScan] Creating ${shortcutTasks.length} shortcuts...`);
         const psLines = shortcutTasks.map((t) => {
@@ -24880,14 +24912,20 @@ function createEmuRoutes(ctx2) {
           const args = t.args.replace(/'/g, "''");
           return `$s=$w.CreateShortcut('${lnk}');$s.TargetPath='${target}';$s.Arguments='${args}';$s.Save()`;
         });
-        const psScript = `$w=New-Object -ComObject WScript.Shell
+        const psScript = `$ErrorActionPreference = 'Stop'
+$w=New-Object -ComObject WScript.Shell
 ${psLines.join("\n")}`;
-        const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+        const tempScriptPath = import_path7.default.join(ctx2.ASSETS_DIR, `sync_${Date.now()}.ps1`);
+        import_fs7.default.writeFileSync(tempScriptPath, "\uFEFF" + psScript, "utf8");
         await new Promise((resolve3, reject) => {
           (0, import_child_process3.exec)(
-            `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`,
+            `powershell -NoProfile -ExecutionPolicy Bypass -File "${tempScriptPath}"`,
             { maxBuffer: 1024 * 1024 * 10 },
             (err) => {
+              try {
+                if (import_fs7.default.existsSync(tempScriptPath)) import_fs7.default.unlinkSync(tempScriptPath);
+              } catch (e) {
+              }
               if (err) {
                 console.error("[EmuScan] Shortcut creation failed:", err.message);
                 reject(err);

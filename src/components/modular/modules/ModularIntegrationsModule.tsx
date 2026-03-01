@@ -3,12 +3,13 @@ import Subsection from '../../management/Subsection';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { getContrastColor } from '../../../utils/colors';
 import CyberScrollbar from '../../CyberScrollbar';
+import SgdbAsset from '../asset/SgdbAsset';
 
 interface ModularIntegrationsModuleProps {
     activeAccent: string;
     handleSyncSteamLibrary: (options: { includeSoftware: boolean; includeAdultOnly: boolean }) => Promise<void>;
     handleSyncXboxLibrary: () => Promise<void>;
-    handleSyncEmuLibrary: (platformId: string, romsDir: string, emuExe: string, customArgs: string) => Promise<void>;
+    handleSyncEmuLibrary: (platformId: string, romsDir: string, emuExe: string, customArgs: string, customIcon?: string, extension?: string, onProgress?: (p: number) => void) => Promise<void>;
     triggerFileBrowser: (target: string, type: string) => void;
     emuPath: string;
     romsDir: string;
@@ -29,6 +30,7 @@ const ModularIntegrationsModule: React.FC<ModularIntegrationsModuleProps> = ({
     const [steamOptions, setSteamOptions] = useState({ includeSoftware: false, includeAdultOnly: false });
     const [sgdbKey, setSgdbKey] = useState('');
     const [sgdbEnabled, setSgdbEnabled] = useState(false);
+    const [activeSgdb, setActiveSgdb] = useState(false);
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -120,32 +122,15 @@ const ModularIntegrationsModule: React.FC<ModularIntegrationsModuleProps> = ({
                         />
                     </Subsection>
 
-                    {/* SteamGridDB API */}
-                    <Subsection title="API_Link: SteamGridDB" accentColor={activeAccent}>
-                        <div className="flex flex-col gap-4 col-span-2">
-                            <div className="flex items-center gap-4">
-                                <input
-                                    type="text"
-                                    value={sgdbKey}
-                                    onChange={(e) => handleUpdateSgdbKey(e.target.value)}
-                                    placeholder="ENTER_SGDB_API_KEY"
-                                    className="flex-1 bg-black/20 border-2 border-white/10 p-3 text-[10px] font-mono text-white outline-none focus:border-white/30 transition-colors"
-                                />
-                                <button
-                                    onClick={() => handleToggleSgdb(!sgdbEnabled)}
-                                    className={`px-6 py-3 font-bold text-[9px] uppercase tracking-widest border-2 transition-all ${sgdbEnabled ? 'bg-white text-black border-white' : 'text-white/40 border-white/10 hover:border-white/40'}`}
-                                >
-                                    {sgdbEnabled ? 'ACTIVE' : 'DISABLED'}
-                                </button>
-                            </div>
-                            <div className="flex items-center gap-2 text-[8px] text-white/40 font-mono">
-                                <span>STATUS:</span>
-                                <span className={`transition-colors duration-500 ${sgdbEnabled ? 'text-emerald-400' : 'text-red-400'}`}>
-                                    {sgdbEnabled ? 'LINK_ESTABLISHED' : 'OFFLINE'}
-                                </span>
-                            </div>
-                        </div>
-                    </Subsection>
+                    <SgdbAsset
+                        isActive={activeSgdb}
+                        onActiveToggle={setActiveSgdb}
+                        accentColor={activeAccent}
+                        sgdbKey={sgdbKey}
+                        onKeyUpdate={handleUpdateSgdbKey}
+                        sgdbEnabled={sgdbEnabled}
+                        onToggleSgdb={handleToggleSgdb}
+                    />
                 </div>
             </div>
             <CyberScrollbar containerRef={scrollContainerRef} accentColor={activeAccent} />

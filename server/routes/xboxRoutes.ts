@@ -64,7 +64,7 @@ foreach ($app in $startApps) {
             try {
                 $s = $WScript.CreateShortcut($lnkPath)
                 $s.TargetPath = "explorer.exe"
-                $s.Arguments = "shell:AppsFolder\\\\" + $app.AppID
+                $s.Arguments = 'shell:AppsFolder\' + $app.AppID
                 $s.IconLocation = "$logoPath,0"
                 $s.Save()
             } catch {
@@ -90,13 +90,14 @@ $games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
                 if (error) return res.status(500).json({ error: 'Failed to scan Xbox games' });
                 try {
                     const rawGames = JSON.parse(stdout || '[]');
+                    const { includeAssets = true } = req.body || {};
                     const psGames = Array.isArray(rawGames) ? rawGames : [rawGames];
                     const games = [];
                     for (const g of psGames) {
                         if (!g.Id) continue;
                         const gameId = g.Id;
                         let localLogoPath = null;
-                        if (g.Logo && (fs.existsSync(g.Logo))) {
+                        if (includeAssets && g.Logo && (fs.existsSync(g.Logo))) {
                             const assetSubDir = path.join('xbox', gameId);
                             const fullAssetDir = path.join(ctx.ASSETS_DIR, assetSubDir);
                             if (!fs.existsSync(fullAssetDir)) fs.mkdirSync(fullAssetDir, { recursive: true });

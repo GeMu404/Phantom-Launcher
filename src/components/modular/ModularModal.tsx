@@ -13,7 +13,11 @@ interface ModularModalProps {
     commandText?: string;
     commandDesc?: string;
     onExecute?: () => void;
+    onExecuteStart?: () => void;
+    onExecuteEnd?: () => void;
     progress?: number;
+    isExecuting?: boolean;
+    isReady?: boolean;
     scrollProgress?: number;
     showScrollMarker?: boolean;
 }
@@ -33,7 +37,11 @@ const ModularModal: React.FC<ModularModalProps> = ({
     commandText,
     commandDesc,
     onExecute,
+    onExecuteStart,
+    onExecuteEnd,
     progress,
+    isExecuting,
+    isReady,
     scrollProgress,
     showScrollMarker
 }) => {
@@ -55,7 +63,11 @@ const ModularModal: React.FC<ModularModalProps> = ({
                 commandText={commandText}
                 commandDesc={commandDesc}
                 onExecute={onExecute}
+                onExecuteStart={onExecuteStart}
+                onExecuteEnd={onExecuteEnd}
                 progress={progress}
+                isExecuting={isExecuting}
+                isReady={isReady}
                 scrollProgress={scrollProgress}
                 showScrollMarker={showScrollMarker}
             >

@@ -5,9 +5,9 @@ import { getContrastColor } from '../../utils/colors';
 
 interface IntegrationsTabProps {
     activeAccent: string;
-    handleSyncSteamLibrary: () => void;
-    handleSyncXboxLibrary: () => void;
-    handleSyncEmuLibrary: (platformId: string, romsDir: string, emuExe: string) => Promise<void>;
+    handleSyncSteamLibrary: (options?: { includeSoftware: boolean; includeAdultOnly: boolean; quiet?: boolean }) => Promise<void>;
+    handleSyncXboxLibrary: (options?: { quiet?: boolean; includeAssets?: boolean }) => Promise<void>;
+    handleSyncEmuLibrary: (platformId: string, romsDir: string, emuExe: string, customArgs?: string, customIcon?: string, extension?: string, onProgress?: (p: number) => void, includeAssets?: boolean) => Promise<void>;
     emuPath: string;
     setEmuPath: (v: string) => void;
     romsDir: string;
@@ -19,13 +19,15 @@ interface IntegrationsTabProps {
     handleToggleSgdb: (enabled: boolean) => void;
     steamOptions: { includeSoftware: boolean; includeAdultOnly: boolean };
     setSteamOptions: React.Dispatch<React.SetStateAction<{ includeSoftware: boolean; includeAdultOnly: boolean }>>;
+    includeAssets: boolean;
+    setIncludeAssets: (v: boolean) => void;
 }
 
 const IntegrationsTab: React.FC<IntegrationsTabProps> = ({
     activeAccent, handleSyncSteamLibrary, handleSyncXboxLibrary, handleSyncEmuLibrary,
     emuPath, setEmuPath, romsDir, setRomsDir, triggerFileBrowser,
     sgdbKey, handleUpdateSgdbKey, sgdbEnabled, handleToggleSgdb,
-    steamOptions, setSteamOptions
+    steamOptions, setSteamOptions, includeAssets, setIncludeAssets
 }) => {
     const { t } = useTranslation();
 
@@ -54,10 +56,21 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = ({
                     </div>
                 </div>
             </Subsection>
-            <Subsection title="Xbox" onSync={handleSyncXboxLibrary} syncLabel="INIT_SYNC" accentColor={activeAccent}>
+            <Subsection title="Xbox" onSync={() => handleSyncXboxLibrary({ includeAssets })} syncLabel="INIT_SYNC" accentColor={activeAccent}>
                 <div className="flex items-center gap-4 p-4 bg-white/[0.01] border-2 border-white/5 col-span-2">
                     <img src="./res/external/xbox.png" className="w-8 h-8 opacity-80" alt="Xbox" />
                     <span className="text-[9px] font-bold text-white uppercase tracking-widest">Xbox_Game_Pass</span>
+                    {sgdbEnabled && (
+                        <div className="ml-auto">
+                            <button
+                                onClick={() => setIncludeAssets(!includeAssets)}
+                                className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border-2 transition-all active:scale-95 ${includeAssets ? '' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white/80'}`}
+                                style={includeAssets ? { backgroundColor: activeAccent, borderColor: activeAccent, color: getContrastColor(activeAccent) } : {}}
+                            >
+                                {includeAssets ? 'FETCH_ASSETS_ACTIVE' : 'FETCH_ASSETS_INACTIVE'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </Subsection>
 
@@ -68,43 +81,26 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = ({
                     emuPath={emuPath}
                     romsDir={romsDir}
                     triggerFileBrowser={triggerFileBrowser}
+                    includeAssets={includeAssets}
+                    setIncludeAssets={setIncludeAssets}
+                    sgdbEnabled={sgdbEnabled}
                 />
             </Subsection>
 
-            <Subsection title="API_Link: SteamGridDB" accentColor={activeAccent}>
-                <div className="flex flex-col gap-4 col-span-2">
-                    <div className="flex items-center gap-4">
-                        <input
-                            type="text"
-                            value={sgdbKey}
-                            onChange={(e) => handleUpdateSgdbKey(e.target.value)}
-                            placeholder="ENTER_SGDB_API_KEY"
-                            className="flex-1 bg-black/20 border-2 border-white/10 p-3 text-[10px] font-mono text-white outline-none focus:border-white/40 transition-colors"
-                        />
-                        <button
-                            onClick={() => handleToggleSgdb(!sgdbEnabled)}
-                            className={`px-6 py-3 font-bold text-[9px] uppercase tracking-widest border-2 transition-all ${sgdbEnabled ? 'bg-white text-black border-white' : 'text-white/40 border-white/10 hover:border-white/40'}`}
-                        >
-                            {sgdbEnabled ? 'ACTIVE' : 'DISABLED'}
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-2 text-[8px] text-white/40 font-mono">
-                        <span>STATUS:</span>
-                        <span style={{ color: sgdbEnabled ? '#00ff00' : '#ff0000' }}>{sgdbEnabled ? 'LINK_ESTABLISHED' : 'OFFLINE'}</span>
-                    </div>
-                </div>
-            </Subsection>
         </div>
     );
 };
 
 const EmuSyncForm: React.FC<{
     activeAccent: string,
-    onSync: (platformId: string, romsDir: string, emuExe: string, customArgs: string) => Promise<void>,
+    onSync: (platformId: string, romsDir: string, emuExe: string, customArgs?: string, customIcon?: string, extension?: string, onProgress?: (p: number) => void, includeAssets?: boolean) => Promise<void>,
     emuPath: string,
     romsDir: string,
-    triggerFileBrowser: (t: string, type: string) => void
-}> = ({ activeAccent, onSync, emuPath, romsDir, triggerFileBrowser }) => {
+    triggerFileBrowser: (t: string, type: string) => void,
+    includeAssets: boolean,
+    setIncludeAssets: (v: boolean) => void,
+    sgdbEnabled: boolean
+}> = ({ activeAccent, onSync, emuPath, romsDir, triggerFileBrowser, includeAssets, setIncludeAssets, sgdbEnabled }) => {
     const [platform, setPlatform] = React.useState('n64');
     const [customArgs, setCustomArgs] = React.useState('');
     const [isScanning, setIsScanning] = React.useState(false);
@@ -130,7 +126,7 @@ const EmuSyncForm: React.FC<{
     const handleSync = async () => {
         if (!emuPath || !romsDir) return;
         setIsScanning(true);
-        await onSync(platform, romsDir, emuPath, customArgs);
+        await onSync(platform, romsDir, emuPath, customArgs, undefined, undefined, undefined, includeAssets);
         setIsScanning(false);
     };
 
@@ -199,6 +195,18 @@ const EmuSyncForm: React.FC<{
                     className="w-full bg-black/60 border-2 border-white/10 p-2 text-[9px] text-white/80 font-mono outline-none focus:border-white/30"
                 />
             </div>
+
+            {sgdbEnabled && (
+                <div className="flex items-center gap-2 mb-2">
+                    <button
+                        onClick={() => setIncludeAssets(!includeAssets)}
+                        className={`px-4 py-2 text-[8px] font-bold uppercase tracking-widest border-2 transition-all active:scale-95 ${includeAssets ? '' : 'bg-transparent text-white/40 border-white/10 hover:border-white/30 hover:text-white/80'}`}
+                        style={includeAssets ? { backgroundColor: activeAccent, borderColor: activeAccent, color: getContrastColor(activeAccent) } : {}}
+                    >
+                        {includeAssets ? 'FETCH_ASSETS_ACTIVE' : 'FETCH_ASSETS_INACTIVE'}
+                    </button>
+                </div>
+            )}
 
             <button
                 onClick={handleSync}

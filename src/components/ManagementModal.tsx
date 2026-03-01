@@ -11,6 +11,7 @@ import AssetSearchModal from './AssetSearchModal';
 import GamesTab from './management/GamesTab';
 import CategoriesTab from './management/CategoriesTab';
 import IntegrationsTab from './management/IntegrationsTab';
+import AssetsTab from './management/AssetsTab';
 import { useTranslation } from '../hooks/useTranslation';
 import CyberScrollbar from './CyberScrollbar';
 import { getContrastColor } from '../utils/colors';
@@ -32,6 +33,8 @@ interface ManagementModalProps {
   isSecretUnlocked?: boolean;
   resolveColor: (raw: string) => string;
   onNotification?: (msg: string | null) => void;
+  includeAssets: boolean;
+  setIncludeAssets: (val: boolean) => void;
 }
 
 interface ConfirmState {
@@ -58,7 +61,7 @@ const PLATFORM_NAMES: Record<string, string> = {
 const ManagementModal: React.FC<ManagementModalProps> = ({
   isOpen, onClose, categories, currentCatIdx, onUpdateCategories, accentColor,
   taskbarMargin, onUpdateTaskbarMargin, uiScale, onUpdateUIScale, onResolveAsset, bumpAssetVersion,
-  isSecretUnlocked = false, resolveColor, onNotification
+  isSecretUnlocked = false, resolveColor, onNotification, includeAssets, setIncludeAssets
 }) => {
   const { t } = useTranslation();
 
@@ -108,7 +111,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     'sega_dreamcast': '#ff4b00',
     'pc': '#66c0f4',
   };
-  const [tab, setTab] = useState<'games' | 'categories' | 'integrations' | 'system' | 'secret'>('games');
+  const [tab, setTab] = useState<'games' | 'categories' | 'integrations' | 'system' | 'secret' | 'assets'>('games');
   const [explorer, setExplorer] = useState<{ isOpen: boolean; target: string; filter: 'exe' | 'image' | 'folder' | 'any'; initialPath?: string }>({
     isOpen: false,
     target: '',
@@ -435,6 +438,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
       const response = await fetch('/api/xbox/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ includeAssets })
       });
       const { games: xboxGames } = await response.json();
       onUpdateCategories(prev => {
@@ -473,7 +477,7 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
     }
   };
 
-  const handleSyncEmuLibrary = async (platformId: string, romsDir: string, emuExe: string) => {
+  const handleSyncEmuLibrary = async (platformId: string, romsDir: string, emuExe: string, customArgs?: string, customIcon?: string, extension?: string, onProgress?: (p: number) => void, includeAssetsOpt?: boolean) => {
     const statusHandler = (s: string) => {
       if (onNotification) onNotification(`${PLATFORM_NAMES[platformId] || platformId.toUpperCase()}::${s}`);
     };
@@ -512,7 +516,9 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
         });
 
         // Batch Asset Fetch (Cloud Sync)
-        await handleFetchMissingAssets(catId, statusHandler);
+        if (includeAssets) {
+          await handleFetchMissingAssets(catId, statusHandler);
+        }
 
         statusHandler('SYNC_PROTOCOL_SUCCESS');
         setTimeout(() => onNotification?.(null), 3000);
@@ -967,8 +973,8 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
             {[
               { id: 'games', label: t('nav.unit_registry'), color: resolveColor(allGamesCategory.assetColor || activeAccent) },
               { id: 'categories', label: t('nav.neural_nodes'), color: resolveColor(allGamesCategory.nodeColor || activeAccent) },
-              ...(isSecretUnlocked ? [{ id: 'secret', label: t('nav.secret_link'), color: resolveColor('#ec4899') }] : []),
               { id: 'integrations', label: t('nav.sync_protocols'), color: resolveColor(allGamesCategory.syncColor || activeAccent) },
+              { id: 'assets', label: 'ASSET_CORE', color: resolveColor(allGamesCategory.assetColor || activeAccent) },
               { id: 'system', label: t('nav.core_sequence'), color: resolveColor(allGamesCategory.coreColor || activeAccent) }
             ].map(item => (
               <button key={item.id} onClick={() => {
@@ -1066,6 +1072,18 @@ const ManagementModal: React.FC<ManagementModalProps> = ({
                 handleToggleSgdb={handleToggleSgdb}
                 steamOptions={steamOptions}
                 setSteamOptions={setSteamOptions}
+                includeAssets={includeAssets}
+                setIncludeAssets={setIncludeAssets}
+              />
+            )}
+
+            {tab === 'assets' && (
+              <AssetsTab
+                activeAccent={activeAccent}
+                sgdbKey={sgdbKey}
+                handleUpdateSgdbKey={handleUpdateSgdbKey}
+                sgdbEnabled={sgdbEnabled}
+                handleToggleSgdb={handleToggleSgdb}
               />
             )}
 

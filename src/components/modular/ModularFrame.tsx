@@ -9,7 +9,11 @@ interface ModularFrameProps {
     commandText?: string;
     commandDesc?: string;
     onExecute?: () => void;
+    onExecuteStart?: () => void;
+    onExecuteEnd?: () => void;
     progress?: number; // 0 to 100
+    isExecuting?: boolean;
+    isReady?: boolean;
     scrollProgress?: number; // 0 to 1
     showScrollMarker?: boolean;
 }
@@ -28,7 +32,11 @@ const ModularFrame: React.FC<ModularFrameProps> = ({
     commandText,
     commandDesc,
     onExecute,
+    onExecuteStart,
+    onExecuteEnd,
     progress = 0,
+    isExecuting = false,
+    isReady = false,
     scrollProgress = 0,
     showScrollMarker = false
 }) => {
@@ -221,37 +229,86 @@ const ModularFrame: React.FC<ModularFrameProps> = ({
                 style={{ width: bW, height: bH }}>
                 <button
                     onClick={onExecute}
-                    className="flex items-center justify-center w-full h-full group/exec active:scale-95 transition-transform disabled:opacity-20 disabled:pointer-events-none relative overflow-hidden"
+                    onPointerDown={(e) => {
+                        // Only trigger if left click or touch
+                        if (e.button !== 0 && e.pointerType === 'mouse') return;
+                        onExecuteStart?.();
+                    }}
+                    onPointerUp={(e) => {
+                        if (e.button !== 0 && e.pointerType === 'mouse') return;
+                        onExecuteEnd?.();
+                    }}
+                    onPointerLeave={(e) => {
+                        onExecuteEnd?.();
+                    }}
+                    onPointerCancel={(e) => {
+                        onExecuteEnd?.();
+                    }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    disabled={isExecuting || (!onExecute && !onExecuteStart) || !isReady}
+                    className={`flex items-center justify-center w-full h-full group/exec active:scale-95 transition-transform disabled:opacity-20 disabled:pointer-events-none relative overflow-hidden select-none cursor-pointer ${onExecuteStart ? 'touch-none' : ''}`}
                     style={{
-                        pointerEvents: onExecute ? 'auto' : 'none',
+                        pointerEvents: ((onExecute || onExecuteStart) && !isExecuting && isReady) ? 'auto' : 'none',
                         clipPath: `polygon(0 ${bCut}px, ${bCut}px 0, 100% 0, 100% calc(100% - ${bCut}px), calc(100% - ${bCut}px) 100%, 0 100%, 0 ${bCut}px)`
                     }}>
 
-                    {/* Interior Progress Bar Background */}
-                    {progress > 0 && (
+                    {/* Background / Filling Logic */}
+                    <div
+                        className="absolute inset-0 transition-all duration-300"
+                        style={{
+                            backgroundColor: isExecuting ? `${accentColor}20` : (isReady ? `${accentColor}40` : 'rgba(255,255,255,0.02)'),
+                            boxShadow: isReady && !isExecuting ? `inset 0 0 20px ${accentColor}66` : 'none'
+                        }}
+                    />
+
+                    {/* Real Progress Fill */}
+                    {(isExecuting || progress > 0) && (
                         <div
-                            className="absolute inset-0 transition-all duration-300 ease-out"
+                            className="absolute inset-0 transition-all duration-500 ease-out"
                             style={{
                                 backgroundColor: accentColor,
-                                opacity: 0.1,
-                                width: `${progress}%`
+                                clipPath: `inset(0 ${100 - progress}% 0 0)`,
+                                opacity: 0.8
                             }}
                         />
                     )}
 
-                    {/* Tip Glow / Spark */}
-                    {progress > 0 && progress < 100 && (
-                        <div
-                            className="absolute top-0 bottom-0 transition-all duration-300 ease-out"
-                            style={{
-                                left: `${progress}%`,
-                                width: '2px',
-                                backgroundColor: '#fff',
-                                boxShadow: `0 0 15px 2px ${accentColor}`,
-                                zIndex: 20
-                            }}
-                        />
+                    {/* Glitch Overlay for active state */}
+                    {isReady && !isExecuting && (
+                        <div className="absolute inset-0 opacity-10 bg-white animate-pulse" />
                     )}
+
+                    <div className="relative z-20 flex items-center justify-center w-full h-full group">
+                        {/* Status LED */}
+                        {isReady && !isExecuting && (
+                            <div className="absolute left-8 w-1.5 h-1.5 rounded-full animate-pulse"
+                                style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
+                        )}
+
+                        {/* Base Text (White/Dim) */}
+                        <span className={`text-[12px] font-black tracking-[0.6em] whitespace-nowrap transition-all duration-500 ${isReady ? 'text-white' : 'text-white/20'}`}
+                            style={isReady && !isExecuting ? { textShadow: `0 0 15px ${accentColor}, 0 0 5px #fff` } : {}}>
+                            {isExecuting ? 'SYNCING...' : 'EXECUTE'}
+                        </span>
+
+                        {/* High-Contrast Fill Text (Black) */}
+                        {(isExecuting || progress > 0) && (
+                            <div
+                                className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+                                style={{ clipPath: `inset(0 ${100 - progress}% 0 0)` }}
+                            >
+                                <span className="text-[12px] font-black tracking-[0.6em] whitespace-nowrap text-black/90">
+                                    {isExecuting ? 'SYNCING...' : 'EXECUTE'}
+                                </span>
+                            </div>
+                        )}
+
+                        {isReady && !isExecuting && (
+                            <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                <div className="w-1.5 h-1.5 bg-white rotate-45" style={{ boxShadow: `0 0 10px #fff` }} />
+                            </div>
+                        )}
+                    </div>
 
                     {/* Scanline Progress Effect */}
                     {progress > 0 && progress < 100 && (
@@ -268,12 +325,7 @@ const ModularFrame: React.FC<ModularFrameProps> = ({
                         </div>
                     )}
 
-                    <span
-                        className={`relative z-10 font-['Space_Mono'] font-black text-[14px] uppercase tracking-[1em] transition-colors duration-300 mr-[-1em] ${onExecute ? 'text-white/90 drop-shadow-md group-hover/exec:text-white' : 'text-white/20'}`}
-                        style={onExecute ? { textShadow: `0 0 10px ${accentColor}44` } : {}}>
-                        {progress > 0 && progress < 100 ? `${Math.round(progress)}%` :
-                            progress === 100 ? 'EXECUTED' : 'EXECUTE'}
-                    </span>
+
                 </button>
             </div>
         </div>

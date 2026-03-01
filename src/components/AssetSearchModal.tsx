@@ -6,7 +6,7 @@ interface AssetSearchModalProps {
     onClose: () => void;
     onSelect: (url: string) => void;
     initialQuery: string;
-    type: 'grid' | 'hero' | 'logo';
+    type: 'grid' | 'hero' | 'logo' | 'banner' | 'icon';
     accentColor: string;
 }
 
@@ -188,8 +188,8 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                                 <span className="text-[8px] opacity-70 uppercase tracking-[0.4em] font-mono">SELECT_UNIT_FOR_DEPLOYMENT</span>
                             </div>
                             <div ref={resultsRef} className="flex-1 overflow-y-auto p-8 lg:p-10 no-scrollbar relative">
-                                <div className={`grid gap-6 ${type === 'hero' ? 'grid-cols-1 md:grid-cols-2' :
-                                    type === 'logo' ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5' :
+                                <div className={`grid gap-6 ${(type === 'hero' || type === 'banner') ? 'grid-cols-1 md:grid-cols-2' :
+                                    (type === 'logo' || type === 'icon') ? 'grid-cols-2 md:grid-cols-4 lg:grid-cols-5' :
                                         'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
                                     }`}>
                                     {results.map((asset: any) => (
@@ -198,7 +198,10 @@ const AssetSearchModal: React.FC<AssetSearchModalProps> = ({ isOpen, onClose, on
                                             onClick={() => onSelect(asset.url)}
                                             className="relative group cursor-pointer border-2 border-white/5 hover:border-white/30 transition-all overflow-hidden bg-black/40 flex flex-col shadow-2xl active:scale-95"
                                         >
-                                            <div className={`relative overflow-hidden bg-black ${type === 'logo' ? 'aspect-square flex items-center justify-center p-6' : type === 'hero' ? 'aspect-[920/430]' : 'aspect-[2/3]'}`}>
+                                            <div className={`relative overflow-hidden bg-black ${(type === 'logo' || type === 'icon') ? 'aspect-square flex items-center justify-center p-6' :
+                                                    type === 'banner' ? 'aspect-[1000/160]' :
+                                                        type === 'hero' ? 'aspect-[920/430]' :
+                                                            'aspect-[2/3]'}`}>
                                                 <img
                                                     src={asset.thumb}
                                                     className={`${type === 'logo' ? 'max-w-full max-h-full object-contain filter brightness-75 group-hover:brightness-100' : 'w-full h-full object-cover opacity-50'} group-hover:opacity-100 transition-all duration-700 group-hover:scale-110`}

@@ -10,9 +10,12 @@ export const PLATFORM_NAMES: Record<string, string> = {
     'wiu': 'NINTENDO WII U',
     'ps2': 'PLAYSTATION 2',
     'ps3': 'PLAYSTATION 3',
-    'ps4': 'PLAYSTATION 4',
+    'ps1': 'PLAYSTATION 1',
     'psp': 'PLAYSTATION PORTABLE',
     'psv': 'PLAYSTATION VITA',
+    'gba': 'GAME BOY ADVANCE',
+    'xbox360': 'XBOX 360',
+    'multi': 'RETROARCH'
 };
 
 export const EMU_PLATFORMS: Record<string, { extensions: string[], mode: 'FILE' | 'FOLDER', defaultArgs: string }> = {
@@ -23,11 +26,16 @@ export const EMU_PLATFORMS: Record<string, { extensions: string[], mode: 'FILE' 
     'nsw': { extensions: ['.nsp', '.xci'], mode: 'FILE', defaultArgs: '-f' },
     'wii': { extensions: ['.iso', '.wbfs', '.rvz'], mode: 'FILE', defaultArgs: '-f -e' },
     'wiu': { extensions: ['.wud', '.wux', '.rpx'], mode: 'FILE', defaultArgs: '-f' },
+    'ps1': { extensions: ['.cue', '.iso', '.chd', '.pbp'], mode: 'FILE', defaultArgs: '--fullscreen' },
     'ps2': { extensions: ['.iso', '.bin', '.chd'], mode: 'FILE', defaultArgs: '--fullscreen --no-gui' },
     'ps3': { extensions: [], mode: 'FOLDER', defaultArgs: '--fullscreen' },
     'ps4': { extensions: [], mode: 'FOLDER', defaultArgs: '' },
     'psp': { extensions: ['.iso', '.cso'], mode: 'FILE', defaultArgs: '--fullscreen' },
     'psv': { extensions: ['.vpk'], mode: 'FILE', defaultArgs: '' },
+    'gba': { extensions: ['.gba', '.zip'], mode: 'FILE', defaultArgs: '--fullscreen' },
+    'xbox360': { extensions: ['.iso', '.xex'], mode: 'FILE', defaultArgs: '--fullscreen' },
+    'multi': { extensions: ['.iso', '.zip', '.rom'], mode: 'FILE', defaultArgs: '-L "%CORE%" "%ROM%"' },
+    'custom': { extensions: [], mode: 'FILE', defaultArgs: '' }
 };
 
 export function cleanEmuTitle(filename: string): string {
