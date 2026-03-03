@@ -141,12 +141,20 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                 </h3>
                                 <span className="text-[7px] text-white/30 tracking-[0.2em] font-mono">ID: {editingId}</span>
                             </div>
-                            <button
-                                onClick={() => setEditingId(null)}
-                                className="px-4 py-2 border-2 border-white/10 hover:border-white text-white/40 hover:text-white text-[8px] font-bold uppercase tracking-widest transition-all"
-                            >
-                                {t('categories.back_to_grid')}
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleDeleteCategory(editingId!, editingId, setEditingId, requestConfirmation)}
+                                    className="px-4 py-2 border-2 border-red-500/20 hover:border-red-500 text-red-500/80 hover:text-white hover:bg-red-600 text-[8px] font-bold uppercase tracking-widest transition-all"
+                                >
+                                    {t('categories.purge')}
+                                </button>
+                                <button
+                                    onClick={() => setEditingId(null)}
+                                    className="px-4 py-2 border-2 border-white/10 hover:border-white text-white/40 hover:text-white text-[8px] font-bold uppercase tracking-widest transition-all"
+                                >
+                                    {t('categories.back_to_grid')}
+                                </button>
+                            </div>
                         </div>
 
                         <Subsection title={t('categories.identity_matrix')} accentColor={catForm.color}>
@@ -331,12 +339,6 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                             <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">{t('categories.node_monitor')}</h3>
                             <span className="text-[7px] text-white/30 tracking-[0.2em] font-mono">{t('categories.active_nodes_indices')}</span>
                         </div>
-                        <button
-                            onClick={() => handleCreateCategory(setEditingId, setCatForm, scrollToForm)}
-                            className="bg-white text-black px-6 py-3 font-black text-[9px] uppercase tracking-[0.4em] hover:bg-white/90 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
-                        >
-                            {t('categories.create_new_node')}
-                        </button>
                     </div>
 
                     {/* Fixed Nodes (ALL / RECENT) */}
@@ -345,81 +347,91 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                             <div
                                 key={cat.id}
                                 onClick={() => setEditingId(cat.id)}
-                                className="relative group cursor-pointer h-24 border-2 transition-all hover:bg-white/5 active:scale-[0.98]"
-                                style={{ borderColor: `${cat.color}22` }}
+                                className="relative group cursor-pointer h-24 border-2 border-white/5 bg-black/30 transition-all hover:bg-white/5 active:scale-[0.98]"
+                                style={{
+                                    clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))',
+                                    borderTopColor: `${cat.color}aa`
+                                }}
                             >
-                                <div className="absolute top-0 right-0 w-12 h-12 flex items-center justify-center opacity-10 pointer-events-none">
+                                <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center opacity-5 pointer-events-none">
                                     <img src={onResolveAsset(cat.icon)} className="w-full h-full object-contain grayscale invert" alt="" />
                                 </div>
-                                <div className="h-full flex items-center gap-6 px-6">
-                                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center border-2 border-white/5 bg-black/10">
-                                        <img src={onResolveAsset(cat.icon)} className="w-8 h-8 object-contain" alt="" />
-                                    </div>
+                                <div className="h-full flex items-center gap-6 px-6 relative z-10">
                                     <div className="flex flex-col gap-0.5">
-                                        <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">{cat.name}</span>
+                                        <span className="text-[20px] font-black text-white uppercase tracking-[0.3em] font-['Space_Mono']">{cat.name}</span>
                                         <span className="text-[7px] uppercase font-bold tracking-widest" style={{ color: cat.color }}>{cat.games.length} {t('categories.units_in_memory')}</span>
                                     </div>
+                                    <div className="ml-auto w-12 h-12 flex-shrink-0 flex items-center justify-center opacity-60">
+                                        <img src={onResolveAsset(cat.icon)} className="w-8 h-8 object-contain" alt="" />
+                                    </div>
                                 </div>
-                                {/* Glow Strip */}
-                                <div className="absolute bottom-0 left-0 h-1 transition-all" style={{ backgroundColor: cat.color, width: '40px' }}></div>
                             </div>
                         ))}
                     </div>
 
                     {/* User Nodes Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {/* + Block */}
+                        <div
+                            onClick={() => handleCreateCategory(setEditingId, setCatForm, scrollToForm)}
+                            className="relative group cursor-pointer aspect-square transition-all hover:bg-white/5 active:scale-[0.98] bg-black/20 flex flex-col items-center justify-center border-2 border-white/5 hover:border-white/20"
+                            style={{
+                                clipPath: 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px))'
+                            }}
+                        >
+                            <span className="text-5xl font-light text-white/20 group-hover:text-white/60 transition-colors">+</span>
+                        </div>
+
+                        {/* Node Blocks */}
                         {displayCategories.map((cat, idx) => (
-                            <div
-                                key={cat.id}
-                                className="relative group flex flex-col border-2 transition-all hover:bg-white/[0.02]"
-                                style={{ borderColor: `${cat.color}22` }}
-                            >
-                                {/* Static Header */}
-                                <div className="p-1 px-3 border-b-2 border-white/5 flex justify-between items-center bg-black/20">
-                                    <span className="text-[6px] font-mono opacity-20 uppercase tracking-widest">NODE_0{idx + 1}</span>
-                                    <span className="text-[6px] font-mono opacity-20 uppercase tracking-widest">{cat.id.substring(0, 8)}</span>
-                                </div>
-
-                                <div
-                                    className="flex-1 p-6 flex flex-col items-center justify-center gap-4 cursor-pointer active:scale-95 transition-transform"
-                                    onClick={() => setEditingId(cat.id)}
+                            <div key={cat.id} className="relative group flex flex-col aspect-square">
+                                {/* Top: UP */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleMoveCategory(cat.id, 'up'); }}
+                                    disabled={idx === 0}
+                                    className="h-7 w-full flex items-center justify-center bg-black/20 hover:bg-white/10 transition-all text-white/30 hover:text-white disabled:opacity-10 border border-white/5 hover:border-white/20 z-10"
+                                    style={{
+                                        clipPath: 'polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%)',
+                                        marginBottom: '2px'
+                                    }}
                                 >
-                                    <div className="w-16 h-16 flex items-center justify-center bg-black/20 border-2 border-white/5 relative">
-                                        <img src={onResolveAsset(cat.icon)} className="w-10 h-10 object-contain opacity-60 group-hover:opacity-100 transition-opacity" alt="" />
-                                        <div className="absolute -bottom-1 -right-1 w-4 h-4 border border-white/10 bg-black"></div>
+                                    <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-current"></div>
+                                </button>
+
+                                {/* Middle: SELECT */}
+                                <div
+                                    onClick={() => setEditingId(cat.id)}
+                                    className="flex-1 flex flex-col items-center justify-center gap-2 bg-black/20 hover:bg-white/5 transition-all cursor-pointer border border-white/5 hover:border-white/20 relative group/select overflow-hidden"
+                                    style={{
+                                        borderLeftColor: cat.color,
+                                        borderLeftWidth: '2px'
+                                    }}
+                                >
+                                    <div className="absolute top-0 right-0 w-16 h-16 flex items-center justify-center opacity-5 pointer-events-none -mr-4 -mt-4">
+                                        <img src={onResolveAsset(cat.icon)} className="w-full h-full object-contain grayscale invert" alt="" />
                                     </div>
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-[10px] font-black text-white uppercase tracking-[0.4em] text-center">{cat.name}</span>
-                                        <span className="text-[7px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>{cat.games.length} {t('categories.registered_units')}</span>
+                                    <span className="absolute bottom-2 right-2 text-[6px] text-white/20 font-mono">{idx + 1}</span>
+
+                                    <div className="w-10 h-10 flex items-center justify-center relative z-10 mb-1">
+                                        <img src={onResolveAsset(cat.icon)} className="w-8 h-8 opacity-60 group-hover/select:opacity-100 transition-all group-hover/select:scale-110" style={{ filter: `drop-shadow(0 0 5px ${cat.color}88)` }} />
                                     </div>
+                                    <span className="font-bold text-[9px] uppercase tracking-widest text-center truncate px-2 text-white w-full z-10">
+                                        {cat.name}
+                                    </span>
                                 </div>
 
-                                {/* Actions Footer */}
-                                <div className="h-12 border-t-2 border-white/5 flex divide-x-2 divide-white/5 bg-black/20">
-                                    <button
-                                        onClick={() => handleMoveCategory(cat.id, 'up')}
-                                        disabled={idx === 0}
-                                        className="flex-1 flex items-center justify-center hover:bg-white/5 text-white/40 hover:text-white transition-all disabled:opacity-5 text-[10px]"
-                                    >
-                                        ↑
-                                    </button>
-                                    <button
-                                        onClick={() => handleMoveCategory(cat.id, 'down')}
-                                        disabled={idx === displayCategories.length - 1}
-                                        className="flex-1 flex items-center justify-center hover:bg-white/5 text-white/40 hover:text-white transition-all disabled:opacity-5 text-[10px]"
-                                    >
-                                        ↓
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteCategory(cat.id, editingId, setEditingId, requestConfirmation)}
-                                        className="flex-[1.5] flex items-center justify-center hover:bg-red-600 text-red-500 hover:text-white font-bold text-[8px] uppercase tracking-widest transition-all"
-                                    >
-                                        {t('categories.purge')}
-                                    </button>
-                                </div>
-
-                                {/* Accent Highlight */}
-                                <div className="absolute top-0 left-0 w-1 h-full opacity-40" style={{ backgroundColor: cat.color }}></div>
+                                {/* Bottom: DOWN */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleMoveCategory(cat.id, 'down'); }}
+                                    disabled={idx === displayCategories.length - 1}
+                                    className="h-7 w-full flex items-center justify-center bg-black/20 hover:bg-white/10 transition-all text-white/30 hover:text-white disabled:opacity-10 border border-white/5 hover:border-white/20 z-10"
+                                    style={{
+                                        clipPath: 'polygon(0 0, 100% 0, 100% 100%, 15px 100%, 0 calc(100% - 15px))',
+                                        marginTop: '2px'
+                                    }}
+                                >
+                                    <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-current"></div>
+                                </button>
                             </div>
                         ))}
                     </div>
