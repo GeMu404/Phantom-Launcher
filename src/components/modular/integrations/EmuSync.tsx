@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { EMU_PLATFORMS, EmuPlatform } from '../../../constants/emulators';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface EmuSyncProps {
     isActive: boolean;
@@ -22,6 +23,7 @@ interface EmuSyncProps {
     includeAssets: boolean;
     setIncludeAssets: (v: boolean) => void;
     sgdbEnabled?: boolean;
+    onResetFields: () => void;
 }
 
 const SyncCardBorder = ({ color, isActive }: { color: string; isActive: boolean }) => {
@@ -32,8 +34,13 @@ const SyncCardBorder = ({ color, isActive }: { color: string; isActive: boolean 
             <div className="absolute bottom-0 right-0 h-[2px]" style={{ left: '20px', backgroundColor: color }} />
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
             <div className="absolute top-0 bottom-[20px] left-0 w-[2px]" style={{ backgroundColor: color }} />
-            <div className="absolute top-0 h-[2.5px]" style={{ left: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color, transformOrigin: 'top left', transform: 'rotate(45deg)' }} />
-            <div className="absolute left-0 h-[2.5px]" style={{ top: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color, transformOrigin: 'top left', transform: 'rotate(45deg)' }} />
+
+            <svg className="absolute top-0 right-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
+            <svg className="absolute bottom-0 left-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
         </div>
     );
 };
@@ -50,12 +57,14 @@ const EmuSync: React.FC<EmuSyncProps> = ({
     emuIcon,
     includeAssets,
     setIncludeAssets,
-    sgdbEnabled
+    sgdbEnabled,
+    onResetFields
 }) => {
     const [customArgs, setCustomArgs] = useState('');
     const [customExt, setCustomExt] = useState('.iso');
     const [isExecuting, setIsExecuting] = useState(false);
     const cardRef = React.useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     React.useEffect(() => {
         if (isActive && cardRef.current) {
@@ -120,16 +129,17 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                 currentPlatform?.icon || './res/external/Emu.png',
                 customExt,
                 (p) => {
-                    onCommandUpdate({ text: commandTitle, desc: 'SYNCHRONIZING_ASSETS_AND_CORES' }, undefined, p, true, true);
+                    onCommandUpdate({ text: commandTitle, desc: t('emu.syncing') }, undefined, p, true, true);
                 },
                 includeAssets
             );
 
             // Final visual hold on "EXECUTED"
-            onCommandUpdate({ text: commandTitle, desc: 'SYNC_PROTOCOL_COMPLETED' }, undefined, 100, true, true);
+            onCommandUpdate({ text: commandTitle, desc: t('emu.complete') }, undefined, 100, true, true);
             setTimeout(() => {
                 setIsExecuting(false);
                 onActiveToggle(false);
+                onResetFields();
                 onCommandUpdate(null, undefined, 0, false, false);
             }, 800);
         } catch (error) {
@@ -145,8 +155,8 @@ const EmuSync: React.FC<EmuSyncProps> = ({
         if (nextState) {
             onCommandUpdate(
                 {
-                    text: 'SYNC_EMU_DATABASE',
-                    desc: detectedPlatforms.length > 0 ? detectedPlatforms[0].desc : 'INICIALIZANDO PROTOCOLO DE ESCANEO DE ROMS.'
+                    text: t('emu.command_sync'),
+                    desc: detectedPlatforms.length > 0 ? detectedPlatforms[0].desc : t('emu.desc_sync_init')
                 },
                 handleExecuteSync,
                 0,
@@ -164,8 +174,8 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                 {
                     text: currentPlatform ? `${currentPlatform.name.toUpperCase()}_SYNC_CORE` : 'EMU_SYNC_CORE',
                     desc: !currentPlatform
-                        ? 'ESTA FUNCIÓN SINCRONIZARÁ LOS JUEGOS DE TU CONSOLA FAVORITA CON EL LANZADOR, SELECCIONA UN EMULADOR PRIMERO'
-                        : `ESTA FUNCIÓN SINCRONIZARÁ TUS JUEGOS DE LA CONSOLA ${currentPlatform.name.toUpperCase()} CON EL LANZADOR`
+                        ? t('emu.desc_sync_no_emu')
+                        : t('emu.desc_sync_platform').replace('{{name}}', currentPlatform.name.toUpperCase())
                 },
                 isReady ? handleExecuteSync : undefined,
                 0,
@@ -173,7 +183,7 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                 isReady
             );
         }
-    }, [emuPath, romsDir, customArgs, platformId, currentPlatform?.id, isActive, isExecuting, isReady]);
+    }, [emuPath, romsDir, customArgs, platformId, currentPlatform?.id, isActive, isExecuting, isReady, t]);
 
     const cardClip = `polygon(
         0 0, 
@@ -247,7 +257,7 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                                     border: 'none'
                                 }}
                             >
-                                {isExecuting ? '[ SYNCHRONIZING... ]' : (includeAssets ? '[ FETCH_ASSETS_ACTIVE ]' : '[ FETCH_ASSETS_INACTIVE ]')}
+                                {isExecuting ? t('integrations.syncing') : (includeAssets ? t('integrations.fetch_assets_active') : t('integrations.fetch_assets_inactive'))}
                             </button>
                         )}
                     </div>

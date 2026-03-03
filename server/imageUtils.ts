@@ -75,21 +75,18 @@ export const processImage = async (input: string | Buffer, dest: string, type: s
 };
 
 /** Download Helper for Offline protocol */
-export const downloadImage = (url: string, dest: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        if (dest.includes('steam_') && fs.existsSync(dest)) return resolve(dest);
+export const downloadImage = async (url: string, dest: string): Promise<string> => {
+    if (dest.includes('steam_') && fs.existsSync(dest)) return dest;
 
-        https.get(url, (response) => {
-            if (response.statusCode !== 200) {
-                return reject(new Error(`Failed to download: ${response.statusCode}`));
-            }
-            const chunks: any[] = [];
-            response.on('data', chunk => chunks.push(chunk));
-            response.on('end', () => {
-                const buffer = Buffer.concat(chunks);
-                fs.writeFileSync(dest, buffer);
-                resolve(dest);
-            });
-        }).on('error', reject);
-    });
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        fs.writeFileSync(dest, buffer);
+        return dest;
+    } catch (e: any) {
+        console.error(`[Download] Error for ${url}:`, e.message);
+        throw e;
+    }
 };

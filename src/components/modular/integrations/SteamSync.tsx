@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface SteamSyncProps {
     isActive: boolean;
@@ -18,15 +19,14 @@ const SyncCardBorder = ({ color, isActive }: { color: string; isActive: boolean 
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
             <div className="absolute top-0 bottom-[20px] left-0 w-[2px]" style={{ backgroundColor: color }} />
 
-            {/* Diagonal Corners */}
-            <div className="absolute top-0 h-[2.5px]" style={{
-                left: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
-            <div className="absolute left-0 h-[2.5px]" style={{
-                top: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
+            {/* Top-right diagonal corner */}
+            <svg className="absolute top-0 right-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
+            {/* Bottom-left diagonal corner */}
+            <svg className="absolute bottom-0 left-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
         </div>
     );
 };
@@ -36,6 +36,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
     const [adult, setAdult] = useState(false);
     const [isExecuting, setIsExecuting] = useState(false);
     const cardRef = React.useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     React.useEffect(() => {
         if (isActive && cardRef.current) {
@@ -49,8 +50,8 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
         if (isActive) {
             onCommandUpdate(
                 {
-                    text: 'VALVE_SYNC_PROTOCOL',
-                    desc: 'ESTA FUNCIÓN SINCRONIZARÁ TUS JUEGOS DE STEAM CON EL LANZADOR, PUEDES ELEGIR SI INCLUIR TAMBIÉN EL SOFTWARE Y CONTENIDO NO APROPIADO PARA TODAS LAS EDADES'
+                    text: t('steam.command_sync'),
+                    desc: t('steam.desc_sync')
                 },
                 handleExecuteSync,
                 0,
@@ -58,7 +59,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
                 true
             );
         }
-    }, [isActive, isExecuting, software, adult]);
+    }, [isActive, isExecuting, software, adult, t]);
 
     const handleExecuteSync = async () => {
         if (isExecuting) return;
@@ -67,7 +68,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
         // Progress Simulation for visual feedback on the badge
         let prog = 0;
         onCommandUpdate(
-            { text: 'VALVE_SYNC_PROTOCOL', desc: 'VALVE_PROTOCOL_ST_001: INDEXING_REMOTE_ASSETS_AND_LICENSES' },
+            { text: t('steam.command_sync'), desc: t('steam.syncing') },
             undefined, 0, true, true
         );
 
@@ -78,7 +79,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
                 clearInterval(interval);
             }
             onCommandUpdate(
-                { text: 'VALVE_SYNC_PROTOCOL', desc: 'VALVE_PROTOCOL_ST_001: INDEXING_REMOTE_ASSETS_AND_LICENSES' },
+                { text: t('steam.command_sync'), desc: t('steam.syncing') },
                 undefined,
                 prog,
                 true,
@@ -92,7 +93,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
 
             // 1. Force 100% progress immediately upon real sync finish
             onCommandUpdate(
-                { text: 'VALVE_SYNC_PROTOCOL', desc: 'SYNC_PROTOCOL_COMPLETED: REGISTRY_UPDATED' },
+                { text: t('steam.command_sync'), desc: t('steam.complete') },
                 undefined,
                 100,
                 true,
@@ -158,7 +159,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
 
                     <div className="flex flex-col gap-1">
                         <span className={`text-[12px] font-black tracking-[0.2em] uppercase transition-colors ${isActive ? 'text-white' : 'text-white/40'}`}>
-                            VALVE_SYNC_PROTOCOL
+                            {t('steam.command_sync')}
                         </span>
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isActive ? accentColor : 'white', opacity: isActive ? 1 : 0.3 }}></div>
@@ -184,7 +185,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
                                     border: 'none'
                                 }}
                             >
-                                {software ? '[ SOFTWARE_INCLUDED ]' : 'INCLUDE_SOFTWARE'}
+                                {software ? t('steam.software_included') : t('steam.include_software')}
                             </button>
                             <button
                                 onClick={() => !isExecuting && setAdult(!adult)}
@@ -197,7 +198,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
                                     border: 'none'
                                 }}
                             >
-                                {adult ? '[ ADULT_ONLY_ON ]' : 'INCLUDE_ADULT_ONLY'}
+                                {adult ? t('steam.adult_included') : t('steam.include_adult')}
                             </button>
                         </>
                     )}

@@ -24370,7 +24370,6 @@ var findLocalSteamAsset = (appId, type) => {
 
 // server/imageUtils.ts
 var import_fs3 = __toESM(require("fs"), 1);
-var import_https = __toESM(require("https"), 1);
 var import_node_module2 = require("node:module");
 var import_path4 = __toESM(require("path"), 1);
 var isExe2 = process.execPath.toLowerCase().endsWith("phantomserver.exe");
@@ -24435,22 +24434,19 @@ var processImage = async (input, dest, type) => {
     return dest;
   }
 };
-var downloadImage = (url, dest) => {
-  return new Promise((resolve3, reject) => {
-    if (dest.includes("steam_") && import_fs3.default.existsSync(dest)) return resolve3(dest);
-    import_https.default.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        return reject(new Error(`Failed to download: ${response.statusCode}`));
-      }
-      const chunks = [];
-      response.on("data", (chunk) => chunks.push(chunk));
-      response.on("end", () => {
-        const buffer = Buffer.concat(chunks);
-        import_fs3.default.writeFileSync(dest, buffer);
-        resolve3(dest);
-      });
-    }).on("error", reject);
-  });
+var downloadImage = async (url, dest) => {
+  if (dest.includes("steam_") && import_fs3.default.existsSync(dest)) return dest;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    import_fs3.default.writeFileSync(dest, buffer);
+    return dest;
+  } catch (e) {
+    console.error(`[Download] Error for ${url}:`, e.message);
+    throw e;
+  }
 };
 
 // server/routes/steamRoutes.ts
@@ -24948,7 +24944,6 @@ ${psLines.join("\n")}`;
 // server/routes/dataRoutes.ts
 var import_express4 = __toESM(require_express2(), 1);
 var import_fs8 = __toESM(require("fs"), 1);
-var import_https2 = __toESM(require("https"), 1);
 function createDataRoutes(ctx2) {
   const router = (0, import_express4.Router)();
   const getSGDBKey = () => {
@@ -24980,6 +24975,7 @@ function createDataRoutes(ctx2) {
       }
       if (key !== void 0) config.sgdbKey = key;
       if (enabled !== void 0) config.sgdbEnabled = enabled;
+      console.log(`[Config] Updating SGDB Core at: ${ctx2.CONFIG_FILE}`);
       import_fs8.default.writeFileSync(ctx2.CONFIG_FILE, JSON.stringify(config, null, 2));
       res.json({ success: true });
     } catch (e) {
@@ -25006,61 +25002,89 @@ function createDataRoutes(ctx2) {
       res.status(500).json({ error: "Failed to save data" });
     }
   });
-  router.get("/sgdb/search/:query", (req, res) => {
+  router.get("/sgdb/search/:query", async (req, res) => {
     const key = getSGDBKey();
-    if (!key) return res.status(401).json({ error: "No API Key" });
-    const url = `https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(req.params.query)}`;
-    const options = { headers: { "Authorization": `Bearer ${key}` } };
-    import_https2.default.get(url, options, (response) => {
-      let data = "";
-      response.on("data", (chunk) => data += chunk);
-      response.on("end", () => {
-        try {
-          res.json(JSON.parse(data));
-        } catch (e) {
-          res.status(500).json({ error: "Failed to parse SGDB response" });
+    if (!key) {
+      console.error("[SGDB] Search aborted: No API Key found in config.json");
+      return res.status(401).json({ error: "No API Key" });
+    }
+    const query = req.params.query;
+    const url = `https://www.steamgriddb.com/api/v2/search/autocomplete/${encodeURIComponent(query)}`;
+    console.log(`[SGDB] Search Protocol Initialized: ${url}`);
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${key}`,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json"
         }
       });
-    }).on("error", (e) => res.status(500).json({ error: e.message }));
+      console.log(`[SGDB] Remote Status: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[SGDB] Remote Failure: ${response.status} - ${errorText}`);
+        return res.status(response.status).json({
+          success: false,
+          error: "REMOTE_API_ERROR",
+          detail: errorText,
+          status: response.status
+        });
+      }
+      const data = await response.json();
+      console.log(`[SGDB] Search Success: Found ${data.data?.length || 0} entries`);
+      res.json(data);
+    } catch (e) {
+      console.error("[SGDB] Internal Proxy Exception:", e);
+      res.status(500).json({ success: false, error: "PROXY_EXCEPTION", detail: e.message });
+    }
   });
-  router.get("/sgdb/grids/:gameId/:type", (req, res) => {
+  router.get("/sgdb/grids/:gameId/:type", async (req, res) => {
     const key = getSGDBKey();
     if (!key) return res.status(401).json({ error: "No API Key" });
     const { gameId, type } = req.params;
     let endpointType = "grids";
-    let styleQuery = "?styles=alternate,blurred,material";
+    let styleQuery = "";
     if (type === "hero") {
       endpointType = "heroes";
     } else if (type === "logo") {
       endpointType = "logos";
-      styleQuery = "";
     } else if (type === "icon") {
       endpointType = "icons";
-      styleQuery = "";
-    } else if (type === "banner") {
+    } else if (type === "banner" || type === "grid") {
       endpointType = "grids";
     }
     const url = `https://www.steamgriddb.com/api/v2/${endpointType}/game/${gameId}${styleQuery}`;
-    const options = { headers: { "Authorization": `Bearer ${key}` } };
-    import_https2.default.get(url, options, (response) => {
-      let data = "";
-      response.on("data", (chunk) => data += chunk);
-      response.on("end", () => {
-        try {
-          const json = JSON.parse(data);
-          if (json.success && json.data) {
-            if (type === "grid") {
-              json.data = json.data.filter((asset) => asset.height > asset.width);
-            } else if (type === "banner") {
-              json.data = json.data.filter((asset) => asset.width > asset.height);
-            }
-          }
-          res.json(json);
-        } catch (e) {
-          res.status(500).json({ error: "Failed to parse SGDB response" });
+    console.log(`[SGDB] Fetching Assets: ${url}`);
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${key}`,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json"
         }
       });
-    }).on("error", (e) => res.status(500).json({ error: e.message }));
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[SGDB] Asset Remote Failure: ${response.status} - ${errorText}`);
+        return res.status(response.status).json({ success: false, error: "REMOTE_ASSET_ERROR", detail: errorText });
+      }
+      const json = await response.json();
+      if (json.success && json.data) {
+        if (type === "grid") {
+          json.data = json.data.filter((asset) => asset.height > asset.width);
+        } else if (type === "banner") {
+          json.data = json.data.filter((asset) => asset.width > asset.height);
+        } else if (type === "hero") {
+          json.data = json.data.filter((asset) => asset.width > asset.height);
+        }
+      }
+      res.json(json);
+    } catch (e) {
+      console.error("[SGDB] Assets Proxy Exception:", e);
+      res.status(500).json({ success: false, error: "PROXY_ASSETS_EXCEPTION", detail: e.message });
+    }
   });
   return router;
 }

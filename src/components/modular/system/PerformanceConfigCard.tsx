@@ -21,14 +21,16 @@ const ConfigCardBorder = ({ color, isActive }: { color: string; isActive: boolea
     return (
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
             <div className="absolute top-0 left-0 h-[2px]" style={{ right: '20px', backgroundColor: color }} />
-            <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ backgroundColor: color }} />
+            <div className="absolute bottom-0 right-0 h-[2px]" style={{ left: '20px', backgroundColor: color }} />
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
-            <div className="absolute top-0 bottom-0 left-0 w-[2px]" style={{ backgroundColor: color }} />
+            <div className="absolute top-0 bottom-[20px] left-0 w-[2px]" style={{ backgroundColor: color }} />
 
-            <div className="absolute top-0 h-[2.5px]" style={{
-                left: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
+            <svg className="absolute top-0 right-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
+            <svg className="absolute bottom-0 left-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
         </div>
     );
 };
@@ -196,7 +198,7 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
                 setIsExecuting(false);
                 onCommandUpdate(
                     {
-                        text: 'PERFORMANCE_PROTOCOL',
+                        text: 'PERFORMANCE_SET_PROTOCOL',
                         desc: 'THIS PROTOCOL WILL RECONFIGURE RENDERING QUALITY AND UI PERFORMANCE LIMITS.'
                     },
                     handleExecute,
@@ -213,7 +215,8 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
         calc(100% - 20px) 0, 
         100% 20px, 
         100% 100%, 
-        0 100%
+        20px 100%, 
+        0 calc(100% - 20px)
     )`;
 
     const handleToggleActive = () => {
@@ -274,24 +277,24 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
                 className={`w-full flex flex-col p-[20px] transition-all duration-300 relative overflow-hidden ${!isActive ? 'justify-center' : ''} ${isExecuting ? 'cursor-wait opacity-80' : 'cursor-pointer'}`}
                 style={{
                     clipPath: cardClip,
-                    backgroundColor: `${accentColor}1A`, // faint tint
+                    backgroundColor: `${accentColor}26`, // unified tint
                     minHeight: '100px'
                 }}
             >
                 {/* Header Row */}
                 <div className={`flex items-center justify-between w-full shrink-0 transition-all ${isActive ? 'h-[50px] mb-4' : ''}`}>
                     <div className="flex items-center gap-[20px]">
-                        <div className={`w-16 h-16 flex items-center justify-center shrink-0 transition-transform duration-500 rounded-full border border-white/10 bg-black/40 ${isExecuting ? 'animate-pulse' : ''} ${isActive ? 'scale-110' : ''}`}>
+                        <div className={`w-16 h-16 flex items-center justify-center shrink-0 transition-transform duration-500 ${isExecuting ? 'animate-pulse' : ''} ${isActive ? 'scale-110' : ''}`}>
                             <img
                                 src="./res/ui/perf.png"
                                 alt="Performance"
-                                className="w-10 h-10 object-contain opacity-90 transition-opacity"
+                                className="w-14 h-14 object-contain opacity-90 transition-opacity"
                             />
                         </div>
 
                         <div className="flex flex-col gap-1">
                             <span className={`text-[12px] font-black tracking-[0.2em] uppercase transition-colors ${isActive ? 'text-white' : 'text-white/40'}`}>
-                                PERFORMANCE_PROTOCOL
+                                PERFORMANCE_SET_PROTOCOL
                             </span>
                             <div className="flex items-center gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isActive ? accentColor : 'white', opacity: isActive ? 1 : 0.3 }}></div>

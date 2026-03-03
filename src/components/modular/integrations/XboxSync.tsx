@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface XboxSyncProps {
     isActive: boolean;
@@ -21,15 +22,14 @@ const SyncCardBorder = ({ color, isActive }: { color: string; isActive: boolean 
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
             <div className="absolute top-0 bottom-[20px] left-0 w-[2px]" style={{ backgroundColor: color }} />
 
-            {/* Diagonal Corners */}
-            <div className="absolute top-0 h-[2.5px]" style={{
-                left: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
-            <div className="absolute left-0 h-[2.5px]" style={{
-                top: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
+            {/* Top-right diagonal corner */}
+            <svg className="absolute top-0 right-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
+            {/* Bottom-left diagonal corner */}
+            <svg className="absolute bottom-0 left-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
         </div>
     );
 };
@@ -37,6 +37,7 @@ const SyncCardBorder = ({ color, isActive }: { color: string; isActive: boolean 
 const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentColor, onCommandUpdate, handleSyncXboxLibrary, includeAssets, setIncludeAssets, sgdbEnabled }) => {
     const [isExecuting, setIsExecuting] = useState(false);
     const cardRef = React.useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     React.useEffect(() => {
         if (isActive && cardRef.current) {
@@ -50,8 +51,8 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
         if (isActive) {
             onCommandUpdate(
                 {
-                    text: 'XBOX_SYNC_PROTOCOL',
-                    desc: 'ESTA FUNCIÓN SINCRONIZARÁ TUS JUEGOS ADQUIRIDOS DESDE LA TIENDA DE XBOX O XBOX GAMEPASS CON EL LANZADOR'
+                    text: t('xbox.command_sync'),
+                    desc: t('xbox.desc_sync')
                 },
                 handleExecuteSync,
                 0,
@@ -59,7 +60,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
                 true
             );
         }
-    }, [isActive, isExecuting]);
+    }, [isActive, isExecuting, t]);
 
     const handleExecuteSync = async () => {
         if (isExecuting) return;
@@ -68,7 +69,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
         // Progress Simulation for visual feedback on the badge
         let prog = 0;
         onCommandUpdate(
-            { text: 'XBOX_SYNC_PROTOCOL', desc: 'XBOX_LIVE_PROTOCOL_ST_002: AUTHENTICATING_AND_SYNCING_LICENSES' },
+            { text: t('xbox.command_sync'), desc: t('xbox.syncing') },
             undefined, 0, true, true
         );
 
@@ -79,7 +80,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
                 clearInterval(interval);
             }
             onCommandUpdate(
-                { text: 'XBOX_SYNC_PROTOCOL', desc: 'XBOX_LIVE_PROTOCOL_ST_002: AUTHENTICATING_AND_SYNCING_LICENSES' },
+                { text: t('xbox.command_sync'), desc: t('xbox.syncing') },
                 undefined,
                 prog,
                 true,
@@ -93,7 +94,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
 
             // 1. Force 100% progress immediately upon real sync finish
             onCommandUpdate(
-                { text: 'XBOX_SYNC_PROTOCOL', desc: 'SYNC_PROTOCOL_COMPLETED: REGISTRY_UPDATED' },
+                { text: t('xbox.command_sync'), desc: t('xbox.complete') },
                 undefined,
                 100,
                 true,
@@ -160,7 +161,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
 
                     <div className="flex flex-col gap-1">
                         <span className={`text-[12px] font-black tracking-[0.2em] uppercase transition-colors ${isActive ? 'text-white' : 'text-white/40'}`}>
-                            XBOX_SYNC_PROTOCOL
+                            {t('xbox.command_sync')}
                         </span>
                         <div className="flex items-center gap-3">
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: isActive ? accentColor : 'white', opacity: isActive ? 1 : 0.3 }}></div>
@@ -185,7 +186,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
                                 border: 'none'
                             }}
                         >
-                            {includeAssets ? '[ FETCH_ASSETS_ACTIVE ]' : '[ FETCH_ASSETS_INACTIVE ]'}
+                            {isExecuting ? t('integrations.syncing') : (includeAssets ? t('integrations.fetch_assets_active') : t('integrations.fetch_assets_inactive'))}
                         </button>
                     )}
                 </div>

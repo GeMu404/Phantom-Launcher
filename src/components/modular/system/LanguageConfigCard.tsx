@@ -24,14 +24,12 @@ const ConfigCardBorder = ({ color, isActive }: { color: string; isActive: boolea
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
             <div className="absolute top-0 bottom-[20px] left-0 w-[2px]" style={{ backgroundColor: color }} />
 
-            <div className="absolute top-0 h-[2.5px]" style={{
-                left: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
-            <div className="absolute left-0 h-[2.5px]" style={{
-                top: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
+            <svg className="absolute top-0 right-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
+            <svg className="absolute bottom-0 left-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
         </div>
     );
 };
@@ -159,11 +157,11 @@ const LanguageConfigCard: React.FC<LanguageConfigCardProps> = ({
                 {/* Header Row */}
                 <div className={`flex items-center justify-between w-full shrink-0 transition-all ${isActive ? 'h-[50px]' : ''}`}>
                     <div className="flex items-center gap-[20px]">
-                        <div className={`w-16 h-16 flex items-center justify-center shrink-0 transition-transform duration-500 rounded-full border border-white/10 bg-black/40 ${isExecuting ? 'animate-pulse' : ''} ${isActive ? 'scale-110' : ''}`}>
+                        <div className={`w-16 h-16 flex items-center justify-center shrink-0 transition-transform duration-500 ${isExecuting ? 'animate-pulse' : ''} ${isActive ? 'scale-110' : ''}`}>
                             <img
                                 src="./res/ui/lang.png"
                                 alt="Language"
-                                className="w-10 h-10 object-contain opacity-90 transition-opacity"
+                                className="w-14 h-14 object-contain opacity-90 transition-opacity"
                             />
                         </div>
 

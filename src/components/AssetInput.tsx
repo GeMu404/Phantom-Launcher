@@ -5,9 +5,9 @@ interface AssetInputProps {
     label: string;
     value: string;
     onChange: (v: string) => void;
-    triggerFileBrowser: (t: string, type: 'icon' | 'banner' | 'logo' | 'exe' | 'wallpaper') => void;
+    triggerFileBrowser: (t: string, type: string) => void;
     target: string;
-    previewType: 'cover' | 'banner' | 'logo' | 'icon' | 'wallpaper';
+    previewType: 'cover' | 'banner' | 'logo' | 'icon' | 'wallpaper' | 'all' | string;
     accentColor?: string;
     onResolveAsset: (path: string | undefined) => string;
     sgdbEnabled?: boolean;

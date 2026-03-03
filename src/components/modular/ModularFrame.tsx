@@ -246,84 +246,70 @@ const ModularFrame: React.FC<ModularFrameProps> = ({
                     }}
                     onContextMenu={(e) => e.preventDefault()}
                     disabled={isExecuting || (!onExecute && !onExecuteStart) || !isReady}
-                    className={`flex items-center justify-center w-full h-full group/exec active:scale-95 transition-transform disabled:opacity-20 disabled:pointer-events-none relative overflow-hidden select-none cursor-pointer ${onExecuteStart ? 'touch-none' : ''}`}
+                    className={`flex items-center justify-center w-full h-full group/exec transition-transform disabled:opacity-20 disabled:pointer-events-none relative overflow-hidden select-none cursor-pointer ${onExecuteStart ? 'touch-none' : ''}`}
                     style={{
                         pointerEvents: ((onExecute || onExecuteStart) && !isExecuting && isReady) ? 'auto' : 'none',
                         clipPath: `polygon(0 ${bCut}px, ${bCut}px 0, 100% 0, 100% calc(100% - ${bCut}px), calc(100% - ${bCut}px) 100%, 0 100%, 0 ${bCut}px)`
                     }}>
 
-                    {/* Background / Filling Logic */}
-                    <div
-                        className="absolute inset-0 transition-all duration-300"
-                        style={{
-                            backgroundColor: isExecuting ? `${accentColor}20` : (isReady ? `${accentColor}40` : 'rgba(255,255,255,0.02)'),
-                            boxShadow: isReady && !isExecuting ? `inset 0 0 20px ${accentColor}66` : 'none'
-                        }}
-                    />
+                    {/* Redefine Progress Color for Destruction */}
+                    {(() => {
+                        const isDestruction = commandText?.includes('DESTRUCTION') || commandText?.includes('TERMINATE');
+                        const barColor = isDestruction ? '#ef4444' : accentColor;
 
-                    {/* Real Progress Fill */}
-                    {(isExecuting || progress > 0) && (
-                        <div
-                            className="absolute inset-0 transition-all duration-500 ease-out"
-                            style={{
-                                backgroundColor: accentColor,
-                                clipPath: `inset(0 ${100 - progress}% 0 0)`,
-                                opacity: 0.8
-                            }}
-                        />
-                    )}
+                        return (
+                            <>
+                                {/* Background / Filling Logic */}
+                                <div
+                                    className="absolute inset-0 transition-all duration-300"
+                                    style={{
+                                        backgroundColor: isExecuting ? `${accentColor}20` : (isReady ? `${accentColor}40` : 'rgba(255,255,255,0.05)'),
+                                        boxShadow: isReady && !isExecuting ? `inset 0 0 20px ${accentColor}66` : 'none',
+                                        opacity: (onExecute || onExecuteStart) ? 1 : 0.3
+                                    }}
+                                />
 
-                    {/* Glitch Overlay for active state */}
-                    {isReady && !isExecuting && (
-                        <div className="absolute inset-0 opacity-10 bg-white animate-pulse" />
-                    )}
+                                {/* Real Progress Fill */}
+                                {(isExecuting || progress > 0) && (
+                                    <div
+                                        className="absolute inset-0 transition-all duration-500 ease-out"
+                                        style={{
+                                            backgroundColor: barColor,
+                                            clipPath: `inset(0 ${100 - progress}% 0 0)`,
+                                            opacity: isDestruction ? 0.9 : 0.4,
+                                            boxShadow: isDestruction && progress > 0 ? '0 0 30px rgba(239, 68, 68, 0.4)' : 'none'
+                                        }}
+                                    />
+                                )}
 
-                    <div className="relative z-20 flex items-center justify-center w-full h-full group">
-                        {/* Status LED */}
-                        {isReady && !isExecuting && (
-                            <div className="absolute left-8 w-1.5 h-1.5 rounded-full animate-pulse"
-                                style={{ backgroundColor: accentColor, boxShadow: `0 0 10px ${accentColor}` }} />
-                        )}
+                                <div className="relative z-20 flex items-center justify-center w-full h-full group">
+                                    {/* Base Text (Always EXECUTE or SYNCING) */}
+                                    <span className={`text-[12px] font-black tracking-[0.6em] whitespace-nowrap transition-all duration-500 ${isReady ? 'text-white' : 'text-white/20'}`}
+                                        style={isReady && !isExecuting ? { textShadow: `0 0 15px ${accentColor}, 0 0 5px #fff` } : {}}>
+                                        {isExecuting ? 'SYNCING...' : 'EXECUTE'}
+                                    </span>
 
-                        {/* Base Text (White/Dim) */}
-                        <span className={`text-[12px] font-black tracking-[0.6em] whitespace-nowrap transition-all duration-500 ${isReady ? 'text-white' : 'text-white/20'}`}
-                            style={isReady && !isExecuting ? { textShadow: `0 0 15px ${accentColor}, 0 0 5px #fff` } : {}}>
-                            {isExecuting ? 'SYNCING...' : 'EXECUTE'}
-                        </span>
+                                    {/* High-Contrast Fill Text */}
+                                    {(isExecuting || progress > 0) && (
+                                        <div
+                                            className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
+                                            style={{ clipPath: `inset(0 ${100 - progress}% 0 0)` }}
+                                        >
+                                            <span className={`text-[12px] font-black tracking-[0.6em] whitespace-nowrap ${isDestruction ? 'text-white' : 'text-black/90'}`}>
+                                                {isExecuting ? 'SYNCING...' : 'EXECUTE'}
+                                            </span>
+                                        </div>
+                                    )}
 
-                        {/* High-Contrast Fill Text (Black) */}
-                        {(isExecuting || progress > 0) && (
-                            <div
-                                className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
-                                style={{ clipPath: `inset(0 ${100 - progress}% 0 0)` }}
-                            >
-                                <span className="text-[12px] font-black tracking-[0.6em] whitespace-nowrap text-black/90">
-                                    {isExecuting ? 'SYNCING...' : 'EXECUTE'}
-                                </span>
-                            </div>
-                        )}
-
-                        {isReady && !isExecuting && (
-                            <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                <div className="w-1.5 h-1.5 bg-white rotate-45" style={{ boxShadow: `0 0 10px #fff` }} />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Scanline Progress Effect */}
-                    {progress > 0 && progress < 100 && (
-                        <div
-                            className="absolute inset-0 opacity-20 pointer-events-none"
-                            style={{ width: `${progress}%`, overflow: 'hidden' }}
-                        >
-                            <div className="w-[200%] h-full animate-[scanline_2s_linear_infinite] opacity-50"
-                                style={{
-                                    background: `linear-gradient(90deg, transparent 0%, ${accentColor} 50%, transparent 100%)`,
-                                    backgroundSize: '50% 100%'
-                                }}
-                            />
-                        </div>
-                    )}
+                                    {isReady && !isExecuting && (
+                                        <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                            <div className="w-1.5 h-1.5 bg-white rotate-45" style={{ boxShadow: `0 0 10px #fff` }} />
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        );
+                    })()}
 
 
                 </button>

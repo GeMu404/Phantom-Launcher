@@ -25,14 +25,16 @@ const ConfigCardBorder = ({ color, isActive }: { color: string; isActive: boolea
     return (
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
             <div className="absolute top-0 left-0 h-[2px]" style={{ right: '20px', backgroundColor: color }} />
-            <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ backgroundColor: color }} />
+            <div className="absolute bottom-0 right-0 h-[2px]" style={{ left: '20px', backgroundColor: color }} />
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
-            <div className="absolute top-0 bottom-0 left-0 w-[2px]" style={{ backgroundColor: color }} />
+            <div className="absolute top-0 bottom-[20px] left-0 w-[2px]" style={{ backgroundColor: color }} />
 
-            <div className="absolute top-0 h-[2.5px]" style={{
-                left: 'calc(100% - 20.5px)', width: '29.5px', backgroundColor: color,
-                transformOrigin: 'top left', transform: 'rotate(45deg)'
-            }} />
+            <svg className="absolute top-0 right-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
+            <svg className="absolute bottom-0 left-0 w-[21px] h-[21px]" viewBox="0 0 21 21" fill="none">
+                <line x1="0" y1="0" x2="21" y2="21" stroke={color} strokeWidth="2.5" />
+            </svg>
         </div>
     );
 };
@@ -110,7 +112,7 @@ const DataManagementConfigCard: React.FC<DataManagementConfigCardProps> = ({
             if (selectedAction === 'none') {
                 onCommandUpdate(
                     {
-                        text: 'DATA_MANAGEMENT_PROTOCOL',
+                        text: 'DATA_MANAGEMENT_SET_PROTOCOL',
                         desc: 'AWAITING_MAINTENANCE_DIRECTIVE. SELECT_A_PROTOCOL_TO_CONTINUE.'
                     },
                     null, 0, false, false, null, null,
@@ -235,7 +237,8 @@ const DataManagementConfigCard: React.FC<DataManagementConfigCardProps> = ({
         calc(100% - 20px) 0, 
         100% 20px, 
         100% 100%, 
-        0 100%
+        20px 100%, 
+        0 calc(100% - 20px)
     )`;
 
     const handleToggleActive = () => {
@@ -257,24 +260,24 @@ const DataManagementConfigCard: React.FC<DataManagementConfigCardProps> = ({
                 className={`w-full flex flex-col p-[20px] transition-all duration-300 relative overflow-hidden ${!isActive ? 'justify-center' : ''} ${isExecuting ? 'cursor-wait opacity-80' : 'cursor-pointer'} ${selectedAction === 'autodestruct' && isHoldingRef.current ? 'animate-pulse' : ''}`}
                 style={{
                     clipPath: cardClip,
-                    backgroundColor: selectedAction === 'autodestruct' ? (holdProgress > 0 ? '#ff000022' : '#ff00000a') : `${accentColor}1A`,
+                    backgroundColor: selectedAction === 'autodestruct' ? (holdProgress > 0 ? '#ff000022' : '#ff00000a') : `${accentColor}26`,
                     minHeight: '100px'
                 }}
             >
                 {/* Header Row */}
                 <div className={`flex items-center justify-between w-full shrink-0 transition-all ${isActive ? 'h-[50px] mb-4' : ''}`}>
                     <div className="flex items-center gap-[20px]">
-                        <div className={`w-16 h-16 flex items-center justify-center shrink-0 transition-all duration-500 rounded-full border bg-black/40 ${selectedAction === 'autodestruct' ? 'border-red-500/50' : 'border-white/10'} ${isExecuting || (selectedAction === 'autodestruct' && holdProgress > 0) ? 'animate-pulse scale-110' : ''} ${isActive ? 'scale-110' : ''}`}>
+                        <div className={`w-16 h-16 flex items-center justify-center shrink-0 transition-all duration-500 ${isExecuting || (selectedAction === 'autodestruct' && holdProgress > 0) ? 'animate-pulse scale-110' : ''} ${isActive ? 'scale-110' : ''}`}>
                             <img
                                 src="./res/ui/data.png"
                                 alt="Data Management"
-                                className={`w-10 h-10 object-contain opacity-90 transition-opacity ${selectedAction === 'autodestruct' ? 'hue-rotate-180 brightness-150 saturate-200' : ''}`}
+                                className={`w-14 h-14 object-contain opacity-90 transition-opacity ${selectedAction === 'autodestruct' ? 'hue-rotate-180 brightness-150 saturate-200' : ''}`}
                             />
                         </div>
 
                         <div className="flex flex-col gap-1">
                             <span className={`text-[12px] font-black tracking-[0.2em] uppercase transition-colors ${selectedAction === 'autodestruct' ? 'text-red-500' : isActive ? 'text-white' : 'text-white/40'}`}>
-                                DATA_MANAGEMENT_PROTOCOL
+                                DATA_MANAGEMENT_SET_PROTOCOL
                             </span>
                             <div className="flex items-center gap-3">
                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedAction === 'autodestruct' ? '#ff3333' : isActive ? accentColor : 'white', opacity: isActive ? 1 : 0.3 }}></div>

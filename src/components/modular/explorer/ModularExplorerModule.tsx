@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../../../hooks/useTranslation';
 
 interface FileItem {
     name: string;
@@ -25,6 +26,7 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
     onSelect,
     selectedPath = null
 }) => {
+    const { t } = useTranslation();
     const [contents, setContents] = useState<FileItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -90,7 +92,7 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
                                     backgroundColor: 'rgba(10, 10, 10, 0.8)'
                                 }}
                             >
-                                BACK
+                                {t('nav.go_back')}
                             </button>
                         </div>
                     </div>
@@ -127,13 +129,13 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
                 {loading ? (
                     <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-70">
                         <div className="w-8 h-8 border-2 border-white/10 border-t-white animate-spin"></div>
-                        <span className="text-[8px] font-['Space_Mono'] uppercase tracking-[0.5em] text-white">MOUNTING_FS...</span>
+                        <span className="text-[8px] font-['Space_Mono'] uppercase tracking-[0.5em] text-white">{t('explorer.mounting')}</span>
                     </div>
                 ) : error ? (
                     <div className="flex-1 flex flex-col items-center justify-center gap-6 text-red-500 font-['Space_Mono'] uppercase">
                         <div className="w-12 h-12 border-2 border-red-500/30 flex items-center justify-center text-2xl animate-pulse">!</div>
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-[9px] font-black tracking-[0.2em]">[ ACCESS_DENIED ]</span>
+                            <span className="text-[9px] font-black tracking-[0.2em]">{t('explorer.access_denied')}</span>
                             <span className="text-[7px] opacity-40 tracking-widest">{error}</span>
                         </div>
                     </div>
@@ -156,7 +158,9 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
                                             clipPath: previewClip,
                                             backgroundColor: selectedPath === currentPath ? 'rgba(10, 10, 10, 0.85)' : 'rgba(255, 255, 255, 0.03)'
                                         }}>
-                                        <span className={`text-[10px] font-black font-['Space_Mono'] uppercase tracking-widest px-2 text-center transition-colors ${selectedPath === currentPath ? 'text-white' : 'text-white/40 group-hover:text-white'}`}>USE_CURRENT_PATH</span>
+                                        <span className={`text-[10px] font-black font-['Space_Mono'] uppercase tracking-widest px-2 text-center transition-colors ${selectedPath === currentPath ? 'text-white' : 'text-white/40 group-hover:text-white'}`}>
+                                            {t('explorer.confirm_directory')}
+                                        </span>
                                     </div>
                                 </div>
                                 <div className="h-[26px] shrink-0 w-full relative overflow-hidden"
@@ -172,11 +176,11 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
                                         }}>
                                         <div className={`marquee-led-content ${selectedPath === currentPath ? 'marquee-led-active' : ''}`}>
                                             <span className={`text-[7px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] ${selectedPath === currentPath ? 'text-white' : 'text-white/30 group-hover:text-white'}`}>
-                                                CURRENT_NODE
+                                                {t('explorer.empty_node')}
                                             </span>
                                             {/* Duplicate for infinite loop */}
                                             <span className={`text-[7px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] ${selectedPath === currentPath ? 'text-white' : 'text-white/30 group-hover:text-white'}`}>
-                                                CURRENT_NODE
+                                                {t('explorer.empty_node')}
                                             </span>
                                         </div>
                                     </div>
@@ -228,7 +232,10 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
                                                     alt={item.name}
                                                 />
                                             ) : (
-                                                <span className={`text-[14px] font-black font-['Space_Mono'] transition-opacity uppercase tracking-wider ${isSelected ? 'text-white opacity-100' : 'text-white opacity-40 group-hover:opacity-100'}`}>
+                                                <span
+                                                    className={`text-[14px] font-black font-['Space_Mono'] transition-opacity uppercase tracking-wider ${isSelected ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}
+                                                    style={{ color: ['.exe', '.bat', '.lnk', '.url'].includes(item.ext.toLowerCase()) ? accentColor : '#ffffff' }}
+                                                >
                                                     {item.ext.replace('.', '') || 'FILE'}
                                                 </span>
                                             )}
@@ -253,9 +260,8 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
                                                 <span className={`text-[9px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] ${isSelected ? 'text-white' : 'text-white/60 group-hover:text-white'}`}>
                                                     {item.name}
                                                 </span>
-                                                {/* Duplicate for infinite loop */}
-                                                <span className={`text-[9px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] ${isSelected ? 'text-white' : 'text-white/60 group-hover:text-white'}`}>
-                                                    {item.name}
+                                                <span className="text-[6px] opacity-30 uppercase font-mono tracking-widest leading-none mx-2">
+                                                    :: {item.isDir ? t('explorer.directory_node') : t('explorer.data_sector')}
                                                 </span>
                                             </div>
                                         </div>
@@ -266,7 +272,7 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
 
                         {contents.length === 0 && (
                             <div className="col-span-full h-48 flex items-center justify-center opacity-10">
-                                <span className="text-[10px] font-['Space_Mono'] uppercase tracking-[1em]">REGISTRY_EMPTY</span>
+                                <span className="text-[10px] font-['Space_Mono'] uppercase tracking-[1em]">{t('explorer.registry_empty')}</span>
                             </div>
                         )}
                     </div>

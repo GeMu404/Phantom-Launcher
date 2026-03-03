@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Category } from '../../../types';
 import { useTranslation } from '../../../hooks/useTranslation';
-import Subsection from '../../management/Subsection';
+import Subsection from './Subsection';
 import AssetInput from '../../AssetInput';
-import ModeSelector from '../../management/ModeSelector';
+import ModeSelector from './ModeSelector';
 import CyberScrollbar from '../../CyberScrollbar';
 import { getContrastColor } from '../../../utils/colors';
 
@@ -20,6 +20,7 @@ interface ModularCategoriesModuleProps {
     triggerFileBrowser: (target: string, type: string) => void;
     onUpdateCategories: React.Dispatch<React.SetStateAction<Category[]>>;
     requestConfirmation: (message: string, onConfirm: () => void, isDanger?: boolean) => void;
+    onCommandUpdate: (command: any, execute?: () => void, progress?: number, isExecuting?: boolean, isReady?: boolean) => void;
 }
 
 const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
@@ -34,7 +35,8 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
     handleFetchMissingAssets,
     triggerFileBrowser,
     onUpdateCategories,
-    requestConfirmation
+    requestConfirmation,
+    onCommandUpdate
 }) => {
     const { t } = useTranslation();
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,8 +90,33 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
     const handleSaveCategoryData = () => {
         if (!editingId) return;
         onUpdateCategories(prev => prev.map(c => c.id === editingId ? { ...c, ...catForm } : c));
-        // Reset or notification could go here
     };
+
+    useEffect(() => {
+        if (editingId && isFormOpen) {
+            onCommandUpdate(
+                {
+                    text: t('categories.command_commit'),
+                    desc: t('categories.desc_commit')
+                },
+                handleSaveCategoryData,
+                0,
+                false,
+                !!catForm.name.trim()
+            );
+        } else {
+            onCommandUpdate(
+                {
+                    text: t('categories.node_monitor'),
+                    desc: t('categories.active_nodes_indices')
+                },
+                undefined,
+                0,
+                false,
+                false
+            );
+        }
+    }, [editingId, isFormOpen, catForm.name, t, onCommandUpdate]);
 
     const scrollToForm = () => {
         setTimeout(() => {
@@ -109,21 +136,23 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                     <div className="flex flex-col gap-6 lg:gap-8">
                         <div className="flex justify-between items-center border-b-2 border-white/10 pb-4">
                             <div className="flex flex-col gap-1">
-                                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">NODE_CONFIGURATION: {catForm.name}</h3>
+                                <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">
+                                    {t('categories.node_configuration').replace('{{name}}', catForm.name)}
+                                </h3>
                                 <span className="text-[7px] text-white/30 tracking-[0.2em] font-mono">ID: {editingId}</span>
                             </div>
                             <button
                                 onClick={() => setEditingId(null)}
                                 className="px-4 py-2 border-2 border-white/10 hover:border-white text-white/40 hover:text-white text-[8px] font-bold uppercase tracking-widest transition-all"
                             >
-                                BACK_TO_GRID
+                                {t('categories.back_to_grid')}
                             </button>
                         </div>
 
-                        <Subsection title="Identity_Matrix" onSync={handleSaveCategoryData} syncLabel="COMMIT_CHANGES" accentColor={catForm.color}>
+                        <Subsection title={t('categories.identity_matrix')} accentColor={catForm.color}>
                             <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">NODE_LABEL</label>
+                                    <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">{t('categories.node_label')}</label>
                                     <input
                                         value={catForm.name}
                                         onChange={e => setCatForm({ ...catForm, name: e.target.value })}
@@ -131,7 +160,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     />
                                 </div>
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">ACCENT_HEX</label>
+                                    <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">{t('categories.accent_hex')}</label>
                                     <div className="flex gap-4">
                                         <input
                                             type="color"
@@ -147,7 +176,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     </div>
                                 </div>
                                 <AssetInput
-                                    label="TERMINAL_ICON"
+                                    label={t('categories.terminal_icon')}
                                     value={catForm.icon}
                                     onChange={v => setCatForm({ ...catForm, icon: v })}
                                     triggerFileBrowser={triggerFileBrowser}
@@ -157,7 +186,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     onResolveAsset={onResolveAsset}
                                 />
                                 <div className="flex flex-col gap-2">
-                                    <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">LINK_STATUS</label>
+                                    <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">{t('categories.link_status')}</label>
                                     <button
                                         onClick={() => editingId !== 'recent' && setCatForm({ ...catForm, enabled: !catForm.enabled })}
                                         disabled={editingId === 'recent'}
@@ -168,16 +197,16 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                                 : 'bg-red-600 border-red-500 text-white'
                                             }`}
                                     >
-                                        {editingId === 'recent' ? 'SYSTEM_LOCKED' : (catForm.enabled ? 'ONLINE_PROTOCOL' : 'OFFLINE_ISOLATION')}
+                                        {editingId === 'recent' ? t('categories.system_locked') : (catForm.enabled ? t('categories.online_protocol') : t('categories.offline_isolation'))}
                                     </button>
                                 </div>
                             </div>
                         </Subsection>
 
-                        <Subsection title="Ambience_Engine" accentColor={catForm.color}>
+                        <Subsection title={t('categories.ambience_engine')} accentColor={catForm.color}>
                             <div className="col-span-full flex flex-col gap-6">
                                 <AssetInput
-                                    label="NODE_WALLPAPER"
+                                    label={t('categories.node_wallpaper')}
                                     value={catForm.wallpaper}
                                     onChange={v => setCatForm({ ...catForm, wallpaper: v })}
                                     triggerFileBrowser={triggerFileBrowser}
@@ -187,10 +216,10 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     onResolveAsset={onResolveAsset}
                                 />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <ModeSelector label="RENDER_SEQUENCE" value={catForm.wallpaperMode} onChange={v => setCatForm({ ...catForm, wallpaperMode: v })} />
+                                    <ModeSelector label={t('categories.render_sequence')} value={catForm.wallpaperMode} onChange={v => setCatForm({ ...catForm, wallpaperMode: v })} />
                                     <div className="flex flex-col gap-2">
                                         <div className="flex justify-between items-center">
-                                            <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">MESH_GRID_OPACITY</label>
+                                            <label className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">{t('categories.mesh_grid_opacity')}</label>
                                             <span className="text-[10px] font-mono" style={{ color: catForm.color }}>{Math.round(catForm.gridOpacity * 100)}%</span>
                                         </div>
                                         <input
@@ -207,20 +236,20 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                             </div>
                         </Subsection>
 
-                        <Subsection title="Unit_Registry_Management" accentColor={catForm.color}>
+                        <Subsection title={t('categories.unit_registry_management')} accentColor={catForm.color}>
                             <div className="col-span-full flex flex-col gap-4">
                                 <div className="flex flex-wrap items-center gap-3 mb-2">
                                     <button
                                         onClick={() => setIsAddingGame(!isAddingGame)}
                                         className={`px-4 py-2 border-2 font-bold text-[8px] uppercase tracking-widest transition-all ${isAddingGame ? 'bg-white text-black' : 'border-white/10 text-white/40 hover:border-white/40 hover:text-white'}`}
                                     >
-                                        {isAddingGame ? 'CLOSE_SELECTOR' : 'ADD_EXISTING_UNIT'}
+                                        {isAddingGame ? t('categories.close_selector') : t('categories.add_existing_unit')}
                                     </button>
                                     <button
                                         onClick={() => handleFetchMissingAssets(editingId)}
                                         className="px-4 py-2 border-2 border-white/10 text-white/40 hover:border-white hover:text-white font-bold text-[8px] uppercase tracking-widest transition-all"
                                     >
-                                        RESCAN_METADATA
+                                        {t('categories.rescan_metadata')}
                                     </button>
                                 </div>
 
@@ -228,7 +257,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     <div className="p-4 bg-white/5 border-2 border-white/10 flex flex-col gap-4">
                                         <input
                                             autoFocus
-                                            placeholder="SEARCH_FOR_UNIT..."
+                                            placeholder={t('categories.search_for_unit')}
                                             value={selectionSearch}
                                             onChange={e => setSelectionSearch(e.target.value)}
                                             className="bg-black/20 border-2 border-white/10 p-3 text-[10px] font-mono uppercase outline-none focus:border-white text-white"
@@ -255,7 +284,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
 
                                 <div className="flex flex-col gap-2">
                                     {gameList.length === 0 && !isAddingGame && (
-                                        <div className="py-12 text-center border-2 border-dashed border-white/5 text-[8px] opacity-20 uppercase tracking-[0.5em]">NO_UNITS_REGISTERED</div>
+                                        <div className="py-12 text-center border-2 border-dashed border-white/5 text-[8px] opacity-20 uppercase tracking-[0.5em]">{t('categories.no_units_registered')}</div>
                                     )}
                                     {gameList.map((g, idx) => (
                                         <div key={g.id} className="flex items-center gap-3 p-3 bg-black/20 border-2 border-white/5 group/row hover:border-white/20 transition-all">
@@ -277,7 +306,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                                     onClick={() => handleToggleGameInCategory(editingId!, g.id)}
                                                     className="px-4 h-8 flex items-center justify-center border-2 border-red-500/20 hover:border-red-500 text-red-500/40 hover:text-red-500 text-[8px] font-bold uppercase transition-all"
                                                 >
-                                                    DETACH
+                                                    {t('categories.detach')}
                                                 </button>
                                             </div>
                                         </div>
@@ -299,14 +328,14 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                     {/* Header Action */}
                     <div className="flex justify-between items-center border-b-2 border-white/10 pb-6">
                         <div className="flex flex-col gap-1">
-                            <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">Neural_Node_Grid</h3>
-                            <span className="text-[7px] text-white/30 tracking-[0.2em] font-mono">REGISTRY_COUNT: {categories.length}</span>
+                            <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-white">{t('categories.node_monitor')}</h3>
+                            <span className="text-[7px] text-white/30 tracking-[0.2em] font-mono">{t('categories.active_nodes_indices')}</span>
                         </div>
                         <button
                             onClick={() => handleCreateCategory(setEditingId, setCatForm, scrollToForm)}
                             className="bg-white text-black px-6 py-3 font-black text-[9px] uppercase tracking-[0.4em] hover:bg-white/90 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
                         >
-                            INITIALIZE_NEW_NODE
+                            {t('categories.create_new_node')}
                         </button>
                     </div>
 
@@ -328,7 +357,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     </div>
                                     <div className="flex flex-col gap-0.5">
                                         <span className="text-[11px] font-black text-white uppercase tracking-[0.3em]">{cat.name}</span>
-                                        <span className="text-[7px] uppercase font-bold tracking-widest" style={{ color: cat.color }}>{cat.games.length} UNITS_IN_MEMORY</span>
+                                        <span className="text-[7px] uppercase font-bold tracking-widest" style={{ color: cat.color }}>{cat.games.length} {t('categories.units_in_memory')}</span>
                                     </div>
                                 </div>
                                 {/* Glow Strip */}
@@ -361,7 +390,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                     </div>
                                     <div className="flex flex-col items-center gap-1">
                                         <span className="text-[10px] font-black text-white uppercase tracking-[0.4em] text-center">{cat.name}</span>
-                                        <span className="text-[7px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>{cat.games.length} REGISTERED</span>
+                                        <span className="text-[7px] font-bold uppercase tracking-widest" style={{ color: cat.color }}>{cat.games.length} {t('categories.registered_units')}</span>
                                     </div>
                                 </div>
 
@@ -385,7 +414,7 @@ const ModularCategoriesModule: React.FC<ModularCategoriesModuleProps> = ({
                                         onClick={() => handleDeleteCategory(cat.id, editingId, setEditingId, requestConfirmation)}
                                         className="flex-[1.5] flex items-center justify-center hover:bg-red-600 text-red-500 hover:text-white font-bold text-[8px] uppercase tracking-widest transition-all"
                                     >
-                                        PURGE
+                                        {t('categories.purge')}
                                     </button>
                                 </div>
 

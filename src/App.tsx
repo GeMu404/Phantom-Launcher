@@ -8,23 +8,20 @@ import Notification from './components/Notification';
 import BackgroundEffect from './components/BackgroundEffect';
 import anime from 'animejs';
 
-// Lazy load ManagementModal to avoid circular dependency/initialization issues
-const ManagementModal = React.lazy(() => import('./components/ManagementModal'));
+// Lazy load ModularModal and components
 const ModularModal = React.lazy(() => import('./components/modular/ModularModal'));
 const ModularHeader = React.lazy(() => import('./components/modular/ModularHeader'));
-const ModularSystemModule = React.lazy(() => import('./components/modular/modules/ModularSystemModule'));
-const ModularIntegrationsModule = React.lazy(() => import('./components/modular/modules/ModularIntegrationsModule'));
-const ModularCategoriesModule = React.lazy(() => import('./components/modular/modules/ModularCategoriesModule'));
-const ModularGamesModule = React.lazy(() => import('./components/modular/modules/ModularGamesModule'));
-const SteamSync = React.lazy(() => import('./components/modular/sync/SteamSync'));
-const XboxSync = React.lazy(() => import('./components/modular/sync/XboxSync'));
-const EmuSync = React.lazy(() => import('./components/modular/sync/EmuSync'));
-const SgdbAsset = React.lazy(() => import('./components/modular/asset/SgdbAsset'));
-const ModularExplorerModule = React.lazy(() => import('./components/modular/fileexplorer/ModularExplorerModule'));
-const LanguageConfigCard = React.lazy(() => import('./components/modular/config/LanguageConfigCard'));
-const AppearanceConfigCard = React.lazy(() => import('./components/modular/config/AppearanceConfigCard'));
-const PerformanceConfigCard = React.lazy(() => import('./components/modular/config/PerformanceConfigCard'));
-const DataManagementConfigCard = React.lazy(() => import('./components/modular/config/DataManagementConfigCard'));
+const GameRegistryModule = React.lazy(() => import('./components/modular/registry/GameRegistryModule'));
+const ModularCategoriesModule = React.lazy(() => import('./components/modular/categories/ModularCategoriesModule'));
+const SteamSync = React.lazy(() => import('./components/modular/integrations/SteamSync'));
+const XboxSync = React.lazy(() => import('./components/modular/integrations/XboxSync'));
+const EmuSync = React.lazy(() => import('./components/modular/integrations/EmuSync'));
+const SgdbAsset = React.lazy(() => import('./components/modular/assets/SgdbAsset'));
+const ModularExplorerModule = React.lazy(() => import('./components/modular/explorer/ModularExplorerModule'));
+const LanguageConfigCard = React.lazy(() => import('./components/modular/system/LanguageConfigCard'));
+const AppearanceConfigCard = React.lazy(() => import('./components/modular/system/AppearanceConfigCard'));
+const PerformanceConfigCard = React.lazy(() => import('./components/modular/system/PerformanceConfigCard'));
+const DataManagementConfigCard = React.lazy(() => import('./components/modular/system/DataManagementConfigCard'));
 
 // Hooks
 import { usePersistence } from './hooks/usePersistence';
@@ -36,7 +33,7 @@ import { useKonami } from './hooks/useKonami';
 import { useLibrary } from './hooks/useLibrary';
 import { useColor } from './hooks/useColor';
 import { useManagement } from './hooks/useManagement';
-import FileExplorerModal from './components/FileExplorerModal';
+import ModularAssetSearchModule from './components/modular/assetSearch/ModularAssetSearchModule';
 
 const App: React.FC = () => {
   // --- Custom Hooks ---
@@ -53,19 +50,16 @@ const App: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
   const [isManagementOpen, setIsManagementOpen] = useState(false);
   const [isModularOpen, setIsModularOpen] = useState(false);
-  const [activeModularModule, setActiveModularModule] = useState<'system' | 'integrations' | 'categories' | 'games' | 'explorer' | 'assets'>('system');
+  const [activeModularModule, setActiveModularModule] = useState<'categories' | 'system' | 'integrations' | 'registry' | 'games' | 'explorer' | 'assets' | 'assetSearch'>('categories');
   const [emuPath, setEmuPath] = useState('');
   const [romsDir, setRomsDir] = useState('');
   const [emuIcon, setEmuIcon] = useState('');
-  const [explorer, setExplorer] = useState<{ isOpen: boolean; target: string; filter: 'exe' | 'image' | 'folder' | 'any'; initialPath?: string }>({
-    isOpen: false,
+  const [explorer, setExplorer] = useState<{ target: string }>({
     target: '',
-    filter: 'any',
-    initialPath: undefined
   });
   const [explorerMode, setExplorerMode] = useState<'browse' | 'select-file' | 'select-folder' | 'select-image'>('browse');
   const [explorerSelectedPath, setExplorerSelectedPath] = useState<string | null>(null);
-  const [lastModularModule, setLastModularModule] = useState<'system' | 'integrations' | 'categories' | 'games' | 'explorer' | 'assets'>('system');
+  const [lastModularModule, setLastModularModule] = useState<'system' | 'integrations' | 'registry' | 'games' | 'explorer' | 'assets'>('system');
   const [confirmData, setConfirmData] = useState<{ message: string; onConfirm: () => void; isDanger?: boolean } | null>(null);
 
   const [postLaunchNav, setPostLaunchNav] = useState(false);
@@ -86,6 +80,10 @@ const App: React.FC = () => {
   const [modularScrollProgress, setModularScrollProgress] = useState(0);
   const [showModularScrollMarker, setShowModularScrollMarker] = useState(false);
   const lastUnlockedRef = useRef(false);
+  const registryGoBackRef = useRef<(() => boolean) | null>(null);
+  const assetSearchGoBackRef = useRef<(() => boolean) | null>(null);
+  const [registryCanGoBack, setRegistryCanGoBack] = useState(false);
+  const [assetSearchCanGoBack, setAssetSearchCanGoBack] = useState(false);
 
   const modularScrollRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +164,12 @@ const App: React.FC = () => {
     onClose: handleModularClose
   });
 
+  const resetEmuFields = useCallback(() => {
+    setEmuPath('');
+    setRomsDir('');
+    setEmuIcon('');
+  }, []);
+
   const requestConfirmation = (message: string, onConfirm: () => void, isDanger: boolean = true) => {
     setConfirmData({
       message,
@@ -178,24 +182,44 @@ const App: React.FC = () => {
   };
 
   const triggerFileBrowser = (target: string, type: string) => {
-    const filter: any = type === 'folder' ? 'folder' : (type === 'exe' ? 'exe' : 'image');
+    // Force Modular UI
+    if (!isModularOpen) setIsModularOpen(true);
+    setLastModularModule(activeModularModule as any);
+    setActiveModularModule('explorer');
+    setExplorerMode(type === 'folder' ? 'select-folder' : (type === 'exe' ? 'select-file' : 'select-image'));
+    setExplorerSelectedPath(null);
+    setExplorer({ target });
+  };
 
-    if (isModularOpen) {
-      // Internal Modular Selection Mode
-      setLastModularModule(activeModularModule);
-      setActiveModularModule('explorer');
-      setExplorerMode(type === 'folder' ? 'select-folder' : (type === 'exe' ? 'select-file' : 'select-image'));
-      setExplorerSelectedPath(null);
-      setExplorer(prev => ({ ...prev, target })); // Still use explorer.target to know where to save
-    } else {
-      // Legacy Modal Mode
-      setExplorer({
-        isOpen: true,
-        target,
-        filter,
-        initialPath: type === 'exe' ? 'DESKTOP' : (type === 'image' ? 'PICTURES' : undefined)
+  const [lastSelectedAsset, setLastSelectedAsset] = useState<{ target: string; path: string; timestamp: number } | null>(null);
+
+  const [cloudExplorer, setCloudExplorer] = useState<{ target: string, type: 'grid' | 'hero' | 'logo' | 'banner' | 'icon', initialQuery: string } | null>(null);
+
+  const triggerCloudBrowser = (target: string, type: string, initialQuery: string = '') => {
+    if (!isModularOpen) setIsModularOpen(true);
+    setLastModularModule(activeModularModule as any);
+    setActiveModularModule('assetSearch');
+    setCloudExplorer({ target, type: type as any, initialQuery });
+  };
+
+  const handleCloudExplorerSelect = async (url: string | null) => {
+    setActiveModularModule(lastModularModule);
+    if (!url || !cloudExplorer) return;
+
+    const gameId = activeGame?.id || `temp_${Date.now()}`;
+    try {
+      const res = await fetch('/api/assets/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourcePath: url, gameId, assetType: cloudExplorer.target })
       });
+      const data = await res.json();
+      setLastSelectedAsset({ target: cloudExplorer.target, path: data.path || url, timestamp: Date.now() });
+    } catch (e) {
+      console.error("Cloud import failed", e);
+      setLastSelectedAsset({ target: cloudExplorer.target, path: url, timestamp: Date.now() });
     }
+    setCloudExplorer(null);
   };
 
   const handleExplorerSelect = (path: string) => {
@@ -204,6 +228,11 @@ const App: React.FC = () => {
     if (explorer.target === 'emuPath') setEmuPath(path);
     if (explorer.target === 'romsDir') setRomsDir(path);
     if (explorer.target === 'emuIcon') setEmuIcon(path);
+
+    // Support for GameEditForm targets
+    if (['cover', 'banner', 'logo', 'wallpaper', 'execPath'].includes(explorer.target)) {
+      setLastSelectedAsset({ target: explorer.target, path, timestamp: Date.now() });
+    }
 
     // If coming from modular selection, go back
     if (explorerMode !== 'browse') {
@@ -241,7 +270,50 @@ const App: React.FC = () => {
     setActiveProgress(0);
     setActiveIsExecuting(false);
     setActiveIsReady(false);
+    setActiveSyncId(null);
   }, [activeModularModule]);
+
+  // Contextual go-back handler for DISCONNECT button
+  const handleModularGoBack = useCallback(() => {
+    // Priority 1: Let children modules handle internal go-back
+    if (activeModularModule === 'registry' && registryGoBackRef.current) {
+      const handled = registryGoBackRef.current();
+      if (handled) return;
+    }
+    if (activeModularModule === 'assetSearch' && assetSearchGoBackRef.current) {
+      const handled = assetSearchGoBackRef.current();
+      if (handled) return;
+    }
+
+    // Priority 2: Exit sub-modules mode back to previous module (Explorer/Cloud)
+    if (activeModularModule === 'explorer' || activeModularModule === 'assetSearch') {
+      setActiveModularModule(lastModularModule as any);
+      if (activeModularModule === 'explorer') {
+        setExplorerMode('browse');
+        setExplorerSelectedPath(null);
+      } else {
+        setCloudExplorer(null);
+      }
+      return;
+    }
+
+    // Priority 3: Close any active sync/config card
+    if (activeSyncId) {
+      setActiveSyncId(null);
+      setActiveCommand(null);
+      setActiveProgress(0);
+      setActiveIsExecuting(false);
+      setActiveIsReady(false);
+      activeExecuteRef.current = undefined;
+      activeExecuteStartRef.current = undefined;
+      activeExecuteEndRef.current = undefined;
+      return;
+    }
+
+    // Priority 4: Actually close the modal
+    setIsModularOpen(false);
+    playSfx('close');
+  }, [activeSyncId, activeModularModule, lastModularModule, playSfx]);
 
   const activeExecuteRef = useRef<(() => void) | undefined>(undefined);
   const activeExecuteStartRef = useRef<(() => void) | undefined>(undefined);
@@ -262,12 +334,20 @@ const App: React.FC = () => {
     const actualExecStart = typeof _scrollProgress === 'function' ? _scrollProgress : execStart;
     const actualExecEnd = typeof _showScrollMarker === 'function' ? _showScrollMarker : execEnd;
 
-    // 1. Update refs (using null to explicitly clear)
+    // 1. Update refs (explicitly clear if undefined or null)
     if (exec !== undefined) {
       activeExecuteRef.current = exec === null ? undefined : exec;
     }
-    if (actualExecStart !== undefined) activeExecuteStartRef.current = actualExecStart === null ? undefined : actualExecStart;
-    if (actualExecEnd !== undefined) activeExecuteEndRef.current = actualExecEnd === null ? undefined : actualExecEnd;
+
+    // If command is provided, we should reset optional handlers unless explicitly provided
+    if (cmd !== undefined) {
+      activeExecuteStartRef.current = (actualExecStart === undefined || actualExecStart === null) ? undefined : actualExecStart;
+      activeExecuteEndRef.current = (actualExecEnd === undefined || actualExecEnd === null) ? undefined : actualExecEnd;
+    } else {
+      // Partial updates
+      if (actualExecStart !== undefined) activeExecuteStartRef.current = actualExecStart === null ? undefined : actualExecStart;
+      if (actualExecEnd !== undefined) activeExecuteEndRef.current = actualExecEnd === null ? undefined : actualExecEnd;
+    }
 
     if (isExecuting !== undefined) setActiveIsExecuting(isExecuting);
     if (isReady !== undefined) setActiveIsReady(isReady);
@@ -611,12 +691,9 @@ const App: React.FC = () => {
         categories={displayCategories}
         activeIndex={currentCatIndex}
         onSelect={(idx) => switchCategory(idx, idx > currentCatIndex ? 'down' : 'up')}
-        onOpenManagement={() => {
-          setIsManagementOpen(true);
-          playSfx('select');
-        }}
-        onOpenModularTest={() => {
+        onOpenSettings={() => {
           setIsModularOpen(true);
+          setActiveModularModule('categories');
           playSfx('select');
         }}
         taskbarMargin={taskbarMargin}
@@ -666,29 +743,15 @@ const App: React.FC = () => {
       />
 
       <React.Suspense fallback={null}>
-        <ManagementModal
-          isOpen={isManagementOpen}
-          onClose={() => setIsManagementOpen(false)}
-          categories={categories}
-          currentCatIdx={currentCatIndex}
-          onUpdateCategories={setCategories}
-          accentColor={resolveColor(currentCategory?.color || '#fff')}
-          taskbarMargin={taskbarMargin}
-          onUpdateTaskbarMargin={setTaskbarMargin}
-          uiScale={uiScale}
-          onUpdateUIScale={setUIScale}
-          onResolveAsset={resolveAsset}
-          bumpAssetVersion={bumpAssetVersion}
-          isSecretUnlocked={isSecretUnlocked}
-          resolveColor={resolveColor}
-          onNotification={setNotification}
-          includeAssets={globalIncludeAssets}
-          setIncludeAssets={setGlobalIncludeAssets}
-        />
         {isModularOpen && (() => {
           const getBaseColor = (mod: string) => {
-            if (mod === 'games') return '#00ff00';
-            if (mod === 'explorer') return categories[currentCatIndex]?.color || '#00ffcc';
+            const agc = allGamesCategory as any;
+            if (mod === 'categories') return agc?.configColor || '#ff0055';
+            if (mod === 'system') return agc?.coreColor || '#9acd32';
+            if (mod === 'registry') return agc?.nodeColor || '#ff00ff';
+            if (mod === 'integrations') return agc?.syncColor || '#22c55e';
+            if (mod === 'assets') return agc?.assetColor || '#a855f7';
+            if (mod === 'explorer' || mod === 'assetSearch') return agc?.explorerColor || categories[currentCatIndex]?.color || '#00ffff';
             return '#00ffcc';
           };
 
@@ -700,57 +763,44 @@ const App: React.FC = () => {
           return (
             <ModularModal
               isOpen={isModularOpen}
-              onClose={() => {
-                if (activeModularModule === 'explorer') {
-                  setActiveModularModule(lastModularModule);
-                } else {
-                  setIsModularOpen(false);
-                }
-                playSfx('close');
-              }}
+              onClose={handleModularGoBack}
               accentColor={resolvedModularAccent}
               commandText={
-                explorerMode === 'select-file' ? 'CONFIRM_SELECTION' :
-                  explorerMode === 'select-folder' ? 'CONFIRM_DIRECTORY' :
-                    explorerMode === 'select-image' ? 'CONFIRM_IMAGE' :
-                      activeCommand?.text || (
-                        activeModularModule === 'system' ? 'SYS_AUDIT' :
-                          activeModularModule === 'integrations' ? 'API_HANDSHAKE' :
-                            activeModularModule === 'categories' ? 'CATALOG_INDEX' :
-                              activeModularModule === 'games' ? 'PROTOCOL_HUB' :
-                                activeModularModule === 'explorer' ? 'FS_SURVEILLANCE' : 'UNKNOWN'
-                      )
+                explorerMode !== 'browse' ? (
+                  explorer.target === 'emuPath' ? t('explorer.command_emu_exe') :
+                    explorer.target === 'execPath' ? t('explorer.command_game_exe') :
+                      explorer.target === 'romsDir' ? t('explorer.command_rom_dir') :
+                        ['cover', 'banner', 'logo', 'wallpaper'].includes(explorer.target) ? t('explorer.command_image') :
+                          activeCommand?.text || t('explorer.unknown')
+                ) : (activeCommand?.text || t(`module.${activeModularModule}.title`))
               }
               commandDesc={
-                explorerMode !== 'browse' ? `SELeCCIONA EL ELEMENTO DESEADO Y PRESIONA EXECUTE PARA VINCULAR. RUTA_ACTUAL::${explorerSelectedPath || explorerCurrentPath}` :
-                  activeCommand?.desc || (
-                    activeModularModule === 'system' ? 'MONITOR DE RECURSOS Y ESTADO DEL NUCLEO.' :
-                      activeModularModule === 'integrations' ? 'GESTION DE SERVICIOS EXTERNOS Y SINCRONIZACION.' :
-                        activeModularModule === 'categories' ? 'ORGANIZACION GEOMETRICA DE LA BIBLIOTECA.' :
-                          activeModularModule === 'games' ? 'HUB DE PROTOCOLOS DE SINCRONIZACION DE JUEGOS.' :
-                            activeModularModule === 'assets' ? 'CONFIGURACION DE RECURSOS VISUALES Y METADATOS.' :
-                              activeModularModule === 'explorer' ? 'EXPLORADOR DE ARCHIVOS Y NODOS DE ALMACENAMIENTO.' : 'FALLBACK_PROTOCOL_ACTIVE.'
-                  )
+                explorerMode !== 'browse' ? (
+                  explorer.target === 'emuPath' ? t('explorer.desc_emu_exe') :
+                    explorer.target === 'execPath' ? t('explorer.desc_game_exe') :
+                      explorer.target === 'romsDir' ? t('explorer.desc_rom_dir') :
+                        ['cover', 'banner', 'logo', 'wallpaper'].includes(explorer.target) ? t('explorer.desc_image') :
+                          t('explorer.desc_selection').replace('{{path}}', explorerSelectedPath || explorerCurrentPath)
+                ) : (activeCommand?.desc || t(`module.${activeModularModule}.desc`))
               }
-              onExecute={activeCommand && activeExecuteRef.current ? () => activeExecuteRef.current?.() : undefined}
+              onExecute={
+                explorerMode !== 'browse'
+                  ? () => handleExplorerSelect(explorerSelectedPath || explorerCurrentPath)
+                  : (activeCommand && activeExecuteRef.current ? () => activeExecuteRef.current?.() : undefined)
+              }
               onExecuteStart={activeCommand && activeExecuteStartRef.current ? () => activeExecuteStartRef.current?.() : undefined}
               onExecuteEnd={activeCommand && activeExecuteEndRef.current ? () => activeExecuteEndRef.current?.() : undefined}
               progress={activeProgress}
               isExecuting={activeIsExecuting}
-              isReady={explorerMode !== 'browse' ? !!(explorerSelectedPath || explorerCurrentPath) : activeIsReady}
+              isReady={explorerMode !== 'browse' ? !!(explorerSelectedPath || (explorerMode === 'select-folder' && explorerCurrentPath)) : activeIsReady}
               scrollProgress={modularScrollProgress}
               showScrollMarker={showModularScrollMarker}
             >
               <ModularHeader
                 title="MODULAR_RECONSTRUCTION_ALPHA"
                 accentColor={resolvedModularAccent}
-                onClose={() => {
-                  if (activeModularModule === 'explorer') {
-                    setActiveModularModule(lastModularModule);
-                  } else {
-                    setIsModularOpen(false);
-                  }
-                }}
+                onClose={handleModularGoBack}
+                closeLabel={activeSyncId || activeModularModule === 'explorer' || registryCanGoBack || assetSearchCanGoBack || activeModularModule === 'assetSearch' ? t('nav.go_back') : undefined}
                 t={t}
                 style={{ backgroundColor: `${resolvedModularAccent}26` }}
               />
@@ -761,8 +811,8 @@ const App: React.FC = () => {
                   style={{ backgroundColor: `${resolvedModularAccent}26` }}
                 >
                   <div className="flex flex-col w-full">
-                    {/* Primary Application Modules (EXPLORER removed from main sequential list) */}
-                    {['system', 'games', 'assets'].map(mod => {
+                    {/* Primary Application Modules */}
+                    {['categories', 'registry', 'system', 'integrations', 'assets'].map(mod => {
                       const isActive = activeModularModule === mod;
                       // Only hide other modules when in EXPLORER to focus on drives/vaults
                       if (activeModularModule === 'explorer') return null;
@@ -772,6 +822,11 @@ const App: React.FC = () => {
                           key={mod}
                           onClick={() => {
                             setActiveModularModule(mod as any);
+                            setActiveSyncId(null);
+                            setActiveCommand(null);
+                            activeExecuteRef.current = undefined;
+                            activeExecuteStartRef.current = undefined;
+                            activeExecuteEndRef.current = undefined;
                             playSfx('move');
                           }}
                           className={`w-full py-[18px] px-[20px] transition-all duration-150 font-['Space_Mono'] font-bold text-[10px] uppercase tracking-[0.3em] flex items-center cursor-pointer mb-0`}
@@ -781,7 +836,7 @@ const App: React.FC = () => {
                           }}
                         >
                           <div className={`w-[2px] h-[12px] mr-3 transition-all ${isActive ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundColor: resolvedModularAccent }} />
-                          {mod === 'system' ? 'CONFIG_CORE' : mod === 'games' ? 'SYNC_CORE' : mod === 'assets' ? 'ASSET_CORE' : mod.toUpperCase()}
+                          {t(`module.${mod}.title`)}
                         </div>
                       );
                     })}
@@ -849,155 +904,109 @@ const App: React.FC = () => {
                 {/* Module Content Area - Green Zone (Transparent) */}
                 <div className="flex-1 flex flex-col overflow-hidden relative mt-0 mb-[88px] bg-transparent">
                   <React.Suspense fallback={<div className="flex-1 flex items-center justify-center font-mono opacity-20 uppercase tracking-widest text-[10px]">Loading Module...</div>}>
-                    {activeModularModule === 'system' ? (
-                      <div ref={modularScrollRef} className="flex flex-col overflow-y-auto custom-scrollbar flex-1 pl-[18px] pr-[52px] pt-[18px] pb-0">
-                        <div className="flex flex-col gap-[16px] p-0">
-                          <LanguageConfigCard
-                            isActive={activeSyncId === 'language'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'language' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            onCommandUpdate={handleCommandUpdate}
-                            currentLanguage={language}
-                            setLanguage={setLanguage}
-                          />
-                          <AppearanceConfigCard
-                            isActive={activeSyncId === 'appearance'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'appearance' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            onCommandUpdate={handleCommandUpdate}
-                            allGamesCategory={allGamesCategory}
-                            onUpdateCategories={setCategories}
-                            taskbarMargin={taskbarMargin}
-                            onUpdateTaskbarMargin={setTaskbarMargin}
-                            uiScale={uiScale}
-                            onUpdateUIScale={setUIScale}
-                          />
-                          <PerformanceConfigCard
-                            isActive={activeSyncId === 'performance'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'performance' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            onCommandUpdate={handleCommandUpdate}
-                            allGamesCategory={allGamesCategory}
-                            onUpdateCategories={setCategories}
-                          />
-                          <DataManagementConfigCard
-                            isActive={activeSyncId === 'data'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'data' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            onCommandUpdate={handleCommandUpdate}
-                            allGamesCategory={allGamesCategory}
-                            onUpdateCategories={setCategories}
-                          />
-                        </div>
+
+                    {/* CATEGORIES */}
+                    <div className={`flex-1 flex-col overflow-y-auto custom-scrollbar pl-[18px] pr-[52px] pt-[18px] pb-0 ${activeModularModule === 'categories' ? 'flex' : 'hidden'}`} ref={modularScrollRef}>
+                      <ModularCategoriesModule
+                        categories={categories}
+                        activeAccent={resolvedModularAccent}
+                        onResolveAsset={resolveAsset}
+                        handleCreateCategory={handleCreateCategory}
+                        handleDeleteCategory={handleDeleteCategory}
+                        handleMoveCategory={handleMoveCategory}
+                        handleMoveGameInCategory={handleMoveGameInCategory}
+                        handleToggleGameInCategory={handleToggleGameInCategory}
+                        handleFetchMissingAssets={handleFetchMissingAssets}
+                        triggerFileBrowser={triggerFileBrowser}
+                        onUpdateCategories={setCategories}
+                        requestConfirmation={requestConfirmation}
+                        onCommandUpdate={handleCommandUpdate}
+                      />
+                    </div>
+
+                    {/* SYSTEM */}
+                    <div className={`flex-1 flex-col overflow-y-auto custom-scrollbar pl-[18px] pr-[52px] pt-[18px] pb-0 ${activeModularModule === 'system' ? 'flex' : 'hidden'}`} ref={modularScrollRef}>
+                      <div className="flex flex-col gap-[16px] p-0">
+                        <LanguageConfigCard isActive={activeSyncId === 'language'} onActiveToggle={(active) => { setActiveSyncId(active ? 'language' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} onCommandUpdate={handleCommandUpdate} currentLanguage={language} setLanguage={setLanguage} />
+                        <AppearanceConfigCard isActive={activeSyncId === 'appearance'} onActiveToggle={(active) => { setActiveSyncId(active ? 'appearance' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} onCommandUpdate={handleCommandUpdate} allGamesCategory={allGamesCategory} onUpdateCategories={setCategories} taskbarMargin={taskbarMargin} onUpdateTaskbarMargin={setTaskbarMargin} uiScale={uiScale} onUpdateUIScale={setUIScale} />
+                        <PerformanceConfigCard isActive={activeSyncId === 'performance'} onActiveToggle={(active) => { setActiveSyncId(active ? 'performance' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} onCommandUpdate={handleCommandUpdate} allGamesCategory={allGamesCategory} onUpdateCategories={setCategories} />
+                        <DataManagementConfigCard isActive={activeSyncId === 'data'} onActiveToggle={(active) => { setActiveSyncId(active ? 'data' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} onCommandUpdate={handleCommandUpdate} allGamesCategory={allGamesCategory} onUpdateCategories={setCategories} />
                       </div>
-                    ) : activeModularModule === 'games' ? (
-                      <div ref={modularScrollRef} className="flex flex-col overflow-y-auto custom-scrollbar flex-1 pl-[18px] pr-[52px] pt-[18px] pb-0">
-                        <div className="flex flex-col gap-[16px] p-0">
-                          <SteamSync
-                            isActive={activeSyncId === 'valve'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'valve' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            handleSyncSteamLibrary={handleSyncSteamLibrary}
-                            onCommandUpdate={handleCommandUpdate}
-                          />
-                          <XboxSync
-                            isActive={activeSyncId === 'xbox'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'xbox' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            handleSyncXboxLibrary={handleSyncXboxLibrary}
-                            onCommandUpdate={handleCommandUpdate}
-                            includeAssets={globalIncludeAssets}
-                            setIncludeAssets={setGlobalIncludeAssets}
-                            sgdbEnabled={sgdbEnabled}
-                          />
-                          <EmuSync
-                            isActive={activeSyncId === 'emu'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'emu' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            handleSyncEmuLibrary={handleSyncEmuLibrary}
-                            triggerFileBrowser={triggerFileBrowser}
-                            emuPath={emuPath}
-                            romsDir={romsDir}
-                            emuIcon={emuIcon}
-                            onCommandUpdate={handleCommandUpdate}
-                            includeAssets={globalIncludeAssets}
-                            setIncludeAssets={setGlobalIncludeAssets}
-                            sgdbEnabled={sgdbEnabled}
-                          />
-                        </div>
+                    </div>
+
+                    {/* REGISTRY */}
+                    <div className={`flex-1 flex-col overflow-hidden relative ${activeModularModule === 'registry' ? 'flex' : 'hidden'}`}>
+                      <GameRegistryModule
+                        isActive={activeModularModule === 'registry'}
+                        accentColor={resolvedModularAccent}
+                        categories={categories}
+                        allGamesCategory={allGamesCategory}
+                        onUpdateCategories={setCategories}
+                        onCommandUpdate={handleCommandUpdate}
+                        resolveAsset={resolveAsset}
+                        triggerFileBrowser={triggerFileBrowser}
+                        triggerCloudBrowser={triggerCloudBrowser}
+                        handleSaveGame={handleSaveGame}
+                        handleDeleteGame={handleDeleteGame}
+                        sgdbKey={sgdbKey}
+                        sgdbEnabled={sgdbEnabled}
+                        lastSelectedAsset={lastSelectedAsset}
+                        onClearLastAsset={() => setLastSelectedAsset(null)}
+                        registerGoBack={(fn) => { registryGoBackRef.current = fn; }}
+                        onCanGoBackChange={setRegistryCanGoBack}
+                      />
+                    </div>
+
+                    {/* INTEGRATIONS */}
+                    <div className={`flex-1 flex-col overflow-y-auto custom-scrollbar pl-[18px] pr-[52px] pt-[18px] pb-0 ${activeModularModule === 'integrations' ? 'flex' : 'hidden'}`} ref={modularScrollRef}>
+                      <div className="flex flex-col gap-[16px] p-0">
+                        <SteamSync isActive={activeSyncId === 'valve'} onActiveToggle={(active) => { setActiveSyncId(active ? 'valve' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} handleSyncSteamLibrary={handleSyncSteamLibrary} onCommandUpdate={handleCommandUpdate} />
+                        <XboxSync isActive={activeSyncId === 'xbox'} onActiveToggle={(active) => { setActiveSyncId(active ? 'xbox' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} handleSyncXboxLibrary={handleSyncXboxLibrary} onCommandUpdate={handleCommandUpdate} includeAssets={globalIncludeAssets} setIncludeAssets={setGlobalIncludeAssets} sgdbEnabled={sgdbEnabled} />
+                        <EmuSync isActive={activeSyncId === 'emu'} onActiveToggle={(active) => { setActiveSyncId(active ? 'emu' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} handleSyncEmuLibrary={handleSyncEmuLibrary} triggerFileBrowser={triggerFileBrowser} emuPath={emuPath} romsDir={romsDir} emuIcon={emuIcon} onCommandUpdate={handleCommandUpdate} includeAssets={globalIncludeAssets} setIncludeAssets={setGlobalIncludeAssets} sgdbEnabled={sgdbEnabled} onResetFields={resetEmuFields} />
                       </div>
-                    ) : activeModularModule === 'assets' ? (
-                      <div ref={modularScrollRef} className="flex flex-col overflow-y-auto custom-scrollbar flex-1 pl-[18px] pr-[52px] pt-[18px] pb-0">
-                        <div className="flex flex-col gap-[16px] p-0">
-                          <SgdbAsset
-                            isActive={activeSyncId === 'sgdb'}
-                            onActiveToggle={(active) => {
-                              setActiveSyncId(active ? 'sgdb' : null);
-                              if (!active) setActiveCommand(null);
-                            }}
-                            accentColor={resolvedModularAccent}
-                            sgdbKey={sgdbKey}
-                            onKeyUpdate={handleUpdateSgdbKey}
-                            sgdbEnabled={sgdbEnabled}
-                            onToggleSgdb={handleToggleSgdb}
-                            onCommandUpdate={handleCommandUpdate}
-                          />
-                        </div>
+                    </div>
+
+                    {/* ASSETS */}
+                    <div className={`flex-1 flex-col overflow-y-auto custom-scrollbar pl-[18px] pr-[52px] pt-[18px] pb-0 ${activeModularModule === 'assets' ? 'flex' : 'hidden'}`} ref={modularScrollRef}>
+                      <div className="flex flex-col gap-[16px] p-0">
+                        <SgdbAsset isActive={activeSyncId === 'sgdb'} onActiveToggle={(active) => { setActiveSyncId(active ? 'sgdb' : null); if (!active) setActiveCommand(null); }} accentColor={resolvedModularAccent} sgdbKey={sgdbKey} onKeyUpdate={handleUpdateSgdbKey} sgdbEnabled={sgdbEnabled} onToggleSgdb={handleToggleSgdb} onCommandUpdate={handleCommandUpdate} />
                       </div>
-                    ) : activeModularModule === 'explorer' ? (
-                      <div ref={modularScrollRef} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col pl-[20px] pr-[52px] pt-[20px] pb-0">
-                        <ModularExplorerModule
+                    </div>
+
+                    {/* EXPLORER */}
+                    <div className={`flex-1 flex-col overflow-y-auto custom-scrollbar flex pl-[20px] pr-[52px] pt-[20px] pb-0 ${activeModularModule === 'explorer' ? 'flex' : 'hidden'}`} ref={modularScrollRef}>
+                      <ModularExplorerModule accentColor={resolvedModularAccent} currentPath={explorerCurrentPath} onPathChange={setExplorerCurrentPath} mode={explorerMode} selectedPath={explorerSelectedPath} onSelect={setExplorerSelectedPath} />
+                    </div>
+
+                    {/* ASSET SEARCH (CLOUD) */}
+                    <div className={`flex-1 flex-col overflow-y-auto custom-scrollbar flex pl-[20px] pr-[52px] pt-[20px] pb-0 ${activeModularModule === 'assetSearch' ? 'flex' : 'hidden'}`} ref={modularScrollRef}>
+                      {cloudExplorer && (
+                        <ModularAssetSearchModule
                           accentColor={resolvedModularAccent}
-                          currentPath={explorerCurrentPath}
-                          onPathChange={setExplorerCurrentPath}
-                          mode={explorerMode}
-                          selectedPath={explorerSelectedPath}
-                          onSelect={setExplorerSelectedPath}
+                          initialQuery={cloudExplorer.initialQuery}
+                          assetType={cloudExplorer.type}
+                          onSelect={handleCloudExplorerSelect}
+                          onCancel={() => {
+                            setActiveModularModule(lastModularModule);
+                            setCloudExplorer(null);
+                          }}
+                          registerGoBack={(fn) => { assetSearchGoBackRef.current = fn; }}
+                          onCanGoBackChange={setAssetSearchCanGoBack}
                         />
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex items-center justify-center relative overflow-hidden">
-                        <span className="font-['Space_Mono'] text-[10px] uppercase tracking-[1em] font-black opacity-10">
-                          [ {activeModularModule.toUpperCase()}_ZONE_AWAITING_MIGRATION ]
-                        </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+
                   </React.Suspense>
                 </div>
               </div>
             </ModularModal>
           );
         })()}
-        <FileExplorerModal
-          isOpen={explorer.isOpen}
-          onClose={() => setExplorer(prev => ({ ...prev, isOpen: false }))}
-          onSelect={(path) => handleExplorerSelect(path)}
-          filter={explorer.filter}
-          accentColor={resolveColor(categories[currentCatIndex]?.color || '#00ffff')}
-          initialPath={explorer.initialPath}
-        />
-        {confirmData && (
+      </React.Suspense>
+
+      {
+        confirmData && (
           <div className="fixed inset-0 z-[3000] bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
             <div className="max-w-[400px] w-full border border-red-500/20 bg-red-950/10 p-6 flex flex-col gap-6" style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }}>
               <h3 className="font-['Press_Start_2P'] text-[8px] text-red-500 uppercase tracking-tighter">[ ERASE_PROTOCOL ]</h3>
@@ -1018,8 +1027,8 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-      </React.Suspense>
+        )
+      }
     </div >
   );
 };

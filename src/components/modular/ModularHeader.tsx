@@ -7,6 +7,7 @@ interface ModularHeaderProps {
     subtitle?: string;
     accentColor: string;
     onClose: () => void;
+    closeLabel?: string;
     t: (key: string) => string;
     style?: React.CSSProperties;
 }
@@ -16,6 +17,7 @@ const ModularHeader: React.FC<ModularHeaderProps> = ({
     subtitle = `SYSTEM://PHANTOM_SHELL_V${APP_VERSION}.PROTO`,
     accentColor,
     onClose,
+    closeLabel,
     t,
     style
 }) => {
@@ -43,7 +45,7 @@ const ModularHeader: React.FC<ModularHeaderProps> = ({
                     backgroundColor: 'rgba(0,0,0,0.5)'
                 }}>
                 <span className="font-black text-[9px] uppercase tracking-[0.4em]" style={{ color: accentColor }}>
-                    {t('nav.disconnect')}
+                    {closeLabel || t('nav.disconnect')}
                 </span>
             </button>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getContrastColor } from '../../utils/colors';
+import { getContrastColor } from '../../../utils/colors';
 
 interface SubsectionProps {
     title: string;
