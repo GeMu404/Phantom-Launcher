@@ -604,7 +604,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore management or game-launching focus
-      if (isManagementOpen) return;
+      if (isManagementOpen || isModularOpen) return;
       if (appState === 'priming' && e.key !== 'Enter') return;
 
       // Use displayCategories for navigation to ensure sync
@@ -812,7 +812,7 @@ const App: React.FC = () => {
                 >
                   <div className="flex flex-col w-full">
                     {/* Primary Application Modules */}
-                    {['categories', 'registry', 'system', 'integrations', 'assets'].map(mod => {
+                    {['categories', 'registry', 'integrations', 'assets', 'system'].map(mod => {
                       const isActive = activeModularModule === mod;
                       // Only hide other modules when in EXPLORER to focus on drives/vaults
                       if (activeModularModule === 'explorer') return null;
@@ -938,6 +938,7 @@ const App: React.FC = () => {
                     <div className={`flex-1 flex-col overflow-hidden relative ${activeModularModule === 'registry' ? 'flex' : 'hidden'}`}>
                       <GameRegistryModule
                         isActive={activeModularModule === 'registry'}
+                        isSubModuleOpen={lastModularModule === 'registry' && (activeModularModule === 'explorer' || activeModularModule === 'assetSearch')}
                         accentColor={resolvedModularAccent}
                         categories={categories}
                         allGamesCategory={allGamesCategory}

@@ -291,13 +291,19 @@ export function useManagement({
 
     const handleDeleteGame = useCallback((
         gameId: string,
-        requestConfirmation: (msg: string, onConfirm: () => void, isDanger?: boolean) => void
+        requestConfirmation?: ((msg: string, onConfirm: () => void, isDanger?: boolean) => void) | null
     ) => {
-        requestConfirmation(t('registry.purge_confirmation'), async () => {
+        const executeDelete = async () => {
             await fetch('/api/games/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ gameId }) });
             onUpdateCategories(prev => prev.map(c => ({ ...c, games: c.games.filter(g => g.id !== gameId) })));
             bumpAssetVersion();
-        });
+        };
+
+        if (requestConfirmation) {
+            requestConfirmation(t('registry.purge_confirmation'), executeDelete);
+        } else {
+            executeDelete();
+        }
     }, [t, onUpdateCategories, bumpAssetVersion]);
 
     const handleWipeMasterRegistry = useCallback((

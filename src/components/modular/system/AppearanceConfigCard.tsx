@@ -223,7 +223,7 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
         { id: 'sync', label: 'SYNC_CORE', key: 'syncColor', default: '#22c55e' },
         { id: 'explorer', label: 'FILES_CORE', key: 'explorerColor', default: '#00ffff' },
         { id: 'cloud', label: 'CLOUD_CORE', key: 'sgdbColor', default: '#66c0f4' },
-        { id: 'nodes', label: 'NODES_CORE', key: 'nodeColor', default: '#06b6d4' }
+        { id: 'nodes', label: 'LIBRARY_CORE', key: 'nodeColor', default: '#06b6d4' }
     ];
 
     // Local Config State dynamically mapped from definitions

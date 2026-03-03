@@ -8,6 +8,7 @@ import GameEditForm from './GameEditForm';
 
 interface GameRegistryModuleProps {
     isActive: boolean;
+    isSubModuleOpen?: boolean;
     accentColor: string;
     categories: Category[];
     allGamesCategory: Category;
@@ -49,7 +50,7 @@ const SyncCardBorder = ({ color, isActive }: { color: string; isActive: boolean 
 };
 
 const GameRegistryModule: React.FC<GameRegistryModuleProps> = ({
-    isActive, accentColor, categories, allGamesCategory, onUpdateCategories, onCommandUpdate, resolveAsset,
+    isActive, isSubModuleOpen, accentColor, categories, allGamesCategory, onUpdateCategories, onCommandUpdate, resolveAsset,
     triggerFileBrowser,
     triggerCloudBrowser,
     handleSaveGame, handleDeleteGame, sgdbKey, sgdbEnabled, registerGoBack, onCanGoBackChange, lastSelectedAsset, onClearLastAsset
@@ -82,6 +83,14 @@ const GameRegistryModule: React.FC<GameRegistryModuleProps> = ({
     useEffect(() => {
         if (onCanGoBackChange) onCanGoBackChange(view === 'edit' || isDiscoveryOpen);
     }, [view, isDiscoveryOpen, onCanGoBackChange]);
+
+    useEffect(() => {
+        if (!isActive && !isSubModuleOpen) {
+            setView('list');
+            setEditingGame(null);
+            setIsDiscoveryOpen(false);
+        }
+    }, [isActive, isSubModuleOpen]);
 
     // Staged states for "Execute" pattern
     const [stagedSearchQuery, setStagedSearchQuery] = useState('');
@@ -151,12 +160,12 @@ const GameRegistryModule: React.FC<GameRegistryModuleProps> = ({
     };
 
     const cardClip = `polygon(
-        12px 0, 
-        100% 0, 
-        100% calc(100% - 12px), 
-        calc(100% - 12px) 100%, 
-        0 100%, 
-        0 12px
+        0 0, 
+        calc(100% - 20px) 0, 
+        100% 20px, 
+        100% 100%, 
+        20px 100%, 
+        0 calc(100% - 20px)
     )`;
 
     if (view === 'edit') {
@@ -175,7 +184,11 @@ const GameRegistryModule: React.FC<GameRegistryModuleProps> = ({
                 onCommandUpdate={onCommandUpdate}
                 lastSelectedAsset={lastSelectedAsset}
                 onClearLastAsset={onClearLastAsset}
-                onDelete={editingGame ? (id) => handleDeleteGame(id, null) : undefined}
+                onDelete={editingGame ? (id) => {
+                    handleDeleteGame(id, null);
+                    setView('list');
+                    setEditingGame(null);
+                } : undefined}
                 isActive={isActive}
             />
         );

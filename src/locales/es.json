@@ -84,7 +84,7 @@
   "system_tab": {
     "interface_control_matrix": "Matriz_Control_Interfaz",
     "assets_hex": "Recursos_Hex",
-    "nodes_hex": "Nodos_Hex",
+    "nodes_hex": "Librerias_Hex",
     "sync_hex": "Sinc_Hex",
     "core_hex": "Nucleo_Hex",
     "neural_terminal_icon": "Icono_Terminal_Neuronal",
@@ -252,7 +252,7 @@
       "desc": "ORGANIZACION GEOMETRICA DE LA BIBLIOTECA."
     },
     "categories": {
-      "title": "NODES_CORE",
+      "title": "LIBRARY_CORE",
       "desc": "MATRIZ DE NODOS Y CATEGORIZACION.",
       "node_configuration": "CONFIG_NODO: {{name}}",
       "back_to_grid": "VOLVER_AL_GRID",
@@ -277,7 +277,7 @@
       "detach": "DESVINCULAR",
       "create_new_node": "INICIALIZAR_NUEVO_NODO",
       "purge": "PURGAR",
-      "active_nodes_indices": "INDICES_NODOS_ACTIVOS",
+      "active_nodes_indices": "INDICES_LIBRERIAS_ACTIVAS",
       "node_monitor": "MONITOR_NODO",
       "units_in_memory": "UNIDADES_EN_MEMORIA",
       "registered_units": "REGISTRADAS",

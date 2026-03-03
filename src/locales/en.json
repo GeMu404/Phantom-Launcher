@@ -84,7 +84,7 @@
   "system_tab": {
     "interface_control_matrix": "Interface_Control_Matrix",
     "assets_hex": "Assets_Hex",
-    "nodes_hex": "Nodes_Hex",
+    "nodes_hex": "Library_Hex",
     "sync_hex": "Sync_Hex",
     "core_hex": "Core_Hex",
     "neural_terminal_icon": "Neural_Terminal_Icon",
@@ -252,7 +252,7 @@
       "desc": "GEOMETRIC LIBRARY ORGANIZATION."
     },
     "categories": {
-      "title": "NODES_CORE",
+      "title": "LIBRARY_CORE",
       "desc": "NODE MATRIX AND CATEGORIZATION.",
       "node_configuration": "NODE_CONFIGURATION: {{name}}",
       "back_to_grid": "BACK_TO_GRID",
@@ -277,7 +277,7 @@
       "detach": "DETACH",
       "create_new_node": "INITIALIZE_NEW_NODE",
       "purge": "PURGE",
-      "active_nodes_indices": "ACTIVE_NODES_INDICES",
+      "active_nodes_indices": "ACTIVE_LIBRARY_INDICES",
       "node_monitor": "NODE_MONITOR",
       "units_in_memory": "UNITS_IN_MEMORY",
       "registered_units": "REGISTERED",

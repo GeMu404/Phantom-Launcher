@@ -79,6 +79,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
     useEffect(() => {
         if (!isActive) {
             setIsDestructionActive(false);
+            onCommandUpdate(null, null, 0, false, false);
             return;
         }
 
@@ -107,13 +108,14 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                 !!formData.title.trim() && !!formData.execPath.trim()
             );
         }
+    }, [isDestructionActive, holdProgress, formData, onSave, onCommandUpdate, t, game, handleDeleteStart, handleDeleteEnd, isActive]);
 
+    useEffect(() => {
         return () => {
             if (holdTimerRef.current) clearInterval(holdTimerRef.current);
-            // Clear command when inactive or unmounting
             onCommandUpdate(null, null, 0, false, false);
         };
-    }, [isDestructionActive, holdProgress, formData, onSave, onCommandUpdate, t, game, handleDeleteStart, handleDeleteEnd, isActive]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const DestructionToggle: React.FC = () => {
         if (!game) return null;
@@ -122,23 +124,23 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                 onClick={() => setIsDestructionActive(!isDestructionActive)}
                 className="relative h-[48px] overflow-hidden cursor-pointer select-none border border-white/5 transition-all group active:scale-95"
                 style={{
-                    backgroundColor: isDestructionActive ? 'rgba(239, 68, 68, 0.1)' : 'rgba(251, 191, 36, 0.05)',
-                    clipPath: 'polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px)'
+                    background: isDestructionActive ? 'rgba(239, 68, 68, 0.15)' : `linear-gradient(${accentColor}22, ${accentColor}22), #080808bf`,
+                    clipPath: clipCut
                 }}
             >
                 <div className="absolute inset-0 flex items-center justify-center gap-4">
                     <div
-                        className={`w-1.5 h-1.5 rounded-full ${isDestructionActive ? 'bg-red-500 animate-pulse' : 'bg-amber-400'}`}
-                        style={{ boxShadow: `0 0 10px ${isDestructionActive ? '#ef4444' : '#fbbf24'}` }}
+                        className={`w-1.5 h-1.5 rounded-full ${isDestructionActive ? 'bg-red-500 animate-pulse' : 'bg-white/20 group-hover:bg-white/40 transition-colors'}`}
+                        style={{ boxShadow: isDestructionActive ? '0 0 10px #ef4444' : 'none' }}
                     />
                     <span
-                        className={`text-[9px] font-black tracking-[0.4em] uppercase transition-colors ${isDestructionActive ? 'text-red-400' : 'text-amber-400/60 group-hover:text-amber-400'}`}
+                        className={`text-[9px] font-black tracking-[0.4em] uppercase transition-colors ${isDestructionActive ? 'text-red-400' : 'text-white/30 group-hover:text-white/60'}`}
                     >
                         {isDestructionActive ? '[ DESTRUCTION_LINK_ESTABLISHED ]' : 'Erase_game_PROTOCOL'}
                     </span>
                     <div
-                        className={`w-1.5 h-1.5 rounded-full ${isDestructionActive ? 'bg-red-500 animate-pulse' : 'bg-amber-400'}`}
-                        style={{ boxShadow: `0 0 10px ${isDestructionActive ? '#ef4444' : '#fbbf24'}` }}
+                        className={`w-1.5 h-1.5 rounded-full ${isDestructionActive ? 'bg-red-500 animate-pulse' : 'bg-white/20 group-hover:bg-white/40 transition-colors'}`}
+                        style={{ boxShadow: isDestructionActive ? '0 0 10px #ef4444' : 'none' }}
                     />
                 </div>
             </div>
@@ -153,7 +155,7 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
         }
     }, [lastSelectedAsset, onClearLastAsset]);
 
-    const clipCut = 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)';
+    const clipCut = 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))';
 
     // Asset slot with dual mode (local/cloud) on hover
     const AssetSlot = ({ value, field, label, imgAspect }: { value: string, field: 'cover' | 'banner' | 'logo' | 'wallpaper', label: string, imgAspect?: string }) => (
@@ -161,12 +163,12 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
             <span className="text-[5px] font-black opacity-25 uppercase tracking-[0.25em] ml-0.5 shrink-0">{label}</span>
             <div className={`relative w-full bg-white/[0.02] border border-white/5 overflow-hidden hover:border-white/15 transition-colors ${imgAspect || ''}`} style={{ clipPath: clipCut }}>
                 {value ? (
-                    <img src={resolveAsset(value, 400)} className={`absolute inset-0 w-full h-full ${field === 'logo' ? 'object-contain p-2' : 'object-cover'} opacity-80`} loading="lazy" decoding="async" />
+                    <img src={resolveAsset(value, 400)} className={`absolute inset-0 w-full h-full ${field === 'logo' ? 'object-contain p-2' : 'object-cover'} opacity-80 z-10`} loading="lazy" decoding="async" />
                 ) : (
-                    <div className="absolute inset-0 flex items-center justify-center font-mono text-[5px] opacity-10 uppercase">NO_DATA</div>
+                    <div className="absolute inset-0 flex items-center justify-center font-mono text-[5px] opacity-10 uppercase z-10">NO_DATA</div>
                 )}
                 {/* Hover actions overlay */}
-                <div className="absolute inset-0 flex flex-col opacity-0 hover:opacity-100 transition-opacity duration-200">
+                <div className="absolute inset-0 flex flex-col opacity-0 hover:opacity-100 transition-opacity duration-200 z-20">
                     <div className="flex-1 flex items-center justify-center cursor-pointer bg-black/60 hover:bg-black/70 transition-colors" onClick={() => triggerFileBrowser(field, 'image')}>
                         <span className="text-[6px] font-black uppercase tracking-[0.15em] text-white/80">[ LOCAL ]</span>
                     </div>
@@ -272,10 +274,10 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                         <div className="flex-1 flex flex-col gap-1">
                             <label className="text-[5px] font-black opacity-20 uppercase tracking-[0.3em]">Execution_Path</label>
                             <div className="flex gap-1.5">
-                                <div className="flex-1 border border-white/5 px-3 py-2" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 6px 100%, 0 calc(100% - 6px))' }}>
+                                <div className="flex-1 border border-white/5 px-3 py-2" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px))' }}>
                                     <input value={formData.execPath} onChange={e => setFormData({ ...formData, execPath: e.target.value })} className="w-full bg-transparent border-none outline-none font-mono text-[7px] text-white/40 truncate" placeholder="C:\\PATH\\TARGET.EXE" />
                                 </div>
-                                <button onClick={() => triggerFileBrowser('execPath', 'exe')} className="px-2.5 border border-white/5 text-[6px] font-black hover:bg-white/8 transition-all" style={{ color: accentColor }}>[..]</button>
+                                <button onClick={() => triggerFileBrowser('execPath', 'exe')} className="w-10 border border-white/5 text-[6px] font-black flex items-center justify-center hover:bg-white/8 transition-all" style={{ color: accentColor, clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%)' }}>[..]</button>
                             </div>
                         </div>
                         <div className="w-px bg-white/5 my-1" />
@@ -304,12 +306,12 @@ const GameEditForm: React.FC<GameEditFormProps> = ({
                                     key={cat.id}
                                     onClick={() => setFormData(p => ({ ...p, categoryIds: active ? p.categoryIds.filter(id => id !== cat.id) : [...p.categoryIds, cat.id] }))}
                                     className="aspect-square flex items-center justify-center transition-all relative group"
-                                    style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }}
+                                    style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}
                                     title={cat.name}
                                 >
                                     <div className="absolute inset-0" style={{ backgroundColor: active ? `${cat.color}33` : 'transparent' }} />
                                     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 32 32" fill="none">
-                                        <polygon points="4,0 32,0 32,28 28,32 0,32 0,4" stroke={active ? cat.color : 'rgba(255,255,255,0.08)'} strokeWidth={active ? '2' : '1'} fill="none" />
+                                        <polygon points="0,0 24,0 32,8 32,32 8,32 0,24" stroke={active ? cat.color : 'rgba(255,255,255,0.08)'} strokeWidth={active ? '2' : '1'} fill="none" />
                                     </svg>
                                     <div
                                         className="w-[22px] h-[22px] relative z-10 transition-opacity"
