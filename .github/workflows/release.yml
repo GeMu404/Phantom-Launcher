@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -31,7 +31,7 @@ jobs:
 
       - name: Package Assets
         run: |
-          Compress-Archive -Path phantom_app/* -DestinationPath PhantomLauncher_v${{ github.ref_name }}.zip
+          Get-ChildItem -Path phantom_app | Compress-Archive -DestinationPath PhantomLauncher_v${{ github.ref_name }}.zip -Force
         shell: pwsh
 
       - name: Create GitHub Release

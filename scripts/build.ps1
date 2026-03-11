@@ -35,7 +35,16 @@ if (-not (Test-Path "dist")) { throw "Frontend build failed: 'dist' folder not f
 # 4. Build Server & Executable
 Write-Host "[4/5] Compiling Server & Packaging EXE..." -ForegroundColor Yellow
 npm run build:server
+if ($LASTEXITCODE -ne 0) { throw "npm run build:server failed with exit code $LASTEXITCODE." }
+
 npm run build:exe
+if ($LASTEXITCODE -ne 0) { throw "npm run build:exe failed with exit code $LASTEXITCODE." }
+
+if (-not (Test-Path "phantom_app/PhantomServer.exe")) {
+    Write-Host "Contents of phantom_app:" -ForegroundColor Yellow
+    ls phantom_app | Out-String | Write-Host
+    throw "Fatal: PhantomServer.exe was not generated."
+}
 
 # 5. Assemble Final Package
 Write-Host "[5/5] Assembling final distribution package..." -ForegroundColor Yellow
