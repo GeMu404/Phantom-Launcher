@@ -12,9 +12,10 @@ interface GameInfoProps {
   taskbarMargin?: number;
   onResolveAsset: (path: string | undefined) => string;
   performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
+  outerGlowEnabled?: boolean;
 }
 
-const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color: rawColor, isLaunching, onLaunch, taskbarMargin = 0, onResolveAsset, performanceMode = 'balanced' }) => {
+const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color: rawColor, isLaunching, onLaunch, taskbarMargin = 0, onResolveAsset, performanceMode = 'balanced', outerGlowEnabled = true }) => {
   const color = rawColor;
   const logoRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,11 +82,13 @@ const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color: rawColor, i
             src={onResolveAsset(game.logo)}
             alt={game.title}
             className="max-h-full w-auto max-w-full object-contain object-right-bottom"
-            style={performanceMode === 'high'
-              ? { filter: `drop-shadow(0 0 2px #fff) drop-shadow(0 0 12px ${color}) drop-shadow(0 0 30px ${color})` }
-              : performanceMode === 'balanced'
-                ? { filter: `drop-shadow(0 0 10px ${color})` }
-                : {}
+            style={outerGlowEnabled
+              ? (performanceMode === 'high'
+                ? { filter: `drop-shadow(0 0 2px #fff) drop-shadow(0 0 12px ${color}) drop-shadow(0 0 30px ${color})` }
+                : performanceMode === 'balanced'
+                  ? { filter: `drop-shadow(0 0 10px ${color})` }
+                  : {})
+              : {}
             }
           />
         ) : (
@@ -99,7 +102,7 @@ const GameInfo: React.FC<GameInfoProps> = React.memo(({ game, color: rawColor, i
               className="max-h-[80px] w-auto object-contain mb-2 opacity-80"
               style={{ opacity: 0.8 }}
             />
-            <h3 className="text-white font-['Press_Start_2P'] uppercase text-right leading-tight" style={{ fontSize: 'calc(10px + 0.8vh)', textShadow: `0 0 15px ${color}` }}>
+            <h3 className="text-white font-['Press_Start_2P'] uppercase text-right leading-tight" style={{ fontSize: 'calc(10px + 0.8vh)', textShadow: outerGlowEnabled ? `0 0 15px ${color}` : 'none' }}>
               {game.title}
             </h3>
           </div>

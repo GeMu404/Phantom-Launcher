@@ -30,10 +30,11 @@ const slugify = (text: string): string => {
 };
 
 const app = express();
-const port = 3000;
+const port = 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // 1. DYNAMIC BASE DIRECTORY (Handles Dev vs Prod EXE)
 const isExe = process.execPath.toLowerCase().endsWith('phantomserver.exe');
@@ -59,12 +60,22 @@ const DB_FILE = path.join(BASE_DIR, 'phantom.db');
 const db = new AppDatabase(DB_FILE);
 db.migrateFromJson(DATA_FILE);
 
-if (db.getCategories().length === 0) {
-    console.log('[Init] Creating initial categories in SQLite...');
+// Robust Initialization: Ensure "ALL GAMES" exists
+const categories = db.getCategories();
+const hasAll = categories.some(c => c.id === 'all');
+
+if (!hasAll) {
+    console.log('[Init] Creating mandatory "ALL GAMES" category...');
     db.saveCategories([
-        { id: 'all', name: 'ALL GAMES', icon: 'grid', color: '#ffffff', games: [], enabled: true },
-        { id: 'favorites', name: 'FAVORITES', icon: 'heart', color: '#ff4444', games: [], enabled: true }
+        ...categories,
+        { id: 'all', name: 'ALL GAMES', icon: './res/ui/all.png', color: '#ffffff', games: [], enabled: true }
     ]);
+}
+
+// Cleanup: Remove legacy favorites category if it exists
+if (categories.some(c => c.id === 'favorites')) {
+    console.log('[Cleanup] Removing legacy favorites category...');
+    db.saveCategories(db.getCategories().filter(c => c.id !== 'favorites'));
 }
 
 // Create shared context for route modules
@@ -92,14 +103,34 @@ app.get('/api/health', (req, res) => {
 // Endpoint to launch the file
 app.post('/api/launch', (req, res) => {
     try {
-        const { path: execPath, args: execArgs = '', gameId } = req.body;
+        const { path: execPath, args: execArgs = '', gameId, romPath } = req.body as { path: string, args: string, gameId?: string, romPath?: string };
         if (!execPath) return res.status(400).json({ error: 'No path provided' });
-        console.log(`[Server] Executing: ${execPath} ${execArgs}`);
+
+        let finalArgs = execArgs;
+
+        // 1. Resolve Variables: Replace common placeholders if data is available
+        if (romPath) {
+            finalArgs = finalArgs.replace(/%ROM%/g, romPath);
+            finalArgs = finalArgs.replace(/%EXEC_DIR%/g, path.dirname(romPath));
+        }
+
+        // 2. Emulator Shortcut Redundancy Guard:
+        // If the target is a .lnk (internal emulator shortcut) and it STILL contains %ROM%,
+        // it means replacement failed or the user is launching a raw scan template.
+        // We clear finalArgs here because the .lnk itself ALREADY contains the correctly resolved target+args+rom.
+        // Passing them again results in double-arguments (e.g. PCSX2 fails as it thinks flags are part of filename).
+        if (execPath.toLowerCase().endsWith('.lnk') && finalArgs.includes('%ROM%')) {
+            console.log(`[Server] Detected internal .lnk launch for ${gameId}. Clearing redundant template args.`);
+            finalArgs = '';
+        }
+
+        console.log(`[Server] Final Execution: ${execPath} ${finalArgs}`);
 
         if (gameId) {
             try {
                 db.updateGameLastPlayed(gameId);
                 console.log(`[Server] Updated lastPlayed for ${gameId} in DB`);
+                (app as any).broadcastSyncEvent?.({ type: 'DATA_UPDATED' });
             } catch (err) {
                 console.error('[Server] Failed to update lastPlayed:', err);
             }
@@ -108,7 +139,8 @@ app.post('/api/launch', (req, res) => {
         if (execPath.startsWith('http') || execPath.startsWith('steam://')) {
             exec(`start "" "${execPath}"`);
         } else {
-            launchViaShell(execPath, execArgs);
+            launchViaShell(execPath, finalArgs);
+            (req.app as any).broadcastSyncEvent?.({ type: 'DATA_UPDATED' });
         }
         res.json({ success: true });
     } catch (e) {
@@ -138,4 +170,4 @@ if (frontPath) {
 // --- Setup Auto-Synchronization Engine ---
 setupSyncEngine(ctx, app);
 
-app.listen(port, '127.0.0.1', () => console.log(`[Server] Phantom Launcher Backend running at http://127.0.0.1:${port}`));
+app.listen(port, () => console.log(`[Server] Phantom Launcher Backend running at http://0.0.0.0:${port}`));

@@ -28,7 +28,7 @@ const ModularHeader: React.FC<ModularHeaderProps> = ({
         >
             {/* Removed middle line */}
 
-            <div className="flex flex-col gap-1.5 min-w-0 relative z-10">
+            <div className="flex flex-col gap-1.5 min-w-0 relative z-10 ml-4">
                 <h2 className="font-['Press_Start_2P'] text-[10px] uppercase tracking-tighter truncate" style={{ color: accentColor }}>
                     [ {title} ]
                 </h2>
@@ -39,7 +39,7 @@ const ModularHeader: React.FC<ModularHeaderProps> = ({
 
             <button
                 onClick={onClose}
-                className="px-8 h-[40px] border-2 transition-all active:scale-95 hover:bg-white/5 active:bg-white/10 shrink-0 relative z-10"
+                className="px-8 h-[40px] border-2 transition-all active:scale-95 hover:bg-white/5 active:bg-white/10 shrink-0 relative z-10 flex items-center justify-center"
                 style={{
                     borderColor: accentColor,
                     backgroundColor: 'rgba(0,0,0,0.5)'

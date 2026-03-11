@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface SteamSyncProps {
     isActive: boolean;
     onActiveToggle: (active: boolean) => void;
     accentColor: string;
-    onCommandUpdate: (command: { text: string; desc: string } | null, onExecute?: () => void, progress?: number, isExecuting?: boolean, isReady?: boolean) => void;
+    onCommandUpdate: (
+        command: { text: string; desc: string } | null,
+        onExecute?: (() => void) | null,
+        progress?: number,
+        isExecuting?: boolean,
+        isReady?: boolean,
+        _scrollProgress?: number | null,
+        _showScrollMarker?: boolean | null,
+        execStart?: (() => void) | null,
+        execEnd?: (() => void) | null
+    ) => void;
     handleSyncSteamLibrary: (options: { includeSoftware: boolean; includeAdultOnly: boolean; quiet?: boolean }) => Promise<void>;
 }
 
@@ -38,6 +48,9 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
     const cardRef = React.useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
+    const [holdProgress, setHoldProgress] = useState(0);
+    const holdTimerRef = useRef<any>(null);
+
     React.useEffect(() => {
         if (isActive && cardRef.current) {
             setTimeout(() => {
@@ -46,26 +59,10 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
         }
     }, [isActive]);
 
-    React.useEffect(() => {
-        if (isActive) {
-            onCommandUpdate(
-                {
-                    text: t('steam.command_sync'),
-                    desc: t('steam.desc_sync')
-                },
-                handleExecuteSync,
-                0,
-                isExecuting,
-                true
-            );
-        }
-    }, [isActive, isExecuting, software, adult, t]);
-
-    const handleExecuteSync = async () => {
+    const handleExecuteSync = useCallback(async () => {
         if (isExecuting) return;
         setIsExecuting(true);
 
-        // Progress Simulation for visual feedback on the badge
         let prog = 0;
         onCommandUpdate(
             { text: t('steam.command_sync'), desc: t('steam.syncing') },
@@ -88,10 +85,9 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
         }, 60);
 
         try {
-            await handleSyncSteamLibrary({ includeSoftware: software, includeAdultOnly: adult, quiet: true });
+            await handleSyncSteamLibrary({ includeSoftware: software, includeAdultOnly: adult, quiet: false });
             clearInterval(interval);
 
-            // 1. Force 100% progress immediately upon real sync finish
             onCommandUpdate(
                 { text: t('steam.command_sync'), desc: t('steam.complete') },
                 undefined,
@@ -100,19 +96,75 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
                 true
             );
 
-            // 2. Hold 'EXECUTED' for 500ms before resetting
             setTimeout(() => {
                 setIsExecuting(false);
                 onActiveToggle(false);
-                onCommandUpdate(null, undefined, 0, false, false); // Reset progress to 0 and close command HUD
-            }, 800); // 800ms total (extra 300ms for transition feel)
+            }, 800);
 
         } catch (error) {
             clearInterval(interval);
             setIsExecuting(false);
             onCommandUpdate({ text: 'SYNC_ERROR', desc: 'ST_PROTOCOL_FAILURE: CHECK_CONNECTION' }, handleExecuteSync, 0, false, true);
         }
-    };
+    }, [isExecuting, onCommandUpdate, t, handleSyncSteamLibrary, software, adult, onActiveToggle]);
+
+    const handleHoldStart = useCallback(() => {
+        if (isExecuting) return;
+        setHoldProgress(0);
+        const start = Date.now();
+        const duration = 1000;
+        holdTimerRef.current = setInterval(() => {
+            const elapsed = Date.now() - start;
+            const p = Math.min(100, (elapsed / duration) * 100);
+            setHoldProgress(p);
+            if (p >= 100) {
+                clearInterval(holdTimerRef.current);
+                handleExecuteSync();
+                setHoldProgress(0);
+            }
+        }, 30);
+    }, [isExecuting, handleExecuteSync]);
+
+    const handleHoldEnd = useCallback(() => {
+        if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        setHoldProgress(0);
+    }, []);
+
+    const executeRef = useRef(handleExecuteSync);
+    useEffect(() => { executeRef.current = handleExecuteSync; }, [handleExecuteSync]);
+
+    const holdStartRef = useRef(handleHoldStart);
+    const holdEndRef = useRef(handleHoldEnd);
+    useEffect(() => { holdStartRef.current = handleHoldStart; }, [handleHoldStart]);
+    useEffect(() => { holdEndRef.current = handleHoldEnd; }, [handleHoldEnd]);
+
+    const stableStart = useCallback(() => holdStartRef.current(), []);
+    const stableEnd = useCallback(() => holdEndRef.current(), []);
+
+    useEffect(() => {
+        return () => {
+            if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        };
+    }, []);
+
+    React.useEffect(() => {
+        if (isActive) {
+            onCommandUpdate(
+                {
+                    text: 'STREAMS_SYNC_PROTOCOL',
+                    desc: t('steam.desc_sync')
+                },
+                null,
+                holdProgress,
+                isExecuting,
+                true,
+                null,
+                null,
+                stableStart,
+                stableEnd
+            );
+        }
+    }, [isActive, isExecuting, holdProgress, stableStart, stableEnd, onCommandUpdate, t]);
 
     const cardClip = `polygon(
         0 0, 
@@ -125,11 +177,7 @@ const SteamSync: React.FC<SteamSyncProps> = ({ isActive, onActiveToggle, accentC
 
     const handleToggleActive = () => {
         if (isExecuting) return;
-        const nextState = !isActive;
-        onActiveToggle(nextState);
-        if (!nextState) {
-            onCommandUpdate(null, undefined, 0, false, false);
-        }
+        onActiveToggle(!isActive);
     };
 
     return (

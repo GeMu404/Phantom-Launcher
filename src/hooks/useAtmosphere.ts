@@ -24,20 +24,19 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
         const globalWallpaper = allCat?.wallpaper || ASSETS.ui.wallpaper;
         const globalWallpaperMode = allCat?.wallpaperMode || 'cover';
         const globalGridOpacity = allCat?.gridOpacity ?? 0.15;
-        const globalCardOpacity = allCat?.cardOpacity ?? 1.0;
+        const globalLowRes = allCat?.lowResWallpaper ?? (allCat?.performanceMode === 'low');
+        const globalCardTransparency = allCat?.cardTransparencyEnabled ?? true;
+        const globalCardOpacity = allCat?.cardOpacity ?? 0.12;
         const globalBgAnim = allCat?.bgAnimationsEnabled ?? true;
         const globalCardBlur = allCat?.cardBlurEnabled ?? true;
         const globalGridEnabled = allCat?.gridEnabled ?? true;
-        const globalLowRes = allCat?.lowResWallpaper ?? (allCat?.performanceMode === 'low');
-        const globalAA = allCat?.wallpaperAAEnabled ?? (allCat?.performanceMode === 'low');
-        const globalHighQualityBlobs = allCat?.highQualityBlobs ?? (allCat?.performanceMode === 'high');
-        const globalCardTransparency = allCat?.cardTransparencyEnabled ?? true;
         const globalScanlineEnabled = allCat?.scanlineEnabled ?? true;
         const globalVignetteEnabled = allCat?.vignetteEnabled ?? true;
         const globalInnerGlow = allCat?.innerGlowEnabled ?? (allCat?.performanceMode !== 'low');
         const globalOuterGlow = allCat?.outerGlowEnabled ?? (allCat?.performanceMode === 'high');
         const globalSlimMode = allCat?.slimModeEnabled ?? false;
         const globalMonochrome = allCat?.monochromeModeEnabled ?? false;
+        const globalOutline = allCat?.outlineEnabled ?? true;
         const globalPrimingAnimation = allCat?.primingAnimation || 'waterfill';
         const globalPerformanceMode = allCat?.performanceMode || 'high';
         const finalWidth = globalLowRes ? 960 : 1920;
@@ -62,8 +61,6 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
             cardBlurEnabled: globalCardBlur,
             cardTransparencyEnabled: globalCardTransparency,
             lowResWallpaper: globalLowRes,
-            wallpaperAAEnabled: globalAA,
-            highQualityBlobs: globalHighQualityBlobs,
             bgAnimationsEnabled: globalBgAnim,
             gridEnabled: globalGridEnabled,
             scanlineEnabled: globalScanlineEnabled,
@@ -72,6 +69,7 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
             outerGlowEnabled: globalOuterGlow,
             slimModeEnabled: globalSlimMode,
             monochromeModeEnabled: globalMonochrome,
+            outlineEnabled: globalOutline,
             primingAnimation: globalPrimingAnimation,
             performanceMode: globalPerformanceMode
         };

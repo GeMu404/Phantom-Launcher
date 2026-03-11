@@ -9,6 +9,13 @@ interface GameTrackProps {
   activeIdx: number;
   color: string;
   appState: AppState;
+  progress?: number;
+  isExecuting?: boolean;
+  isReady?: boolean;
+  scrollProgress?: number | (() => void) | null;
+  showScrollMarker?: boolean | (() => void) | null;
+  closeLabel?: string;
+  t?: any;
   cardOpacity?: number;
   cardBlurEnabled?: boolean;
   cardTransparencyEnabled?: boolean;
@@ -17,6 +24,7 @@ interface GameTrackProps {
   innerGlowEnabled?: boolean;
   outerGlowEnabled?: boolean;
   slimModeEnabled?: boolean;
+  outlineEnabled?: boolean;
   primingAnimation?: 'waterfill' | 'scanline' | 'ignition' | 'charge' | 'shockwave' | 'glow_pulse';
   onSelect: (index: number) => void;
   onLaunch: () => void;
@@ -25,7 +33,14 @@ interface GameTrackProps {
 const GameTrack: React.FC<GameTrackProps> = React.memo(({
   games, activeIdx, color: rawColor, appState, cardOpacity = 0.7, cardBlurEnabled = true, cardTransparencyEnabled = true,
   onSelect, onLaunch, onResolveAsset, performanceMode = 'balanced', innerGlowEnabled = true, outerGlowEnabled = true,
-  slimModeEnabled = false, primingAnimation = 'waterfill'
+  slimModeEnabled = false, outlineEnabled = true, primingAnimation = 'waterfill',
+  progress,
+  isExecuting,
+  isReady,
+  scrollProgress,
+  showScrollMarker,
+  closeLabel,
+  t
 }) => {
   const color = rawColor;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -211,16 +226,14 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({
       }
     }
 
-    // PREVIOUSLY ACTIVE CARD — shrink from banner to cover
+    // PREVIOUSLY ACTIVE CARD — shrink from banner size to cover dimensions
     const oldCard = trackRef.current.querySelector(`[data-game-idx="${oldIdx}"]`) as HTMLElement;
     if (oldCard) {
       (anime as any).remove(oldCard);
-
       // Set starting dimensions (banner size) BEFORE paint
       oldCard.style.width = `${widthActive}px`;
-      oldCard.style.height = `${height + BAR_H_VAL}px`;
+      oldCard.style.height = `${height}px`;
 
-      // Animate to cover dimensions
       (anime as any)({
         targets: oldCard,
         width: widthInactive,
@@ -250,58 +263,42 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({
           paddingLeft: `${leftPadding}px` // VIRTUALIZATION OFFSET
         }}
       >
-        {/* RADIANT NEON DEFINITION */}
-        <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-          <defs>
-            <filter id="neon-shadow" x="-50%" y="-50%" width="200%" height="200%">
-              {/* Expand the shape slightly to create a clean 'halo' edge */}
-              <feMorphology in="SourceAlpha" result="expanded" operator="dilate" radius="1.5" />
-              <feGaussianBlur in="expanded" result="blur" stdDeviation="3.5" />
-              <feFlood flood-color={color} result="glowColor" />
-              <feComposite in="glowColor" in2="blur" operator="in" result="softGlow" />
-              <feMerge>
-                <feMergeNode in="softGlow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-        </svg>
+
 
         {visibleGames.map((game, i) => {
           const realIdx = startIndex + i;
           const isActive = realIdx === activeIdx;
           const cardWidth = isActive ? widthActive : widthInactive;
           const isPriming = isActive && appState === 'priming';
-          const totalHeight = isActive ? height + BAR_H_VAL : height;
 
-          // SVG border points for the full shape
-          const points = isActive
-            ? [
-              `${CUT_SIZE},0`,
-              `${cardWidth},0`,
-              `${cardWidth},${totalHeight - CUT_SIZE}`,
-              `${cardWidth - CUT_SIZE},${totalHeight}`,
-              `0,${totalHeight}`,
-              `0,${CUT_SIZE}`
-            ].join(' ')
-            : [
-              `${CUT_SIZE},0`,
-              `${cardWidth},0`,
-              `${cardWidth},${height - CUT_SIZE}`,
-              `${cardWidth - CUT_SIZE},${height}`,
-              `0,${height}`,
-              `0,${CUT_SIZE}`
-            ].join(' ');
+          const getImg = (path: string, w: number) => {
+            const res = onResolveAsset(path);
+            return res.includes('/api/proxy-image') ? `${res}&width=${w}` : res;
+          };
+          const bPoints = [
+            `${CUT_SIZE},0`,
+            `${cardWidth},0`,
+            `${cardWidth},${height - CUT_SIZE}`,
+            `${cardWidth - CUT_SIZE},${height}`,
+            `0,${height}`,
+            `0,${CUT_SIZE}`
+          ].join(' ');
 
-          const rawImg = isActive ? (game.banner || ASSETS.templates.banner) : (game.cover || ASSETS.templates.cover);
-          const imgSrc = (() => {
-            const original = onResolveAsset(rawImg);
-            if (original.includes('/api/proxy-image')) {
-              const targetWidth = isActive ? 800 : 300;
-              return `${original}&width=${targetWidth}`;
-            }
-            return original;
-          })();
+          const nPoints = [
+            `${CUT_SIZE / 2},0`,
+            `${cardWidth},0`,
+            `${cardWidth},${BAR_H_VAL - CUT_SIZE / 2}`,
+            `${cardWidth - CUT_SIZE / 2},${BAR_H_VAL}`,
+            `0,${BAR_H_VAL}`,
+            `0,${CUT_SIZE / 2}`
+          ].join(' ');
+
+          const bClip = `polygon(${CUT_SIZE}px 0, 100% 0, 100% calc(100% - ${CUT_SIZE}px), calc(100% - ${CUT_SIZE}px) 100%, 0 100%, 0 ${CUT_SIZE}px)`;
+          const nClip = `polygon(${CUT_SIZE / 2}px 0, 100% 0, 100% calc(100% - ${CUT_SIZE / 2}px), calc(100% - ${CUT_SIZE / 2}px) 100%, 0 100%, 0 ${CUT_SIZE / 2}px)`;
+
+          const bSrc = getImg(game.banner || ASSETS.templates.banner, 800);
+          const cSrc = getImg(game.cover || ASSETS.templates.cover, isActive ? 400 : 300);
+          const lSrc = game.logo ? onResolveAsset(game.logo) : null;
 
           return (
             <div
@@ -315,281 +312,146 @@ const GameTrack: React.FC<GameTrackProps> = React.memo(({
               data-game-idx={realIdx}
               style={{
                 width: `${cardWidth}px`,
-                height: `${totalHeight}px`,
+                height: `${height}px`,
                 zIndex: isActive ? 30 : 10,
               }}
             >
-              {/* BACK GLOW (OUTER GLOW ONLY) - Placed under the opaque card body so inward bleed is hidden */}
-              {isActive && (
-                <svg className="glow-svg absolute inset-0 w-full h-full z-0 pointer-events-none overflow-visible" viewBox={`0 0 ${cardWidth} ${totalHeight}`} preserveAspectRatio="none">
-                  <polygon
-                    points={points}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={isPriming ? "8" : "6"}
-                    style={{
-                      filter: outerGlowEnabled && !slimModeEnabled ? 'url(#neon-shadow)' : 'none',
-                      opacity: slimModeEnabled ? 0 : 0.8
-                    }}
-                  />
+              {/* BACK GLOW (EXPLICIT SVG BLUR) */}
+              {isActive && outerGlowEnabled && !slimModeEnabled && (
+                <svg
+                  className={`glow-svg absolute z-0 pointer-events-none overflow-visible ${isPriming && primingAnimation === 'glow_pulse' ? 'animate-prime-glow-pulse' : ''}`}
+                  style={{ top: 0, left: 0, width: '100%', height: '100%' }}
+                >
+                  <polygon points={bPoints} fill="none" stroke={color} strokeWidth="6" style={{ filter: 'blur(6px)', opacity: 1 }} />
+                  <polygon points={bPoints} fill="none" stroke={color} strokeWidth="16" style={{ filter: 'blur(16px)', opacity: 0.6 }} />
+                  <polygon points={bPoints} fill="none" stroke={color} strokeWidth="30" style={{ filter: 'blur(30px)', opacity: 0.3 }} />
+
+                  <g style={{ transform: `translateY(calc(100% + 8px))` }}>
+                    <polygon points={nPoints} fill="none" stroke={color} strokeWidth="6" style={{ filter: 'blur(6px)', opacity: 1 }} />
+                    <polygon points={nPoints} fill="none" stroke={color} strokeWidth="16" style={{ filter: 'blur(16px)', opacity: 0.6 }} />
+                    <polygon points={nPoints} fill="none" stroke={color} strokeWidth="30" style={{ filter: 'blur(30px)', opacity: 0.3 }} />
+                  </g>
                 </svg>
               )}
 
-              {/* INTEGRATED DESIGN CONTAINER */}
-              <div
-                className="card-body w-full h-full relative overflow-hidden z-10"
-                style={{
-                  clipPath: extClip,
-                  WebkitClipPath: extClip,
-                  backgroundColor: '#050505'
-                }}
-              >
-                {/* Image area - RESTORED with 1px overflow to avoid sub-pixel gaps at edges */}
+              {/* Box 1: Banner / Image Container */}
+              <div style={{
+                width: '100%',
+                height: '100%',
+                position: 'absolute',
+                zIndex: 10
+              }}>
                 <div
-                  className="absolute left-0 right-0 bg-black"
+                  className="card-body w-full h-full relative bg-[#050505]"
                   style={{
-                    top: '-1px',
-                    height: isActive ? `${height + 2}px` : 'calc(100% + 2px)',
-                    zIndex: 1,
-                    // Interface clip: Only needs to handle the notch where it meets the title bar
-                    clipPath: isActive ? `polygon(0 0, 100% 0, 100% calc(100% - ${CUT_SIZE}px), calc(100% - ${CUT_SIZE}px) 100%, 0 100%)` : 'none'
+                    clipPath: bClip,
+                    WebkitClipPath: bClip,
+                    opacity: cardTransparencyEnabled ? (isActive ? 1 : cardOpacity) : 1
                   }}
                 >
                   <img
-                    src={imgSrc}
+                    src={isActive ? bSrc : cSrc}
                     alt={game.title}
                     loading="lazy"
-                    decoding="async"
-                    onError={(e) => {
-                      const target = e.currentTarget;
-                      if (target.getAttribute('data-fallback') === 'true') return;
-                      target.setAttribute('data-fallback', 'true');
-                      target.src = isActive ? ASSETS.templates.banner : ASSETS.templates.cover;
-                    }}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500"
+                    className="absolute inset-0 w-full h-full object-cover"
                     style={{
-                      transform: isPriming ? 'scale(1.1)' : 'scale(1)',
+                      transform: isPriming ? 'scale(1.05)' : 'scale(1)',
+                      transition: 'transform 0.5s ease-out',
                       opacity: isActive ? 1 : cardOpacity,
                     }}
                   />
-                  {!isActive && <div className="absolute inset-0 bg-black/15" />}
 
-                  {/* LOCALIZED INNER GLOW OVERLAY - Strictly for the image area art */}
-                  {isActive && innerGlowEnabled && !slimModeEnabled && (
-                    <svg
-                      className="inner-glow absolute pointer-events-none"
+                  {isActive && innerGlowEnabled && (
+                    <div className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-500"
                       style={{
-                        top: '1px',
-                        left: 0,
-                        width: '100%',
-                        height: `${height}px`,
-                        zIndex: 2,
-                      }}
-                    >
-                      <defs>
-                        <clipPath id={`inner-glow-clip-${game.id}`}>
-                          <polygon
-                            points={[
-                              `${CUT_SIZE},0`,
-                              `${cardWidth},0`,
-                              `${cardWidth},${height - CUT_SIZE}`,
-                              `${cardWidth - CUT_SIZE},${height}`,
-                              `0,${height}`,
-                              `0,${CUT_SIZE}`
-                            ].join(' ')}
-                          />
-                        </clipPath>
-                      </defs>
-                      <polygon
-                        points={[
-                          `${CUT_SIZE},0`,
-                          `${cardWidth},0`,
-                          `${cardWidth},${height - CUT_SIZE}`,
-                          `${cardWidth - CUT_SIZE},${height}`,
-                          `0,${height}`,
-                          `0,${CUT_SIZE}`
-                        ].join(' ')}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="30"
-                        filter="blur(15px)"
-                        clipPath={`url(#inner-glow-clip-${game.id})`}
-                        opacity="0.5"
-                      />
-                      {/* Crisp inner neon core */}
-                      <polygon
-                        points={[
-                          `${CUT_SIZE},0`,
-                          `${cardWidth},0`,
-                          `${cardWidth},${height - CUT_SIZE}`,
-                          `${cardWidth - CUT_SIZE},${height}`,
-                          `0,${height}`,
-                          `0,${CUT_SIZE}`
-                        ].join(' ')}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="3"
-                        clipPath={`url(#inner-glow-clip-${game.id})`}
-                        opacity="0.3"
-                      />
-                    </svg>
+                        boxShadow: `inset 0 0 40px ${color}66, inset 0 0 10px ${color}aa`,
+                        mixBlendMode: 'screen',
+                        opacity: isPriming ? 0 : 0.6
+                      }} />
+                  )}
+
+                  {isActive && isPriming && (
+                    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden" style={{ clipPath: bClip }}>
+                      {primingAnimation === 'waterfill' && (
+                        <div className="absolute bottom-0 left-0 w-full h-[100%] bg-gradient-to-t from-white/60 to-transparent"
+                          style={{ transformOrigin: 'bottom', animation: 'prime-waterfill 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards' }} />
+                      )}
+
+                      {primingAnimation === 'scanline' && (
+                        <div className="absolute top-0 left-0 w-full h-[15%] bg-gradient-to-b from-transparent via-white/80 to-transparent"
+                          style={{ animation: 'prime-scanline 1.5s cubic-bezier(0.4, 0, 1, 1) forwards' }} />
+                      )}
+
+                      {primingAnimation === 'ignition' && (
+                        <div className="absolute inset-0 bg-white mix-blend-overlay"
+                          style={{ animation: 'prime-ignition 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards' }} />
+                      )}
+
+                      {primingAnimation === 'charge' && (
+                        <div className="absolute inset-0 ring-inset"
+                          style={{ animation: 'prime-charge 1.5s ease-in forwards' }} />
+                      )}
+
+                      {primingAnimation === 'shockwave' && (
+                        <div className="absolute inset-0 border-white/80"
+                          style={{ animation: 'prime-shockwave 1.5s ease-out forwards' }} />
+                      )}
+                    </div>
                   )}
                 </div>
-
-                {/* Title bar - Single element with integrated notch to avoid overlap/glow bugs */}
-                {isActive && (
-                  <div
-                    className="title-bar absolute bottom-0 left-0 right-0 flex items-center px-4"
-                    style={{
-                      height: `${BAR_H_VAL + CUT_SIZE}px`,
-                      backgroundColor: color || '#fff',
-                      // Simplificamos: El padre ya recorta el exterior. Solo recortamos la "mordida" superior.
-                      clipPath: `polygon(0 ${CUT_SIZE}px, calc(100% - ${CUT_SIZE}px) ${CUT_SIZE}px, 100% 0, 100% 100%, 0 100%)`,
-                      WebkitClipPath: `polygon(0 ${CUT_SIZE}px, calc(100% - ${CUT_SIZE}px) ${CUT_SIZE}px, 100% 0, 100% 100%, 0 100%)`,
-                      zIndex: 3
-                    }}
-                  >
-                    <span
-                      className="uppercase font-bold whitespace-nowrap overflow-hidden text-ellipsis w-full"
-                      style={{
-                        fontFamily: "'Space Mono', Consolas, monospace",
-                        fontSize: `${Math.min(14, Math.max(10, height * 0.065))}px`,
-                        letterSpacing: '0.15em',
-                        color: getContrastColor(color || '#fff'),
-                        textShadow: '0 0 10px rgba(0,0,0,0.5)',
-                        // Accurate vertical positioning in the solid bar area
-                        marginTop: `${CUT_SIZE}px`
-                      }}
-                    >
-                      {game.title}
-                    </span>
-                  </div>
-                )}
               </div>
 
+              {/* PERFECT SVG OUTLINE (Top Layer for sharp edges) */}
+              <svg
+                className="absolute inset-0 w-full h-full z-20 pointer-events-none overflow-visible"
+                viewBox={`0 0 ${cardWidth} ${height}`}
+                preserveAspectRatio="none"
+              >
+                <polygon
+                  points={bPoints}
+                  fill="none"
+                  stroke={isActive ? color : color}
+                  strokeWidth={outlineEnabled ? (isActive ? (isPriming ? "5" : "3") : "1.5") : "0"}
+                  style={{
+                    opacity: isActive ? 1 : 0.4
+                  }}
+                />
+              </svg>
+
+              {/* Box 2: Name Block (Under Box 1) - ONLY FOR ACTIVE */}
               {isActive && (
-                <svg className="glow-svg absolute inset-0 w-full h-full z-20 pointer-events-none overflow-visible" viewBox={`0 0 ${cardWidth} ${totalHeight}`} preserveAspectRatio="none">
-                  <polygon
-                    points={points}
-                    fill="none"
-                    stroke={color}
-                    strokeWidth={isPriming ? "4" : "2.5"}
-                  />
-                </svg>
+                <div className="title-bar absolute top-[calc(100%+8px)] left-0 w-full z-10">
+                  <div
+                    style={{
+                      width: '100%',
+                      height: BAR_H_VAL,
+                      backgroundColor: color || '#fff',
+                      clipPath: nClip,
+                      WebkitClipPath: nClip,
+                      boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+                      opacity: cardTransparencyEnabled ? cardOpacity : 1
+                    }}
+                  >
+                    <div className="h-full flex items-center px-4">
+                      <span
+                        className="uppercase font-black whitespace-nowrap overflow-hidden text-ellipsis w-full"
+                        style={{
+                          fontFamily: "'Space Mono', monospace",
+                          fontSize: `${Math.min(14, Math.max(10, height * 0.05))}px`,
+                          letterSpacing: '0.3em',
+                          color: getContrastColor(color || '#fff'),
+                        }}
+                      >
+                        {game.title}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               )}
-
-              {/* PRIMING ANIMATION OVERLAY */}
-              {isPriming && (() => {
-                const animStyle: React.CSSProperties = { position: 'absolute', inset: 0, zIndex: 25, pointerEvents: 'none', overflow: 'hidden', clipPath: extClip, WebkitClipPath: extClip };
-                switch (primingAnimation) {
-                  case 'waterfill':
-                    return (
-                      <div style={animStyle}>
-                        <div style={{
-                          position: 'absolute', bottom: 0, left: '-20%', width: '140%', height: '100%',
-                          background: `linear-gradient(35deg, ${color}cc 0%, ${color}44 40%, transparent 60%)`,
-                          animation: 'waterfill-rise 1.5s ease-in-out forwards',
-                        }} />
-                        <style>{`@keyframes waterfill-rise { from { transform: translateY(100%); } to { transform: translateY(0%); } }`}</style>
-                      </div>
-                    );
-                  case 'scanline':
-                    return (
-                      <div style={animStyle}>
-                        <div style={{
-                          position: 'absolute', top: 0, left: 0, width: '200%', height: '200%',
-                          background: `repeating-linear-gradient(135deg, transparent, transparent 10px, ${color}33 10px, ${color}33 12px)`,
-                          animation: 'scanline-sweep 1s linear infinite',
-                        }} />
-                        <div style={{
-                          position: 'absolute', top: 0, left: '-100%', width: '50%', height: '100%',
-                          background: `linear-gradient(135deg, transparent 0%, ${color}aa 50%, transparent 100%)`,
-                          animation: 'scanline-beam 1.5s ease-in-out infinite',
-                        }} />
-                        <style>{`
-                          @keyframes scanline-sweep { from { transform: translate(-12px, -12px); } to { transform: translate(0, 0); } }
-                          @keyframes scanline-beam { 0% { transform: translateX(0%) translateY(0%); } 100% { transform: translateX(400%) translateY(200%); } }
-                        `}</style>
-                      </div>
-                    );
-                  case 'ignition':
-                    return (
-                      <div style={animStyle}>
-                        <div style={{
-                          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                          background: `radial-gradient(circle at 0% 0%, ${color}88 0%, transparent 0%)`,
-                          animation: 'ignition-tl 1.5s ease-out forwards',
-                        }} />
-                        <div style={{
-                          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                          background: `radial-gradient(circle at 100% 100%, ${color}88 0%, transparent 0%)`,
-                          animation: 'ignition-br 1.5s ease-out 0.2s forwards',
-                        }} />
-                        <style>{`
-                          @keyframes ignition-tl { to { background: radial-gradient(circle at 0% 0%, ${color}88 70%, transparent 70%); } }
-                          @keyframes ignition-br { to { background: radial-gradient(circle at 100% 100%, ${color}88 70%, transparent 70%); } }
-                        `}</style>
-                      </div>
-                    );
-                  case 'charge':
-                    return (
-                      <div style={{ ...animStyle, top: 'auto', bottom: 0, height: `${BAR_H_VAL + CUT_SIZE}px` }}>
-                        <div style={{
-                          position: 'absolute', bottom: 0, left: 0, height: '100%', width: '0%',
-                          background: `linear-gradient(90deg, ${color}00, ${color}99, white)`,
-                          animation: 'charge-fill 1.5s ease-in-out forwards',
-                          boxShadow: `0 0 20px ${color}, 0 0 40px ${color}88`,
-                        }} />
-                        <style>{`@keyframes charge-fill { to { width: 100%; } }`}</style>
-                      </div>
-                    );
-                  case 'shockwave':
-                    return (
-                      <div style={animStyle}>
-                        <div style={{
-                          position: 'absolute', top: '50%', left: '50%', width: '10px', height: '10px',
-                          borderRadius: '50%', transform: 'translate(-50%, -50%)',
-                          border: `3px solid ${color}`,
-                          boxShadow: `0 0 20px ${color}, 0 0 40px ${color}66`,
-                          animation: 'shockwave-pulse 0.8s ease-out infinite',
-                        }} />
-                        <div style={{
-                          position: 'absolute', top: '50%', left: '50%', width: '10px', height: '10px',
-                          borderRadius: '50%', transform: 'translate(-50%, -50%)',
-                          border: `2px solid ${color}88`,
-                          animation: 'shockwave-pulse 0.8s ease-out 0.3s infinite',
-                        }} />
-                        <style>{`@keyframes shockwave-pulse { from { width: 10px; height: 10px; opacity: 1; } to { width: ${cardWidth * 2}px; height: ${totalHeight * 2}px; opacity: 0; } }`}</style>
-                      </div>
-                    );
-                  case 'glow_pulse':
-                    return (
-                      <div style={{ ...animStyle, clipPath: 'none', WebkitClipPath: 'none', overflow: 'visible' }}>
-                        <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${cardWidth} ${totalHeight}`} preserveAspectRatio="none">
-                          <polygon
-                            points={points}
-                            fill="none"
-                            stroke={color}
-                            strokeWidth="8"
-                            style={{ filter: 'url(#neon-shadow)', animation: 'glow-intensity 0.6s ease-in-out infinite alternate' }}
-                          />
-                        </svg>
-                        <style>{`@keyframes glow-intensity { from { opacity: 0.4; } to { opacity: 1; } }`}</style>
-                      </div>
-                    );
-                  default:
-                    return null;
-                }
-              })()}
-
-              <div
-                className="info-area absolute top-full left-0 mt-2 w-full pointer-events-none transition-all duration-400"
-                style={{ opacity: 0 }}
-              />
             </div>
           );
         })}
-      </div>
+      </div >
     </div >
   );
 });

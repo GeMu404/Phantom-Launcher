@@ -299,6 +299,10 @@
     "assetSearch": {
       "title": "ASSET_HATCH",
       "desc": "PROTOCOLO DE BUSQUEDA DE ASSETS EN LA NUBE."
+    },
+    "secret": {
+      "title": "SECRET_CORE",
+      "desc": "MODULO DE PROTOCOLOS OCULTOS ACTIVADOS."
     }
   }
 }

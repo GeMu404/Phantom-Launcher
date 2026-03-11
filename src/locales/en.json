@@ -143,6 +143,8 @@
     "launch_aborted": "SYSTEM_ALERT::LAUNCH_ABORTED",
     "launch_protocol": "LAUNCH_PROTOCOL",
     "server_offline": "ERROR_PROTOCOL::SERVER_OFFLINE",
+    "no_signal": "NO_SIGNAL",
+    "signal_acquired": "SIGNAL_ACQUIRED",
     "phantom_unlocked": "PHANTOM_NODE::UNLOCKED"
   },
   "emu": {
@@ -299,6 +301,10 @@
     "assetSearch": {
       "title": "ASSET_HATCH",
       "desc": "CLOUD ASSET SEARCH PROTOCOL."
+    },
+    "secret": {
+      "title": "SECRET_CORE",
+      "desc": "ACTIVATED HIDDEN PROTOCOLS MODULE."
     }
   }
 }

@@ -5,7 +5,20 @@ import path from 'path';
 
 // Dynamic Sharp import using createRequire for Node SEA compatibility
 const isExe = process.execPath.toLowerCase().endsWith('phantomserver.exe');
-const requireFunc = isExe ? createRequire(process.execPath) : (typeof require !== 'undefined' ? require : eval('require'));
+
+// Robust require for both ESM (ts-node) and CJS (bundled)
+let requireFunc: any;
+if (isExe) {
+    // In SEA, createRequire(process.execPath) allows loading modules relative to the EXE
+    requireFunc = createRequire(process.execPath);
+} else {
+    try {
+        // @ts-ignore
+        requireFunc = require;
+    } catch (e) {
+        requireFunc = createRequire(import.meta.url);
+    }
+}
 
 export let sharp: any = null;
 try {
@@ -13,7 +26,7 @@ try {
     const sharpPath = path.join(exeDir, 'node_modules', 'sharp');
     sharp = requireFunc(sharpPath);
 } catch (e) {
-    console.error("FATAL: First absolute load failed for sharp:", e);
+    if (isExe) console.error("FATAL: First absolute load failed for sharp:", e);
     try {
         sharp = requireFunc('sharp');
     } catch (e2) {
@@ -50,16 +63,36 @@ export const processImage = async (input: string | Buffer, dest: string, type: s
             if (isAnimated) {
                 sharpInstance = sharpInstance.resize(800, 320, { fit: 'inside' }).webp({ effort: 0 });
             } else {
-                sharpInstance = sharpInstance.trim().resize(800, 320, { fit: 'inside' });
-                const buffer = await sharpInstance.png().toBuffer();
-                sharpInstance = sharp({
-                    create: {
-                        width: 800,
-                        height: 320,
-                        channels: 4,
-                        background: { r: 0, g: 0, b: 0, alpha: 0 }
+                // ABSOLUTE_SNUG_PROTOCOL: Manual alpha-scan for pixel-perfect cropping
+                const raw = await sharpInstance.raw().toBuffer({ resolveWithObject: true });
+                const { data, info } = raw;
+                let minX = info.width, minY = info.height, maxX = 0, maxY = 0;
+                let hasAlpha = false;
+
+                for (let y = 0; y < info.height; y++) {
+                    for (let x = 0; x < info.width; x++) {
+                        const idx = (y * info.width + x) * info.channels;
+                        const alpha = info.channels === 4 ? data[idx + 3] : 255;
+                        if (alpha > 10) { // Threshold for "real" content
+                            if (x < minX) minX = x;
+                            if (y < minY) minY = y;
+                            if (x > maxX) maxX = x;
+                            if (y > maxY) maxY = y;
+                            hasAlpha = true;
+                        }
                     }
-                }).composite([{ input: buffer, gravity: 'center' }]);
+                }
+
+                if (hasAlpha) {
+                    const cropWidth = (maxX - minX) + 1;
+                    const cropHeight = (maxY - minY) + 1;
+                    sharpInstance = sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } })
+                        .extract({ left: minX, top: minY, width: cropWidth, height: cropHeight })
+                        .resize(800, 320, { fit: 'inside', withoutEnlargement: true })
+                        .png({ palette: true });
+                } else {
+                    sharpInstance = sharpInstance.resize(800, 320, { fit: 'inside' });
+                }
             }
         }
 
@@ -88,5 +121,26 @@ export const downloadImage = async (url: string, dest: string): Promise<string> 
     } catch (e: any) {
         console.error(`[Download] Error for ${url}:`, e.message);
         throw e;
+    }
+};
+/** Specialized thumbnail generator for UI backgrounds (32x32) */
+export const generateThumbnail = async (input: string, dest: string): Promise<string | null> => {
+    try {
+        if (!sharp) return null;
+        if (!fs.existsSync(input)) return null;
+
+        const destDir = path.dirname(dest);
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+        await sharp(input)
+            .resize(64, 64, { fit: 'cover' })
+            .blur(3.5)
+            .webp({ quality: 40, effort: 6 })
+            .toFile(dest);
+
+        return dest;
+    } catch (e: any) {
+        console.error(`[Sharp] Thumbnail failed for ${input}:`, e.message);
+        return null;
     }
 };

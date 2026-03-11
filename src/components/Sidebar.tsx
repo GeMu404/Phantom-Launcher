@@ -13,22 +13,36 @@ interface SidebarProps {
   isSecretUnlocked?: boolean;
   performanceMode?: string;
   resolveColor: (raw: string) => string;
+  outerGlowEnabled?: boolean;
+  outlineEnabled?: boolean;
+  cardTransparencyEnabled?: boolean;
+  cardOpacity?: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = React.memo(({
   categories, activeIndex, onSelect, onOpenSettings, taskbarMargin = 0, onResolveAsset, isSecretUnlocked = false,
-  performanceMode = 'normal', resolveColor
+  performanceMode = 'normal', resolveColor, outerGlowEnabled = true,
+  outlineEnabled = true, cardTransparencyEnabled = true, cardOpacity = 0.7
 }) => {
   const visibleCategories = categories.filter(c => c.enabled !== false && (c.id !== 'hidden' || isSecretUnlocked));
   const systemCategory = categories.find(c => c.id === 'all');
   const customConfigIcon = systemCategory?.configIcon || ASSETS.ui.config;
 
+  const activeColor = resolveColor(categories[activeIndex]?.color || '#ffffff');
+
   return (
     <div
-      className="sidebar-glass fixed left-0 top-0 h-full flex flex-col items-center z-50 bg-[#080808]/75 border-r border-white/5"
+      className="sidebar-glass fixed left-0 top-0 h-full flex flex-col items-center z-50 transition-colors duration-500 ease-in-out"
       style={{
         width: 'calc(50px + 1.5vh)',
-        paddingBottom: `${taskbarMargin + 20}px`
+        paddingBottom: `${taskbarMargin + 20}px`,
+        backgroundColor: cardTransparencyEnabled
+          ? `color-mix(in srgb, color-mix(in srgb, ${activeColor} 12%, #080808) ${Math.round(cardOpacity * 100)}%, transparent)`
+          : `color-mix(in srgb, ${activeColor} 15%, #080808)`,
+        borderRight: outlineEnabled ? `2px solid ${activeColor}` : 'none',
+        boxShadow: outerGlowEnabled
+          ? `5px 0 25px -5px ${activeColor}66, inset -5px 0 20px -5px ${activeColor}44`
+          : 'none'
       }}
     >
       <div
@@ -70,16 +84,6 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
                     opacity: isActive ? 1 : 0.4
                   }}
                 />
-                {isActive && (
-                  <div
-                    className="absolute -right-2 w-[2px] rounded-full"
-                    style={{
-                      backgroundColor: resolveColor(cat.color),
-                      boxShadow: `0 0 10px 2px ${resolveColor(cat.color)}`,
-                      height: '60%'
-                    }}
-                  ></div>
-                )}
               </div>
             );
           })}
@@ -101,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = React.memo(({
                   transform: 'rotate(-90deg)',
                   transformOrigin: '0 50%',
                   color: resolveColor(categories[activeIndex]?.color || '#fff'),
-                  textShadow: performanceMode === 'low' ? 'none' : `0 0 20px ${resolveColor(categories[activeIndex]?.color || '#fff')}88`,
+                  textShadow: (performanceMode === 'low' || !outerGlowEnabled) ? 'none' : `0 0 20px ${resolveColor(categories[activeIndex]?.color || '#fff')}88`,
                 }}
               >
                 {techText}

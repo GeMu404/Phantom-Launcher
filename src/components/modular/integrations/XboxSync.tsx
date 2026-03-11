@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface XboxSyncProps {
     isActive: boolean;
     onActiveToggle: (active: boolean) => void;
     accentColor: string;
-    onCommandUpdate: (command: { text: string; desc: string } | null, onExecute?: () => void, progress?: number, isExecuting?: boolean, isReady?: boolean) => void;
+    onCommandUpdate: (
+        command: { text: string; desc: string } | null,
+        onExecute?: (() => void) | null,
+        progress?: number,
+        isExecuting?: boolean,
+        isReady?: boolean,
+        _scrollProgress?: number | null,
+        _showScrollMarker?: boolean | null,
+        execStart?: (() => void) | null,
+        execEnd?: (() => void) | null
+    ) => void;
     handleSyncXboxLibrary: (options?: { quiet?: boolean; includeAssets?: boolean }) => Promise<void>;
     includeAssets: boolean;
     setIncludeAssets: (v: boolean) => void;
@@ -39,6 +49,9 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
     const cardRef = React.useRef<HTMLDivElement>(null);
     const { t } = useTranslation();
 
+    const [holdProgress, setHoldProgress] = useState(0);
+    const holdTimerRef = useRef<any>(null);
+
     React.useEffect(() => {
         if (isActive && cardRef.current) {
             setTimeout(() => {
@@ -47,22 +60,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
         }
     }, [isActive]);
 
-    React.useEffect(() => {
-        if (isActive) {
-            onCommandUpdate(
-                {
-                    text: t('xbox.command_sync'),
-                    desc: t('xbox.desc_sync')
-                },
-                handleExecuteSync,
-                0,
-                isExecuting,
-                true
-            );
-        }
-    }, [isActive, isExecuting, t]);
-
-    const handleExecuteSync = async () => {
+    const handleExecuteSync = useCallback(async () => {
         if (isExecuting) return;
         setIsExecuting(true);
 
@@ -89,7 +87,7 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
         }, 60);
 
         try {
-            await handleSyncXboxLibrary({ quiet: true, includeAssets });
+            await handleSyncXboxLibrary({ quiet: false, includeAssets });
             clearInterval(interval);
 
             // 1. Force 100% progress immediately upon real sync finish
@@ -105,7 +103,6 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
             setTimeout(() => {
                 setIsExecuting(false);
                 onActiveToggle(false);
-                onCommandUpdate(null, undefined, 0, false, false);
             }, 800);
 
         } catch (error) {
@@ -113,15 +110,69 @@ const XboxSync: React.FC<XboxSyncProps> = ({ isActive, onActiveToggle, accentCol
             setIsExecuting(false);
             onCommandUpdate({ text: 'SYNC_ERROR', desc: 'ST_PROTOCOL_FAILURE: CHECK_CONNECTION' }, handleExecuteSync, 0, false, true);
         }
-    };
+    }, [isExecuting, onCommandUpdate, t, handleSyncXboxLibrary, includeAssets, onActiveToggle]);
+
+    const handleHoldStart = useCallback(() => {
+        if (isExecuting) return;
+        setHoldProgress(0);
+        const start = Date.now();
+        const duration = 1000;
+        holdTimerRef.current = setInterval(() => {
+            const elapsed = Date.now() - start;
+            const p = Math.min(100, (elapsed / duration) * 100);
+            setHoldProgress(p);
+            if (p >= 100) {
+                clearInterval(holdTimerRef.current);
+                handleExecuteSync();
+                setHoldProgress(0);
+            }
+        }, 30);
+    }, [isExecuting, handleExecuteSync]);
+
+    const handleHoldEnd = useCallback(() => {
+        if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        setHoldProgress(0);
+    }, []);
+
+    const executeRef = useRef(handleExecuteSync);
+    useEffect(() => { executeRef.current = handleExecuteSync; }, [handleExecuteSync]);
+
+    const holdStartRef = useRef(handleHoldStart);
+    const holdEndRef = useRef(handleHoldEnd);
+    useEffect(() => { holdStartRef.current = handleHoldStart; }, [handleHoldStart]);
+    useEffect(() => { holdEndRef.current = handleHoldEnd; }, [handleHoldEnd]);
+
+    const stableStart = useCallback(() => holdStartRef.current(), []);
+    const stableEnd = useCallback(() => holdEndRef.current(), []);
+
+    useEffect(() => {
+        return () => {
+            if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        };
+    }, []);
+
+    React.useEffect(() => {
+        if (isActive) {
+            onCommandUpdate(
+                {
+                    text: 'STREAMS_SYNC_PROTOCOL',
+                    desc: t('xbox.desc_sync')
+                },
+                null,
+                holdProgress,
+                isExecuting,
+                true,
+                null,
+                null,
+                stableStart,
+                stableEnd
+            );
+        }
+    }, [isActive, isExecuting, holdProgress, stableStart, stableEnd, onCommandUpdate, t]);
 
     const handleToggleActive = () => {
         if (isExecuting) return;
-        const nextState = !isActive;
-        onActiveToggle(nextState);
-        if (!nextState) {
-            onCommandUpdate(null, undefined, 0, false, false);
-        }
+        onActiveToggle(!isActive);
     };
 
     // Industrial Bevel Path - Double notch (Top-Right and Bottom-Left)

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 
 const AmbientNebula: React.FC<{ color: string, size?: string, opacity?: number, duration?: string }> = React.memo(({
   color,
@@ -70,10 +70,10 @@ interface BackgroundEffectProps {
   gridEnabled?: boolean;
   vignetteEnabled?: boolean;
   paused?: boolean;
-  wallpaperAAEnabled?: boolean;
-  highQualityBlobs?: boolean;
-  isLowRes?: boolean;
+  cardTransparencyEnabled?: boolean;
   performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
+  sidebarWidth?: string;
+  assetVersion?: number;
 }
 
 const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
@@ -87,86 +87,58 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
   gridEnabled = true,
   vignetteEnabled = true,
   paused = false,
-  wallpaperAAEnabled = false,
-  highQualityBlobs = false,
-  isLowRes = false,
-  performanceMode = 'balanced'
+  cardTransparencyEnabled = false,
+  performanceMode = 'balanced',
+  sidebarWidth = '0px',
+  assetVersion = 0
 }) => {
   const isHigh = performanceMode === 'high';
   const isLow = performanceMode === 'low';
 
-  const resolveAsset = (path: string | undefined): string => {
+  const resolveAsset = useCallback((path: string | undefined): string => {
     if (!path) return '';
     if (path.startsWith('http') || path.startsWith('data:') || path.startsWith('blob:')) return path;
     if (path.startsWith('./res') || path.startsWith('res/') || path.startsWith('/res/')) return path;
     const isLikelyPath = path.includes('.') || path.includes('/') || path.includes('\\') || path.match(/^[a-zA-Z]:/);
     if (!isLikelyPath) return path;
 
-    const width = isLowRes ? 960 : 1920;
-    return `/api/proxy-image?path=${encodeURIComponent(path)}&width=${width}`;
-  };
+    const width = 1920; 
+    let url = `/api/proxy-image?path=${encodeURIComponent(path)}&width=${width}`;
+    if (assetVersion > 0) url += `&v=${assetVersion}`;
+    return url;
+  }, [assetVersion]);
 
-  const finalWallpaperPath = gameWallpaper || categoryWallpaper || globalWallpaper;
-  const resolvedUrl = useMemo(() => resolveAsset(finalWallpaperPath), [finalWallpaperPath, isLowRes]);
+  // Triple Layer State (Game, Category, Global)
+  const [urls, setUrls] = useState({
+    game: resolveAsset(gameWallpaper),
+    category: resolveAsset(categoryWallpaper),
+    global: resolveAsset(globalWallpaper)
+  });
 
-  // Double-buffering state
-  const [activeLayer, setActiveLayer] = useState<'A' | 'B'>('A');
-  const [layerA, setLayerA] = useState({ url: resolvedUrl, isReady: true });
-  const [layerB, setLayerB] = useState({ url: '', isReady: false });
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [opacities, setOpacities] = useState({
+    game: gameWallpaper ? 1 : 0,
+    category: categoryWallpaper ? 1 : 0,
+    global: 1
+  });
 
-  // Buffer synchronization
+  // Sync logic for 3-layer system
   useEffect(() => {
-    // If the top-level URL is actually new
-    const currentActiveUrl = activeLayer === 'A' ? layerA.url : layerB.url;
-    if (resolvedUrl === currentActiveUrl) return;
+     const gUrl = resolveAsset(gameWallpaper);
+     const cUrl = resolveAsset(categoryWallpaper);
+     const glUrl = resolveAsset(globalWallpaper);
 
-    // Handle empty URL case immediately (fade out nicely)
-    if (!resolvedUrl) {
-      if (activeLayer === 'A') {
-        setLayerB({ url: '', isReady: true });
-        setActiveLayer('B');
-      } else {
-        setLayerA({ url: '', isReady: true });
-        setActiveLayer('A');
-      }
-      return;
-    }
-
-    // Start loading into the inactive buffer
-    if (activeLayer === 'A') {
-      setLayerB({ url: resolvedUrl, isReady: false });
-    } else {
-      setLayerA({ url: resolvedUrl, isReady: false });
-    }
-    setIsTransitioning(true);
-  }, [resolvedUrl]);
-
-  const handleLayerLoad = (layer: 'A' | 'B') => {
-    if (layer === 'A' && activeLayer === 'B' && layerA.url) {
-      setLayerA(p => ({ ...p, isReady: true }));
-      setActiveLayer('A');
-      setTimeout(() => setIsTransitioning(false), 500);
-    } else if (layer === 'B' && activeLayer === 'A' && layerB.url) {
-      setLayerB(p => ({ ...p, isReady: true }));
-      setActiveLayer('B');
-      setTimeout(() => setIsTransitioning(false), 500);
-    } else {
-      // Initial / same layer load
-      if (layer === 'A') setLayerA(p => ({ ...p, isReady: true }));
-      else setLayerB(p => ({ ...p, isReady: true }));
-    }
-  };
-
-  // Fallback for broken images to prevent hanging transition
-  const handleLayerError = (layer: 'A' | 'B') => {
-    if (layer === 'A') {
-      setLayerA({ url: '', isReady: true });
-    } else {
-      setLayerB({ url: '', isReady: true });
-    }
-    handleLayerLoad(layer); // Force the switch to the empty state so we don't hold the old image forever
-  };
+     setUrls({ game: gUrl, category: cUrl, global: glUrl });
+     
+     // Hierarchical logic: 
+     // 1. If game has wallpaper, show game (O:1) and hide category/global (or keep under)
+     // 2. If game is empty, hide game (O:0) and show category if exists
+     // 3. etc.
+     setOpacities({
+       game: gUrl ? 1 : 0,
+       category: cUrl ? 1 : 0,
+       global: 1
+     });
+  }, [gameWallpaper, categoryWallpaper, globalWallpaper, resolveAsset]);
 
   const getObjectFitStyle = () => {
     switch (wallpaperMode) {
@@ -177,50 +149,56 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
     }
   };
 
+  const layerStyle = {
+    ...getObjectFitStyle(),
+    willChange: 'opacity',
+    ...(isHigh ? { filter: 'brightness(0.65) saturate(1.1)' } : {})
+  };
+
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]">
-      {/* 1. Wallpaper Layer (Double Buffered) */}
-      <div className="absolute inset-0 z-0 bg-black">
-        {/* Layer A */}
-        {layerA.url && (
+    <div className={`fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#050505]`}>
+      {/* 1. Triple Wallpaper Engine (Global [A] -> Category [B] -> Game [C]) */}
+      <div className={`absolute inset-0 z-0 bg-black`}>
+        {/* LAYER A: Global */}
+        {urls.global && (
           <img
-            src={layerA.url}
-            onLoad={() => handleLayerLoad('A')}
-            onError={() => handleLayerError('A')}
-            className={`absolute inset-0 w-full h-full block transition-opacity duration-700 ease-in-out ${activeLayer === 'A' ? 'opacity-100' : 'opacity-0'}`}
-            style={{
-              ...getObjectFitStyle(),
-              ...(isHigh ? { filter: 'brightness(0.65) saturate(1.1)' } : {})
-            }}
-            alt=""
+            src={urls.global}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
+            style={{ ...layerStyle, opacity: opacities.global }}
           />
         )}
-        {/* Layer B */}
-        {layerB.url && (
+
+        {/* LAYER B: Category */}
+        {urls.category && (
           <img
-            src={layerB.url}
-            onLoad={() => handleLayerLoad('B')}
-            onError={() => handleLayerError('B')}
-            className={`absolute inset-0 w-full h-full block transition-opacity duration-700 ease-in-out ${activeLayer === 'B' ? 'opacity-100' : 'opacity-0'}`}
-            style={{
-              ...getObjectFitStyle(),
-              ...(isHigh ? { filter: 'brightness(0.65) saturate(1.1)' } : {})
-            }}
-            alt=""
+            src={urls.category}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
+            style={{ ...layerStyle, opacity: opacities.category }}
           />
         )}
+
+        {/* LAYER C: Game */}
+        {urls.game && (
+          <img
+            src={urls.game}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out"
+            style={{ ...layerStyle, opacity: opacities.game }}
+          />
+        )}
+
+        {/* Visual Overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20 opacity-90" />
         <div className="absolute inset-0 bg-black/50" />
       </div>
 
       {/* 2. Grid Layer */}
       {gridEnabled && (
-        <div className="absolute inset-0 z-10" style={{ opacity: gridOpacity, backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+        <div className="absolute inset-y-0 right-0 z-10" style={{ left: sidebarWidth, opacity: gridOpacity, backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
       )}
 
       {/* 3. Atmosphere — tiered by performance mode */}
       {bgAnimationsEnabled && !paused && !isLow && (
-        <div className="absolute inset-0 overflow-hidden z-20" style={{ contain: 'strict' }}>
+        <div className="absolute inset-y-0 right-0 overflow-hidden z-20" style={{ left: sidebarWidth, contain: 'strict' }}>
           {isHigh && <AtmosphericDust color={color} />}
           <AmbientNebula
             color={color}
@@ -234,8 +212,9 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
       {/* 4. Cinematic Vignette — tiered */}
       {vignetteEnabled && (
         <div
-          className="absolute inset-0 z-30"
+          className="absolute inset-y-0 right-0 z-30"
           style={{
+            left: sidebarWidth,
             // High intensity neon glow vignette (Stronger Light Bleed)
             boxShadow: isLow
               ? 'inset 0 0 120px rgba(0,0,0,0.85)'
@@ -247,4 +226,4 @@ const BackgroundEffect: React.FC<BackgroundEffectProps> = ({
   );
 };
 
-export default BackgroundEffect;
+export default React.memo(BackgroundEffect);

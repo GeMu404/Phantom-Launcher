@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Category } from '../../../types';
 
 interface AppearanceConfigCardProps {
@@ -13,17 +13,23 @@ interface AppearanceConfigCardProps {
         isReady?: boolean
     ) => void;
     allGamesCategory: Category;
+    categories: Category[];
+    isSecretUnlocked: boolean;
     onUpdateCategories: React.Dispatch<React.SetStateAction<Category[]>>;
     taskbarMargin: number;
     onUpdateTaskbarMargin: (val: number) => void;
     uiScale: number;
     onUpdateUIScale: (val: number) => void;
+    cardTransparencyEnabled: boolean;
+    outerGlowEnabled: boolean;
+    outlineEnabled: boolean;
 }
 
-const ConfigCardBorder = ({ color, isActive }: { color: string; isActive: boolean }) => {
+const ConfigCardBorder = ({ color, isActive, outerGlowEnabled }: { color: string; isActive: boolean, outerGlowEnabled: boolean }) => {
     if (!isActive) return null;
+    const glowStyle = outerGlowEnabled ? { filter: `drop-shadow(0 0 6px ${color})`, boxShadow: `0 0 10px ${color}33` } : {};
     return (
-        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10, ...glowStyle }}>
             <div className="absolute top-0 left-0 h-[2px]" style={{ right: '20px', backgroundColor: color }} />
             <div className="absolute bottom-0 right-0 h-[2px]" style={{ left: '20px', backgroundColor: color }} />
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
@@ -207,40 +213,57 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
     accentColor,
     onCommandUpdate,
     allGamesCategory,
+    categories,
+    isSecretUnlocked,
     onUpdateCategories,
     taskbarMargin,
     onUpdateTaskbarMargin,
     uiScale,
-    onUpdateUIScale
+    onUpdateUIScale,
+    cardTransparencyEnabled,
+    outerGlowEnabled,
+    outlineEnabled
 }) => {
     const [isExecuting, setIsExecuting] = useState(false);
 
     // List of dynamic cores and their respective configuration keys inside `Category`
-    // Adding more cores here automatically renders them in the UI config panel.
     const coreDefinitions = [
         { id: 'core', label: 'CONFIG_CORE', key: 'coreColor', default: '#9acd32' },
+        { id: 'games', label: 'GAMES_CORE', key: 'configColor', default: '#ff0055' },
         { id: 'asset', label: 'ASSET_CORE', key: 'assetColor', default: '#a855f7' },
         { id: 'sync', label: 'SYNC_CORE', key: 'syncColor', default: '#22c55e' },
-        { id: 'explorer', label: 'FILES_CORE', key: 'explorerColor', default: '#00ffff' },
-        { id: 'cloud', label: 'CLOUD_CORE', key: 'sgdbColor', default: '#66c0f4' },
-        { id: 'nodes', label: 'LIBRARY_CORE', key: 'nodeColor', default: '#06b6d4' }
+        { id: 'nodes', label: 'LIBRARY_CORE', key: 'nodeColor', default: '#06b6d4' },
+        { id: 'secret', label: 'SECRET_CORE', key: 'secretColor', default: '#b829da' }
     ];
 
     // Local Config State dynamically mapped from definitions
     const [localColors, setLocalColors] = useState<Record<string, string>>(() => {
         const initialColors: Record<string, string> = {};
         coreDefinitions.forEach(core => {
-            initialColors[core.key] = (allGamesCategory as any)[core.key] || core.default;
+            initialColors[core.key] = (allGamesCategory as any)?.[core.key] || core.default;
         });
         return initialColors;
     });
 
-    const [localCardOpacity, setLocalCardOpacity] = useState(allGamesCategory.cardOpacity ?? 0.7);
+    const [localCardOpacity, setLocalCardOpacity] = useState(allGamesCategory?.cardOpacity ?? 0.12);
     const [localTaskbarMargin, setLocalTaskbarMargin] = useState(taskbarMargin);
     const [localUiScale, setLocalUiScale] = useState(uiScale);
-    const [localSlimMode, setLocalSlimMode] = useState(!!allGamesCategory.slimModeEnabled);
-    const [localMonochrome, setLocalMonochrome] = useState(!!allGamesCategory.monochromeModeEnabled);
-    const [localPrimingAnim, setLocalPrimingAnim] = useState(allGamesCategory.primingAnimation || 'waterfill');
+
+    // Performance & Appearance states
+    const [localSlimMode, setLocalSlimMode] = useState(!!allGamesCategory?.slimModeEnabled);
+    const [localMonochrome, setLocalMonochrome] = useState(!!allGamesCategory?.monochromeModeEnabled);
+    const [localGlow, setLocalGlow] = useState(!!allGamesCategory?.outerGlowEnabled);
+    const [localOutline, setLocalOutline] = useState(allGamesCategory?.outlineEnabled ?? true);
+    const [localTransEnabled, setLocalTransEnabled] = useState(allGamesCategory?.cardTransparencyEnabled ?? true);
+
+    const [localVignette, setLocalVignette] = useState(allGamesCategory?.vignetteEnabled ?? true);
+    const [localScanline, setLocalScanline] = useState(allGamesCategory?.scanlineEnabled ?? true);
+    const [localGrid, setLocalGrid] = useState(allGamesCategory?.gridEnabled ?? true);
+    const [localBgAnim, setLocalBgAnim] = useState(allGamesCategory?.bgAnimationsEnabled ?? true);
+    const [localLowRes, setLocalLowRes] = useState(!!allGamesCategory?.lowResWallpaper);
+
+    const [localPerformanceMode, setLocalPerformanceMode] = useState(allGamesCategory?.performanceMode || 'custom');
+    const [localPrimingAnim, setLocalPrimingAnim] = useState(allGamesCategory?.primingAnimation || 'waterfill');
 
     const cardRef = useRef<HTMLDivElement>(null);
 
@@ -249,15 +272,27 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
         if (!isActive) {
             const nextColors: Record<string, string> = {};
             coreDefinitions.forEach(core => {
-                nextColors[core.key] = (allGamesCategory as any)[core.key] || core.default;
+                nextColors[core.key] = (allGamesCategory as any)?.[core.key] || core.default;
             });
             setLocalColors(nextColors);
-            setLocalCardOpacity(allGamesCategory.cardOpacity ?? 0.7);
+            setLocalCardOpacity(allGamesCategory?.cardOpacity ?? 0.12);
             setLocalTaskbarMargin(taskbarMargin);
             setLocalUiScale(uiScale);
-            setLocalSlimMode(!!allGamesCategory.slimModeEnabled);
-            setLocalMonochrome(!!allGamesCategory.monochromeModeEnabled);
-            setLocalPrimingAnim(allGamesCategory.primingAnimation || 'waterfill');
+
+            setLocalSlimMode(!!allGamesCategory?.slimModeEnabled);
+            setLocalMonochrome(!!allGamesCategory?.monochromeModeEnabled);
+            setLocalGlow(!!allGamesCategory?.outerGlowEnabled);
+            setLocalOutline(allGamesCategory?.outlineEnabled ?? true);
+            setLocalTransEnabled(allGamesCategory?.cardTransparencyEnabled ?? true);
+
+            setLocalVignette(allGamesCategory?.vignetteEnabled ?? true);
+            setLocalScanline(allGamesCategory?.scanlineEnabled ?? true);
+            setLocalGrid(allGamesCategory?.gridEnabled ?? true);
+            setLocalBgAnim(allGamesCategory?.bgAnimationsEnabled ?? true);
+            setLocalLowRes(!!allGamesCategory?.lowResWallpaper);
+
+            setLocalPerformanceMode(allGamesCategory?.performanceMode || 'custom');
+            setLocalPrimingAnim(allGamesCategory?.primingAnimation || 'waterfill');
         }
     }, [allGamesCategory, taskbarMargin, uiScale, isActive]);
 
@@ -269,6 +304,39 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
         }
     }, [isActive]);
 
+    // Apply Presets
+    const applyPreset = (mode: 'custom' | 'low' | 'balanced' | 'high') => {
+        if (isExecuting) return;
+        setLocalPerformanceMode(mode);
+        if (mode === 'custom') return;
+
+        if (mode === 'low') {
+            setLocalVignette(false);
+            setLocalScanline(false);
+            setLocalGrid(false);
+            setLocalBgAnim(false);
+            setLocalLowRes(true);
+            setLocalGlow(false);
+            // decoupled transparency from low preset as requested
+        } else if (mode === 'balanced') {
+            setLocalVignette(true);
+            setLocalScanline(true);
+            setLocalGrid(false);
+            setLocalBgAnim(true);
+            setLocalLowRes(false);
+            setLocalGlow(true);
+            setLocalTransEnabled(true);
+        } else if (mode === 'high') {
+            setLocalVignette(true);
+            setLocalScanline(true);
+            setLocalGrid(true);
+            setLocalBgAnim(true);
+            setLocalLowRes(false);
+            setLocalGlow(true);
+            setLocalTransEnabled(true);
+        }
+    };
+
     // Check if there are pending modifications
     const isModifiedColors = coreDefinitions.some(
         core => localColors[core.key] !== ((allGamesCategory as any)[core.key] || core.default)
@@ -276,33 +344,23 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
 
     const isModified =
         isModifiedColors ||
-        localCardOpacity !== (allGamesCategory.cardOpacity ?? 0.7) ||
+        localCardOpacity !== (allGamesCategory.cardOpacity ?? 0.12) ||
         localTaskbarMargin !== taskbarMargin ||
         localUiScale !== uiScale ||
         localSlimMode !== !!allGamesCategory.slimModeEnabled ||
         localMonochrome !== !!allGamesCategory.monochromeModeEnabled ||
+        localGlow !== !!allGamesCategory.outerGlowEnabled ||
+        localOutline !== (allGamesCategory.outlineEnabled ?? true) ||
+        localTransEnabled !== (allGamesCategory.cardTransparencyEnabled ?? true) ||
+        localVignette !== (allGamesCategory.vignetteEnabled ?? true) ||
+        localScanline !== (allGamesCategory.scanlineEnabled ?? true) ||
+        localGrid !== (allGamesCategory.gridEnabled ?? true) ||
+        localBgAnim !== (allGamesCategory.bgAnimationsEnabled ?? true) ||
+        localLowRes !== !!allGamesCategory.lowResWallpaper ||
+        localPerformanceMode !== (allGamesCategory.performanceMode || 'custom') ||
         localPrimingAnim !== (allGamesCategory.primingAnimation || 'waterfill');
 
-    useEffect(() => {
-        if (isActive) {
-            onCommandUpdate(
-                {
-                    text: 'APPEARANCE_SET_PROTOCOL',
-                    desc: 'THIS PROTOCOL WILL RECOMPILE THE STYLING MATRICES AND OVERRIDE GEOMETRY LIMITS.'
-                },
-                handleExecute,
-                0,
-                isExecuting,
-                true
-            );
-        }
-    }, [
-        isActive, isExecuting,
-        localColors, localCardOpacity, localTaskbarMargin, localUiScale,
-        localSlimMode, localMonochrome, localPrimingAnim
-    ]);
-
-    const handleExecute = () => {
+    const handleExecute = useCallback(() => {
         if (isExecuting) return;
         setIsExecuting(true);
 
@@ -330,13 +388,22 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
         setTimeout(() => {
             clearInterval(interval);
 
-            // Apply all configurations dynamically
             onUpdateCategories(prev => prev.map(c => c.id === 'all' ? {
                 ...c,
                 ...localColors,
                 cardOpacity: localCardOpacity,
                 slimModeEnabled: localSlimMode,
                 monochromeModeEnabled: localMonochrome,
+                outerGlowEnabled: localGlow,
+                innerGlowEnabled: localGlow,
+                outlineEnabled: localOutline,
+                cardTransparencyEnabled: localTransEnabled,
+                vignetteEnabled: localVignette,
+                scanlineEnabled: localScanline,
+                gridEnabled: localGrid,
+                bgAnimationsEnabled: localBgAnim,
+                lowResWallpaper: localLowRes,
+                performanceMode: localPerformanceMode,
                 primingAnimation: localPrimingAnim
             } : c));
 
@@ -354,10 +421,28 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
             setTimeout(() => {
                 setIsExecuting(false);
                 onActiveToggle(false);
-                onCommandUpdate(null, undefined, 0, false, false);
             }, 800);
         }, 600);
-    };
+    }, [isExecuting, onCommandUpdate, onUpdateCategories, localColors, localCardOpacity, localSlimMode, localMonochrome, localGlow, localOutline, localTransEnabled, localVignette, localScanline, localGrid, localBgAnim, localLowRes, localPerformanceMode, localPrimingAnim, onUpdateTaskbarMargin, localTaskbarMargin, onUpdateUIScale, localUiScale, onActiveToggle]);
+
+    const executeRef = useRef(handleExecute);
+    useEffect(() => { executeRef.current = handleExecute; }, [handleExecute]);
+    const stableExecute = useCallback(() => executeRef.current(), []);
+
+    useEffect(() => {
+        if (isActive) {
+            onCommandUpdate(
+                {
+                    text: 'APPEARANCE_SET_PROTOCOL',
+                    desc: 'THIS PROTOCOL WILL RECOMPILE THE STYLING MATRICES AND OVERRIDE GEOMETRY LIMITS.'
+                },
+                stableExecute,
+                0,
+                isExecuting,
+                isModified
+            );
+        }
+    }, [isActive, isExecuting, isModified, stableExecute, onCommandUpdate]);
 
     const cardClip = `polygon(
         0 0, 
@@ -372,21 +457,21 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
         if (isExecuting) return;
         const nextState = !isActive;
         onActiveToggle(nextState);
-        if (!nextState) {
-            onCommandUpdate(null, undefined, 0, false, false);
-        }
     };
+
+    // Check if Secret core is actually present in categories
+    const hasSecretCore = isSecretUnlocked;
 
     return (
         <div ref={cardRef} className="w-full relative">
-            <ConfigCardBorder color={accentColor} isActive={isActive} />
+            <ConfigCardBorder color={accentColor} isActive={isActive} outerGlowEnabled={outerGlowEnabled} />
 
             <div
                 onClick={handleToggleActive}
                 className={`w-full flex flex-col p-[20px] transition-all duration-300 relative overflow-hidden ${!isActive ? 'justify-center cursor-pointer' : ''} ${isExecuting ? 'cursor-wait opacity-80' : ''}`}
                 style={{
                     clipPath: cardClip,
-                    backgroundColor: `${accentColor}26`,
+                    backgroundColor: cardTransparencyEnabled ? `${accentColor}1F` : `${accentColor}26`,
                     minHeight: '100px'
                 }}
             >
@@ -422,14 +507,28 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
                         {/* Colors Matrix */}
                         <div className="flex flex-col gap-2">
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
-                                {coreDefinitions.map(core => (
-                                    <ColorPickerBlock
-                                        key={core.id}
-                                        label={core.label}
-                                        color={localColors[core.key]}
-                                        onChange={e => setLocalColors(prev => ({ ...prev, [core.key]: e.target.value }))}
-                                    />
-                                ))}
+                                {coreDefinitions.map(core => {
+                                    // Conditional for Secret Core
+                                    if (core.id === 'secret') {
+                                        return isSecretUnlocked ? (
+                                            <ColorPickerBlock
+                                                key={core.id}
+                                                label={core.label}
+                                                color={localColors[core.key]}
+                                                onChange={e => setLocalColors(prev => ({ ...prev, [core.key]: e.target.value }))}
+                                            />
+                                        ) : null;
+                                    }
+
+                                    return (
+                                        <ColorPickerBlock
+                                            key={core.id}
+                                            label={core.label}
+                                            color={localColors[core.key]}
+                                            onChange={e => setLocalColors(prev => ({ ...prev, [core.key]: e.target.value }))}
+                                        />
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -469,26 +568,33 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
                             />
                         </div>
 
-                        {/* Toggles & Priming */}
+                        {/* TogglesZone */}
                         <div className="flex flex-col gap-6 pt-2">
-                            {/* Protocol Toggles */}
+                            {/* Performance Presets */}
+                            <div className="flex flex-col gap-2">
+                                <span className="text-[7px] font-black tracking-[0.2em] opacity-30 px-1 uppercase text-white/50">PERFORMANCE_PRESETS</span>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                    <ModeButton label="LOW [ECO]" isActive={localPerformanceMode === 'low'} onClick={() => applyPreset('low')} accentColor={accentColor} disabled={isExecuting} />
+                                    <ModeButton label="BALANCED" isActive={localPerformanceMode === 'balanced'} onClick={() => applyPreset('balanced')} accentColor={accentColor} disabled={isExecuting} />
+                                    <ModeButton label="HIGH [GPU]" isActive={localPerformanceMode === 'high'} onClick={() => applyPreset('high')} accentColor={accentColor} disabled={isExecuting} />
+                                    <ModeButton label="CUSTOM" isActive={localPerformanceMode === 'custom'} onClick={() => applyPreset('custom')} accentColor={accentColor} disabled={isExecuting} />
+                                </div>
+                            </div>
+
+                            {/* Render Protocols */}
                             <div className="flex flex-col gap-2">
                                 <span className="text-[7px] font-black tracking-[0.2em] opacity-30 px-1 uppercase text-white/50">RENDER_PROTOCOLS</span>
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                                    <ToggleButton
-                                        label="SLIM_MODE_FRAMELESS"
-                                        isActive={localSlimMode}
-                                        onClick={() => setLocalSlimMode(prev => !prev)}
-                                        accentColor={accentColor}
-                                        disabled={isExecuting}
-                                    />
-                                    <ToggleButton
-                                        label="MONOCHROME_PROTOCOL"
-                                        isActive={localMonochrome}
-                                        onClick={() => setLocalMonochrome(prev => !prev)}
-                                        accentColor={accentColor}
-                                        disabled={isExecuting}
-                                    />
+                                    <ToggleButton label="SLIM_MODE" isActive={localSlimMode} onClick={() => { setLocalSlimMode(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="MONOCHROME" isActive={localMonochrome} onClick={() => { setLocalMonochrome(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="GLOW_FX" isActive={localGlow} onClick={() => { setLocalGlow(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="OUTLINE_FX" isActive={localOutline} onClick={() => setLocalOutline(p => !p)} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="TRANS_FX" isActive={localTransEnabled} onClick={() => { setLocalTransEnabled(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="VIGNETTE_FX" isActive={localVignette} onClick={() => { setLocalVignette(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="SCANLINE_FX" isActive={localScanline} onClick={() => { setLocalScanline(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="GRID_FX" isActive={localGrid} onClick={() => { setLocalGrid(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="AMBIENT_FX" isActive={localBgAnim} onClick={() => { setLocalBgAnim(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
+                                    <ToggleButton label="LOW_RES_FX" isActive={localLowRes} onClick={() => { setLocalLowRes(p => !p); setLocalPerformanceMode('custom'); }} accentColor={accentColor} disabled={isExecuting} />
                                 </div>
                             </div>
 

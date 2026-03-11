@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Category } from '../../../types';
 
 interface PerformanceConfigCardProps {
@@ -117,13 +117,7 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
         { key: 'scanlineEnabled', label: 'SCANLINE_FX' },
         { key: 'gridEnabled', label: 'MATRIX_GRID' },
         { key: 'bgAnimationsEnabled', label: 'AMBIENT_MOTION' },
-        { key: 'highQualityBlobs', label: 'AMBIENT_QUALITY [HIGH]' },
-        { key: 'lowResWallpaper', label: 'WALLPAPER_RES [960P]' },
-        { key: 'wallpaperAAEnabled', label: 'WALLPAPER_SMOOTH [AA]' },
-        { key: 'cardTransparencyEnabled', label: 'CARD_TRANSPARENCY' },
-        { key: 'cardBlurEnabled', label: 'CARD_GLASS [BLUR]' },
-        { key: 'innerGlowEnabled', label: 'INNER NEON BLEED' },
-        { key: 'outerGlowEnabled', label: 'OUTER RADIANT AURA' }
+        { key: 'lowResWallpaper', label: 'WALLPAPER_RES [960P]' }
     ];
 
     // Initialize/Sync State
@@ -151,27 +145,12 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
         localMode !== (allGamesCategory.performanceMode || 'custom') ||
         toggles.some(tggl => localToggles[tggl.key] !== !!allGamesCategory[tggl.key as keyof Category]);
 
-    useEffect(() => {
-        if (isActive) {
-            onCommandUpdate(
-                {
-                    text: 'PERFORMANCE_PROTOCOL',
-                    desc: 'THIS PROTOCOL WILL RECONFIGURE RENDERING QUALITY AND UI PERFORMANCE LIMITS.'
-                },
-                handleExecute,
-                0,
-                isExecuting,
-                isModified
-            );
-        }
-    }, [isActive, isExecuting, isModified, localToggles, localMode]);
-
     const handleExecute = () => {
         if (isExecuting || !isModified) return;
         setIsExecuting(true);
 
         let prog = 0;
-        onCommandUpdate({ text: 'PERFORMANCE_PROTOCOL', desc: 'UPDATING_RENDERING_PIPELINE' }, undefined, 0, true, true);
+        onCommandUpdate({ text: 'PERFORMANCE_PROTOCOL', desc: 'UPDATING_RENDERING_PIPELINE' }, null, 0, true, true);
 
         const interval = setInterval(() => {
             prog += 10 + Math.random() * 10;
@@ -179,7 +158,7 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
                 prog = 98;
                 clearInterval(interval);
             }
-            onCommandUpdate({ text: 'PERFORMANCE_PROTOCOL', desc: 'RECONFIGURING_GPU_BUFFERS' }, undefined, prog, true, true);
+            onCommandUpdate({ text: 'PERFORMANCE_PROTOCOL', desc: 'RECONFIGURING_GPU_BUFFERS' }, null, prog, true, true);
         }, 40);
 
         setTimeout(() => {
@@ -192,23 +171,32 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
                 ...localToggles
             } : c));
 
-            onCommandUpdate({ text: 'PERFORMANCE_PROTOCOL', desc: 'MODIFICATIONS_SUCCESSFUL' }, undefined, 100, true, false);
+            onCommandUpdate({ text: 'PERFORMANCE_PROTOCOL', desc: 'MODIFICATIONS_SUCCESSFUL' }, null, 100, true, false);
 
             setTimeout(() => {
                 setIsExecuting(false);
-                onCommandUpdate(
-                    {
-                        text: 'PERFORMANCE_SET_PROTOCOL',
-                        desc: 'THIS PROTOCOL WILL RECONFIGURE RENDERING QUALITY AND UI PERFORMANCE LIMITS.'
-                    },
-                    handleExecute,
-                    0,
-                    false,
-                    false
-                );
             }, 800);
         }, 800);
     };
+
+    const executeRef = useRef(handleExecute);
+    useEffect(() => { executeRef.current = handleExecute; }, [handleExecute]);
+    const stableExecute = useCallback(() => executeRef.current(), []);
+
+    useEffect(() => {
+        if (isActive) {
+            onCommandUpdate(
+                {
+                    text: 'PERFORMANCE_PROTOCOL',
+                    desc: 'THIS PROTOCOL WILL RECONFIGURE RENDERING QUALITY AND UI PERFORMANCE LIMITS.'
+                },
+                stableExecute,
+                0,
+                isExecuting,
+                isModified
+            );
+        }
+    }, [isActive, isExecuting, isModified, stableExecute, onCommandUpdate]);
 
     const cardClip = `polygon(
         0 0, 
@@ -224,7 +212,6 @@ const PerformanceConfigCard: React.FC<PerformanceConfigCardProps> = ({
         const nextState = !isActive;
         onActiveToggle(nextState);
         if (!nextState) {
-            onCommandUpdate(null, undefined, 0, false, false);
             // Re-sync
             const newToggles: Record<string, boolean> = {};
             toggles.forEach(tggl => {

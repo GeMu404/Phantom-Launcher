@@ -20,6 +20,9 @@ export function setupSyncEngine(ctx: ServerContext, app: any) {
         sseClients.forEach(client => client.write(`data: ${JSON.stringify(eventData)}\n\n`));
     };
 
+    // Expose broadcast function to the app so any route can trigger it
+    app.broadcastSyncEvent = broadcastSyncEvent;
+
     try {
         const steamConfigPath = 'C:/Program Files (x86)/Steam/userdata/*/config/grid';
         const watchPaths = [ctx.ASSETS_DIR, steamConfigPath];

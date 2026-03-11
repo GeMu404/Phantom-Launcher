@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { EMU_PLATFORMS, EmuPlatform } from '../../../constants/emulators';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -9,12 +9,14 @@ interface EmuSyncProps {
     handleSyncEmuLibrary: (platformId: string, romsDir: string, emuExe: string, customArgs: string, customIcon?: string, extension?: string, onProgress?: (p: number) => void, includeAssets?: boolean) => Promise<void>;
     onCommandUpdate: (
         command: { text: string; desc: string } | null,
-        onExecute?: () => void,
+        onExecute?: (() => void) | null,
         progress?: number,
         isExecuting?: boolean,
         isReady?: boolean,
-        scrollProgress?: number,
-        showScrollMarker?: boolean
+        _scrollProgress?: number | null,
+        _showScrollMarker?: boolean | null,
+        execStart?: (() => void) | null,
+        execEnd?: (() => void) | null
     ) => void;
     triggerFileBrowser: (target: string, type: string) => void;
     emuPath: string;
@@ -116,7 +118,7 @@ const EmuSync: React.FC<EmuSyncProps> = ({
         }
     }, [emuPath, detectedPlatforms.map(p => p.id).join(',')]);
 
-    const handleExecuteSync = async () => {
+    const handleExecuteSync = useCallback(async () => {
         if (!emuPath || !romsDir) return;
         setIsExecuting(true);
         try {
@@ -134,39 +136,63 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                 includeAssets
             );
 
-            // Final visual hold on "EXECUTED"
             onCommandUpdate({ text: commandTitle, desc: t('emu.complete') }, undefined, 100, true, true);
             setTimeout(() => {
                 setIsExecuting(false);
                 onActiveToggle(false);
                 onResetFields();
-                onCommandUpdate(null, undefined, 0, false, false);
             }, 800);
         } catch (error) {
             setIsExecuting(false);
             onCommandUpdate({ text: 'SYNC_ERROR', desc: 'ST_PROTOCOL_FAILURE' }, handleExecuteSync, 0, false, isReady);
         }
-    };
+    }, [emuPath, romsDir, currentPlatform, handleSyncEmuLibrary, platformId, customArgs, customExt, onCommandUpdate, t, includeAssets, onActiveToggle, onResetFields, isReady]);
 
     const handleToggleActive = () => {
-        const nextState = !isActive;
-        onActiveToggle(nextState);
-
-        if (nextState) {
-            onCommandUpdate(
-                {
-                    text: t('emu.command_sync'),
-                    desc: detectedPlatforms.length > 0 ? detectedPlatforms[0].desc : t('emu.desc_sync_init')
-                },
-                handleExecuteSync,
-                0,
-                false,
-                isReady
-            );
-        } else {
-            onCommandUpdate(null, undefined, 0, false, false);
-        }
+        onActiveToggle(!isActive);
     };
+
+    const [holdProgress, setHoldProgress] = useState(0);
+    const holdTimerRef = useRef<any>(null);
+
+    const handleHoldStart = useCallback(() => {
+        if (isExecuting || !isReady) return;
+        setHoldProgress(0);
+        const start = Date.now();
+        const duration = 1000;
+        holdTimerRef.current = setInterval(() => {
+            const elapsed = Date.now() - start;
+            const p = Math.min(100, (elapsed / duration) * 100);
+            setHoldProgress(p);
+            if (p >= 100) {
+                clearInterval(holdTimerRef.current);
+                handleExecuteSync();
+                setHoldProgress(0);
+            }
+        }, 30);
+    }, [isExecuting, isReady, handleExecuteSync]);
+
+    const handleHoldEnd = useCallback(() => {
+        if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        setHoldProgress(0);
+    }, []);
+
+    const executeRef = useRef(handleExecuteSync);
+    useEffect(() => { executeRef.current = handleExecuteSync; }, [handleExecuteSync]);
+
+    const holdStartRef = useRef(handleHoldStart);
+    const holdEndRef = useRef(handleHoldEnd);
+    useEffect(() => { holdStartRef.current = handleHoldStart; }, [handleHoldStart]);
+    useEffect(() => { holdEndRef.current = handleHoldEnd; }, [handleHoldEnd]);
+
+    const stableStart = useCallback(() => holdStartRef.current(), []);
+    const stableEnd = useCallback(() => holdEndRef.current(), []);
+
+    useEffect(() => {
+        return () => {
+            if (holdTimerRef.current) clearInterval(holdTimerRef.current);
+        };
+    }, []);
 
     useEffect(() => {
         if (isActive) {
@@ -177,13 +203,17 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                         ? t('emu.desc_sync_no_emu')
                         : t('emu.desc_sync_platform').replace('{{name}}', currentPlatform.name.toUpperCase())
                 },
-                isReady ? handleExecuteSync : undefined,
-                0,
+                null,
+                holdProgress,
                 isExecuting,
-                isReady
+                isReady,
+                null,
+                null,
+                isReady ? stableStart : null,
+                isReady ? stableEnd : null
             );
         }
-    }, [emuPath, romsDir, customArgs, platformId, currentPlatform?.id, isActive, isExecuting, isReady, t]);
+    }, [isActive, isExecuting, isReady, currentPlatform, holdProgress, stableStart, stableEnd, onCommandUpdate, t, emuPath, romsDir]);
 
     const cardClip = `polygon(
         0 0, 
@@ -268,54 +298,60 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                     <div className="flex flex-col gap-4 mt-6 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Executable Path */}
-                            <div className="flex flex-col gap-2">
-                                <span className="text-[7px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] opacity-30 ml-2">CORE_BINARY_LINK</span>
-                                <div className="flex gap-2 h-10">
-                                    <div className="flex-1 bg-black/40 border border-white/5 flex items-center px-4 overflow-hidden"
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">CORE_BINARY_LINK</span>
+                                <div className="flex gap-[3px] h-10">
+                                    <div className="flex items-center flex-1 min-w-0 px-3 bg-black/30"
                                         style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
-                                        <span className="text-[9px] font-['Space_Mono'] text-white/50 lowercase truncate">{emuPath || 'not_set'}</span>
+                                        <span className="text-[9px] font-mono text-white/40 truncate">{emuPath || 'not_set'}</span>
                                     </div>
                                     <button
                                         onClick={() => triggerFileBrowser('emuPath', 'exe')}
-                                        className="w-10 shrink-0 bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center border border-white/5 active:scale-95"
+                                        className="w-10 h-full shrink-0 flex items-center justify-center bg-black/30 hover:bg-white/10 transition-all active:scale-95"
                                         style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)' }}
                                     >
-                                        <div className="w-1.5 h-1.5 border border-white/40"></div>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/40">
+                                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><polyline points="13 2 13 9 20 9" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
 
                             {/* ROMs Directory */}
-                            <div className="flex flex-col gap-2">
-                                <span className="text-[7px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] opacity-30 ml-2">ROM_STORAGE_REPOS</span>
-                                <div className="flex gap-2 h-10">
-                                    <div className="flex-1 bg-black/40 border border-white/5 flex items-center px-4 overflow-hidden"
+                            <div className="flex flex-col gap-1">
+                                <span className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">ROM_STORAGE_REPOS</span>
+                                <div className="flex gap-[3px] h-10">
+                                    <div className="flex items-center flex-1 min-w-0 px-3 bg-black/30"
                                         style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
-                                        <span className="text-[9px] font-['Space_Mono'] text-white/50 lowercase truncate">{romsDir || 'not_set'}</span>
+                                        <span className="text-[9px] font-mono text-white/40 truncate">{romsDir || 'not_set'}</span>
                                     </div>
                                     <button
                                         onClick={() => triggerFileBrowser('romsDir', 'folder')}
-                                        className="w-10 shrink-0 bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center border border-white/5 active:scale-95"
+                                        className="w-10 h-full shrink-0 flex items-center justify-center bg-black/30 hover:bg-white/10 transition-all active:scale-95"
                                         style={{ clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)' }}
                                     >
-                                        <div className="w-1.5 h-1.5 border border-white/40"></div>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/40">
+                                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         {/* Command Arguments */}
-                        <div className="flex flex-col gap-2">
-                            <span className="text-[7px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] opacity-30 ml-2">RUN_COMMAND_VECTORS</span>
-                            <div className="flex bg-black/40 border border-white/5 px-4 h-10 items-center overflow-hidden"
-                                style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
-                                <input
-                                    type="text"
-                                    value={customArgs}
-                                    onChange={(e) => setCustomArgs(e.target.value)}
-                                    placeholder="[--fullscreen --rom %ROM%]"
-                                    className="w-full bg-transparent border-none outline-none font-['Space_Mono'] text-[10px] text-white tracking-[0.2em] uppercase placeholder:opacity-20"
-                                />
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">RUN_COMMAND_VECTORS</span>
+                            <div className="flex gap-[3px] h-10">
+                                <div className="flex items-center flex-1 min-w-0 px-3 bg-black/30"
+                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
+                                    <input
+                                        type="text"
+                                        value={customArgs}
+                                        onChange={(e) => setCustomArgs(e.target.value)}
+                                        placeholder="[--fullscreen --rom %ROM%]"
+                                        className="w-full bg-transparent border-none outline-none font-mono text-[9px] text-white/40 tracking-[0.2em] uppercase placeholder:opacity-20"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -334,15 +370,14 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                                                     setManualPlatform(p);
                                                     setCustomArgs(p.defaultArgs);
                                                 }}
-                                                className={`flex-1 px-4 py-3 text-[11px] font-black font-['Space_Mono'] transition-all border
+                                                className={`flex-1 px-4 py-2 text-[9px] font-black font-['Space_Mono'] transition-all uppercase tracking-widest
                                                         ${isSel
-                                                        ? 'text-white border-white shadow-[0_0_20px_rgba(255,255,255,0.1)]'
-                                                        : 'border-white/10 text-white/30 hover:text-white/60 hover:bg-white/5 hover:border-white/30'
+                                                        ? 'text-black opacity-100 shadow-[0_0_20px_rgba(255,255,255,0.1)]'
+                                                        : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                                                     }`}
                                                 style={{
-                                                    backgroundColor: isSel ? `${accentColor}4D` : 'transparent',
-                                                    borderColor: isSel ? '#fff' : undefined,
-                                                    clipPath: 'polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px)',
+                                                    backgroundColor: isSel ? accentColor : 'rgba(255,255,255,0.05)',
+                                                    clipPath: 'polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px)',
                                                 }}
                                             >
                                                 {p.name.replace(/_/g, ' ')}
@@ -353,16 +388,19 @@ const EmuSync: React.FC<EmuSyncProps> = ({
                             )}
 
                             {platformId === 'custom' && (
-                                <div className="flex flex-col gap-2 mt-4">
-                                    <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-white/30">CUSTOM_CORE_EXTENSION</span>
-                                    <div className="bg-black/40 border border-white/5 px-4 py-3 flex items-center gap-3 transition-colors hover:border-white/10" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px))' }}>
-                                        <input
-                                            type="text"
-                                            value={customExt}
-                                            onChange={(e) => setCustomExt(e.target.value)}
-                                            placeholder=".ISO"
-                                            className="bg-transparent border-none outline-none text-[12px] font-['Space_Mono'] text-white/90 w-full placeholder:text-white/10"
-                                        />
+                                <div className="flex flex-col gap-1 mt-4">
+                                    <span className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">CUSTOM_CORE_EXTENSION</span>
+                                    <div className="flex gap-[3px] h-10">
+                                        <div className="flex items-center flex-1 min-w-0 px-3 bg-black/30"
+                                            style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
+                                            <input
+                                                type="text"
+                                                value={customExt}
+                                                onChange={(e) => setCustomExt(e.target.value)}
+                                                placeholder=".ISO"
+                                                className="w-full bg-transparent border-none outline-none font-mono text-[9px] text-white/40 placeholder:opacity-20"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}

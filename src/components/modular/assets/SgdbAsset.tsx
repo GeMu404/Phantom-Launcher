@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const ConfigCardBorder = ({ color, isActive }: { color: string; isActive: boolean }) => {
     if (!isActive) return null;
@@ -48,6 +48,10 @@ const SgdbAsset: React.FC<SgdbAssetProps> = ({
 }) => {
     const isReady = !!sgdbKey.trim();
 
+    const toggleRef = useRef(() => onToggleSgdb(!sgdbEnabled));
+    useEffect(() => { toggleRef.current = () => onToggleSgdb(!sgdbEnabled); }, [onToggleSgdb, sgdbEnabled]);
+    const stableToggle = useCallback(() => toggleRef.current(), []);
+
     useEffect(() => {
         if (isActive && onCommandUpdate) {
             onCommandUpdate(
@@ -55,13 +59,13 @@ const SgdbAsset: React.FC<SgdbAssetProps> = ({
                     text: `ASSET_SET_PROTOCOL : ${sgdbEnabled ? 'OFFLINE' : 'ONLINE'}`,
                     desc: 'ESTA CONEXIÓN PERMITE OBTENER PORTADAS, LOGOS Y FONDOS AUTOMÁTICAMENTE PARA TUS JUEGOS DESDE LA BASE DE DATOS DE STEAMGRIDDB.'
                 },
-                () => onToggleSgdb(!sgdbEnabled),
+                stableToggle,
                 0,
                 false,
-                isReady
+                true
             );
         }
-    }, [isActive, sgdbKey, isReady, sgdbEnabled, onToggleSgdb]);
+    }, [isActive, stableToggle, sgdbEnabled, onCommandUpdate]);
 
     const cardClip = `polygon(
         0 0, 
@@ -73,11 +77,7 @@ const SgdbAsset: React.FC<SgdbAssetProps> = ({
     )`;
 
     const handleToggleActive = () => {
-        const nextState = !isActive;
-        onActiveToggle(nextState);
-        if (!nextState) {
-            onCommandUpdate(null, undefined, 0, false, false);
-        }
+        onActiveToggle(!isActive);
     };
 
     return (
@@ -129,17 +129,19 @@ const SgdbAsset: React.FC<SgdbAssetProps> = ({
                 {/* Expandable Content */}
                 {isActive && (
                     <div className="flex flex-col gap-4 mt-6 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col gap-2">
-                            <span className="text-[7px] font-black font-['Space_Mono'] uppercase tracking-[0.2em] opacity-30 ml-2">AUTHENTICATION_VOORHEES</span>
-                            <div className="flex bg-black/40 border border-white/5 px-4 h-12 items-center overflow-hidden"
-                                style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 10px 100%, 0 calc(100% - 10px))' }}>
-                                <input
-                                    type="password"
-                                    value={sgdbKey}
-                                    onChange={(e) => onKeyUpdate(e.target.value)}
-                                    placeholder="ENTER_SGDB_API_KEY"
-                                    className="w-full bg-transparent border-none outline-none font-['Space_Mono'] text-[11px] text-white tracking-[0.1em] placeholder:opacity-20"
-                                />
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[7px] opacity-30 uppercase tracking-[0.2em] font-bold">AUTHENTICATION_VOORHEES</span>
+                            <div className="flex gap-[3px] h-10">
+                                <div className="flex items-center flex-1 min-w-0 px-3 bg-black/30"
+                                    style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px))' }}>
+                                    <input
+                                        type="password"
+                                        value={sgdbKey}
+                                        onChange={(e) => onKeyUpdate(e.target.value)}
+                                        placeholder="ENTER_SGDB_API_KEY"
+                                        className="w-full bg-transparent border-none outline-none font-mono text-[9px] text-white/40 tracking-[0.1em] placeholder:opacity-20"
+                                    />
+                                </div>
                             </div>
                         </div>
 

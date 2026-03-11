@@ -8,9 +8,14 @@ export interface Game {
   execPath?: string; // Path to .exe or a URL
   execArgs?: string; // Command line arguments
   source?: 'manual' | 'steam' | 'imported' | 'xbox' | 'emu';
+  sourceId?: string;
+  platform?: string;
+  category?: string;
   lastPlayed?: string;
+  lastUpdated?: number;
   playtime?: string;
   wallpaper?: string;
+  romPath?: string;
 }
 
 export interface Category {
@@ -22,13 +27,11 @@ export interface Category {
   wallpaperMode?: 'fill' | 'contain' | 'cover' | 'center';
   gridOpacity?: number;
   cardOpacity?: number; // Global transparency of cards
-  cardBlurEnabled?: boolean;
   cardTransparencyEnabled?: boolean;
+  cardBlurEnabled?: boolean;
   innerGlowEnabled?: boolean;
   outerGlowEnabled?: boolean;
   lowResWallpaper?: boolean;
-  wallpaperAAEnabled?: boolean;
-  highQualityBlobs?: boolean;
   configIcon?: string;
   games: Game[];
   enabled?: boolean;
@@ -38,13 +41,14 @@ export interface Category {
   scanlineEnabled?: boolean;
   vignetteEnabled?: boolean;
   performanceMode?: 'high' | 'balanced' | 'low' | 'custom';
+  outlineEnabled?: boolean;
   // Chroma_Protocol Palette
   assetColor?: string;
   nodeColor?: string;
   syncColor?: string;
   coreColor?: string;
-  explorerColor?: string;
-  sgdbColor?: string;
+  configColor?: string; // Missing from earlier but used
+  secretColor?: string; // Missing from earlier but used
   slimModeEnabled?: boolean;
   monochromeModeEnabled?: boolean;
   primingAnimation?: 'waterfill' | 'scanline' | 'ignition' | 'charge' | 'shockwave' | 'glow_pulse';

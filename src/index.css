@@ -229,3 +229,118 @@ body {
     will-change: auto !important;
     transition-duration: 0.1s !important;
 }
+
+/* PRIMING ANIMATIONS */
+@keyframes prime-waterfill {
+    0% {
+        transform: scaleY(0);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scaleY(1);
+        opacity: 0.8;
+    }
+}
+
+@keyframes prime-scanline {
+    0% {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(120%);
+        opacity: 0;
+    }
+}
+
+@keyframes prime-ignition {
+    0% {
+        opacity: 0.1;
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        opacity: 0.8;
+        filter: brightness(1.5);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        opacity: 0.3;
+        filter: brightness(1);
+    }
+
+    100% {
+        opacity: 1;
+        filter: brightness(2);
+    }
+}
+
+@keyframes prime-charge {
+    0% {
+        box-shadow: inset 0 0 0px 0px rgba(255, 255, 255, 0);
+        opacity: 0;
+    }
+
+    100% {
+        box-shadow: inset 0 0 100px 30px rgba(255, 255, 255, 0.8);
+        opacity: 1;
+        filter: brightness(1.5);
+    }
+}
+
+@keyframes prime-shockwave {
+    0% {
+        transform: scale(1);
+        opacity: 0.8;
+        border-width: 0px;
+    }
+
+    90% {
+        transform: scale(1.05);
+        opacity: 1;
+        border-width: 4px;
+    }
+
+    100% {
+        transform: scale(1.15);
+        opacity: 0;
+        border-width: 8px;
+    }
+}
+
+@keyframes prime-glow-pulse {
+    0% {
+        opacity: 0.5;
+        filter: brightness(1) drop-shadow(0 0 0px rgba(255, 255, 255, 0));
+    }
+
+    100% {
+        opacity: 1.5;
+        filter: brightness(2) drop-shadow(0 0 40px rgba(255, 255, 255, 0.8));
+        transform: scale(1.02);
+    }
+}
+
+.animate-prime-glow-pulse {
+    animation: prime-glow-pulse 1.5s cubic-bezier(0.4, 0, 1, 1) forwards;
+}

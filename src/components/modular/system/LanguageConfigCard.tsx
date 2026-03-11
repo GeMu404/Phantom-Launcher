@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface LanguageConfigCardProps {
     isActive: boolean;
@@ -13,12 +13,15 @@ interface LanguageConfigCardProps {
     ) => void;
     currentLanguage: string;
     setLanguage: (lang: string) => void;
+    cardTransparencyEnabled: boolean;
+    outerGlowEnabled: boolean;
 }
 
-const ConfigCardBorder = ({ color, isActive }: { color: string; isActive: boolean }) => {
+const ConfigCardBorder = ({ color, isActive, outerGlowEnabled }: { color: string; isActive: boolean; outerGlowEnabled: boolean }) => {
     if (!isActive) return null;
+    const glowStyle = outerGlowEnabled ? { filter: `drop-shadow(0 0 6px ${color})`, boxShadow: `0 0 10px ${color}33` } : {};
     return (
-        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10, ...glowStyle }}>
             <div className="absolute top-0 left-0 h-[2px]" style={{ right: '20px', backgroundColor: color }} />
             <div className="absolute bottom-0 right-0 h-[2px]" style={{ left: '20px', backgroundColor: color }} />
             <div className="absolute top-[20px] bottom-0 right-0 w-[2px]" style={{ backgroundColor: color }} />
@@ -40,7 +43,9 @@ const LanguageConfigCard: React.FC<LanguageConfigCardProps> = ({
     accentColor,
     onCommandUpdate,
     currentLanguage,
-    setLanguage
+    setLanguage,
+    cardTransparencyEnabled,
+    outerGlowEnabled
 }) => {
     const [isExecuting, setIsExecuting] = useState(false);
     const [pendingLanguage, setPendingLanguage] = useState(currentLanguage);
@@ -60,22 +65,6 @@ const LanguageConfigCard: React.FC<LanguageConfigCardProps> = ({
             }, 300);
         }
     }, [isActive]);
-
-    useEffect(() => {
-        if (isActive) {
-            // Re-evaluate if it's "ready" based on if pending is different, or maybe always ready
-            onCommandUpdate(
-                {
-                    text: 'LANGUAGE_SET_PROTOCOL',
-                    desc: 'THIS PROTOCOL WILL RECONFIGURE THE ROOT SYSTEM LANGUAGE AND RE-INITIALIZE THE INTERFACE.'
-                },
-                handleExecute,
-                0,
-                isExecuting,
-                true
-            );
-        }
-    }, [isActive, isExecuting, pendingLanguage]);
 
     const handleExecute = () => {
         if (isExecuting) return;
@@ -117,10 +106,29 @@ const LanguageConfigCard: React.FC<LanguageConfigCardProps> = ({
             setTimeout(() => {
                 setIsExecuting(false);
                 onActiveToggle(false);
-                onCommandUpdate(null, undefined, 0, false, false);
             }, 800);
         }, 600);
     };
+
+    const executeRef = useRef(handleExecute);
+    useEffect(() => { executeRef.current = handleExecute; }, [handleExecute]);
+    const stableExecute = useCallback(() => executeRef.current(), []);
+
+    useEffect(() => {
+        if (isActive) {
+            // Re-evaluate if it's "ready" based on if pending is different, or maybe always ready
+            onCommandUpdate(
+                {
+                    text: 'LANGUAGE_SET_PROTOCOL',
+                    desc: 'THIS PROTOCOL WILL RECONFIGURE THE ROOT SYSTEM LANGUAGE AND RE-INITIALIZE THE INTERFACE.'
+                },
+                stableExecute,
+                0,
+                isExecuting,
+                true
+            );
+        }
+    }, [isActive, isExecuting, stableExecute, onCommandUpdate]);
 
     const cardClip = `polygon(
         0 0, 
@@ -136,21 +144,20 @@ const LanguageConfigCard: React.FC<LanguageConfigCardProps> = ({
         const nextState = !isActive;
         onActiveToggle(nextState);
         if (!nextState) {
-            onCommandUpdate(null, undefined, 0, false, false);
             setPendingLanguage(currentLanguage); // reset
         }
     };
 
     return (
         <div ref={cardRef} className="w-full relative">
-            <ConfigCardBorder color={accentColor} isActive={isActive} />
+            <ConfigCardBorder color={accentColor} isActive={isActive} outerGlowEnabled={outerGlowEnabled} />
 
             <div
                 onClick={handleToggleActive}
                 className={`w-full flex flex-col p-[20px] transition-all duration-300 relative overflow-hidden ${!isActive ? 'justify-center' : ''} ${isExecuting ? 'cursor-wait opacity-80' : 'cursor-pointer'}`}
                 style={{
                     clipPath: cardClip,
-                    backgroundColor: `${accentColor}26`,
+                    backgroundColor: cardTransparencyEnabled ? `${accentColor}1F` : `${accentColor}26`,
                     minHeight: '100px'
                 }}
             >

@@ -18,8 +18,15 @@ interface ModularModalProps {
     progress?: number;
     isExecuting?: boolean;
     isReady?: boolean;
-    scrollProgress?: number;
-    showScrollMarker?: boolean;
+    scrollProgress?: number | (() => void) | null;
+    showScrollMarker?: boolean | (() => void) | null;
+    onScrollDrag?: (progress: number) => void;
+    closeLabel?: string;
+    t?: any;
+    outerGlowEnabled?: boolean;
+    outlineEnabled?: boolean;
+    cardTransparencyEnabled?: boolean;
+    cardOpacity?: number;
 }
 
 /**
@@ -43,7 +50,14 @@ const ModularModal: React.FC<ModularModalProps> = ({
     isExecuting,
     isReady,
     scrollProgress,
-    showScrollMarker
+    showScrollMarker,
+    onScrollDrag,
+    closeLabel,
+    t,
+    outerGlowEnabled,
+    outlineEnabled,
+    cardTransparencyEnabled,
+    cardOpacity
 }) => {
     if (!isOpen) return null;
 
@@ -51,7 +65,7 @@ const ModularModal: React.FC<ModularModalProps> = ({
         <div className="fixed inset-0 flex items-center justify-center p-4 lg:p-8 z-[2000]" style={{ zIndex }}>
             {/* Simple Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300"
+                className={`absolute inset-0 transition-all duration-300 ${cardTransparencyEnabled ? 'bg-black/5 backdrop-blur-sm' : 'bg-black/60 backdrop-blur-md'}`}
                 onClick={onClose}
             />
 
@@ -70,6 +84,13 @@ const ModularModal: React.FC<ModularModalProps> = ({
                 isReady={isReady}
                 scrollProgress={scrollProgress}
                 showScrollMarker={showScrollMarker}
+                onScrollDrag={onScrollDrag}
+                closeLabel={closeLabel}
+                t={t}
+                outerGlowEnabled={outerGlowEnabled}
+                outlineEnabled={outlineEnabled}
+                cardTransparencyEnabled={cardTransparencyEnabled}
+                cardOpacity={cardOpacity}
             >
                 {children}
             </ModularFrame>

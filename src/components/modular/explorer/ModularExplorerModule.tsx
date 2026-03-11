@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ScrollIndicator from '../../ui/ScrollIndicator';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface FileItem {
@@ -30,6 +31,7 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
     const [contents, setContents] = useState<FileItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const explorerContentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchContents = async () => {
@@ -72,59 +74,41 @@ const ModularExplorerModule: React.FC<ModularExplorerModuleProps> = ({
 
     return (
         <div className="flex flex-col w-full h-full overflow-hidden">
-            {/* Address Bar (Geometric Redesign) */}
-            <div className="h-[40px] shrink-0 w-full relative mb-[15px] flex items-center overflow-hidden">
+            {/* Address Bar (Standardized) */}
+            <div className="h-[42px] shrink-0 w-full relative mb-[15px] flex items-center overflow-hidden">
                 <div className="w-full flex items-center gap-2">
                     {/* BACK BUTTON */}
-                    <div className="relative" style={{ filter: `drop-shadow(0 0 10px ${accentColor}44)` }}>
-                        <div
-                            style={{
-                                clipPath: labelClip,
-                                backgroundColor: accentColor,
-                                padding: '1.5px'
-                            }}
-                        >
-                            <button
-                                onClick={handleBack}
-                                className="h-7 px-6 flex items-center justify-center font-['Space_Mono'] font-black text-[10px] uppercase tracking-widest text-white hover:brightness-125 active:scale-95 transition-all"
-                                style={{
-                                    clipPath: labelClip,
-                                    backgroundColor: 'rgba(10, 10, 10, 0.8)'
-                                }}
-                            >
-                                {t('nav.go_back')}
-                            </button>
-                        </div>
-                    </div>
+                    <button
+                        onClick={handleBack}
+                        className="h-[42px] px-5 flex items-center justify-center font-['Space_Mono'] font-black text-[10px] uppercase tracking-widest text-white hover:brightness-125 active:scale-95 transition-all shrink-0"
+                        style={{
+                            clipPath: 'polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px))',
+                            background: `linear-gradient(${accentColor}22, ${accentColor}22), #080808bf`,
+                            border: `1px solid ${accentColor}55`
+                        }}
+                    >
+                        {t('nav.go_back')}
+                    </button>
 
                     {/* PATH BAR */}
-                    <div className="flex-1 relative">
-                        <div
-                            style={{
-                                clipPath: previewClip,
-                                backgroundColor: `${accentColor}26`,
-                                padding: '1.5px'
-                            }}
-                        >
-                            <div
-                                className="w-full h-7 flex items-center px-4 overflow-hidden"
-                                style={{
-                                    clipPath: previewClip,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.03)'
-                                }}
-                            >
-                                <span className="text-[10px] font-['Space_Mono'] text-white/80 uppercase tracking-[0.4em] truncate font-black"
-                                    style={{ textShadow: `0 0 15px ${accentColor}` }}>
-                                    {currentPath}
-                                </span>
-                            </div>
-                        </div>
+                    <div
+                        className="flex-1 h-[42px] flex items-center px-5 overflow-hidden"
+                        style={{
+                            clipPath: 'polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px))',
+                            background: `linear-gradient(${accentColor}22, ${accentColor}22), #080808bf`,
+                        }}
+                    >
+                        <span className="text-[10px] font-['Space_Mono'] text-white/80 uppercase tracking-[0.4em] truncate font-black"
+                            style={{ textShadow: `0 0 15px ${accentColor}` }}>
+                            {currentPath}
+                        </span>
                     </div>
                 </div>
             </div>
 
             {/* Main Content Area with Custom Scrollbar */}
-            <div className="flex-1 w-full overflow-y-scroll custom-scrollbar pb-[100px]">
+            <div ref={explorerContentRef} className="flex-1 w-full overflow-y-scroll custom-scrollbar pb-[100px] relative">
+                <ScrollIndicator scrollRef={explorerContentRef} color={accentColor} />
 
                 {loading ? (
                     <div className="flex-1 flex flex-col items-center justify-center gap-4 opacity-70">

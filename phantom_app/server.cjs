@@ -15308,11 +15308,11 @@ var require_mime_types = __commonJS({
       }
       return exts[0];
     }
-    function lookup(path12) {
-      if (!path12 || typeof path12 !== "string") {
+    function lookup(path13) {
+      if (!path13 || typeof path13 !== "string") {
         return false;
       }
-      var extension2 = extname2("x." + path12).toLowerCase().slice(1);
+      var extension2 = extname2("x." + path13).toLowerCase().slice(1);
       if (!extension2) {
         return false;
       }
@@ -18780,13 +18780,13 @@ var require_view = __commonJS({
   "node_modules/express/lib/view.js"(exports2, module2) {
     "use strict";
     var debug = require_src()("express:view");
-    var path12 = require("node:path");
+    var path13 = require("node:path");
     var fs13 = require("node:fs");
-    var dirname3 = path12.dirname;
-    var basename3 = path12.basename;
-    var extname2 = path12.extname;
-    var join3 = path12.join;
-    var resolve3 = path12.resolve;
+    var dirname3 = path13.dirname;
+    var basename3 = path13.basename;
+    var extname2 = path13.extname;
+    var join3 = path13.join;
+    var resolve3 = path13.resolve;
     module2.exports = View;
     function View(name, options) {
       var opts = options || {};
@@ -18815,17 +18815,17 @@ var require_view = __commonJS({
       this.path = this.lookup(fileName);
     }
     View.prototype.lookup = function lookup(name) {
-      var path13;
+      var path14;
       var roots = [].concat(this.root);
       debug('lookup "%s"', name);
-      for (var i = 0; i < roots.length && !path13; i++) {
+      for (var i = 0; i < roots.length && !path14; i++) {
         var root = roots[i];
         var loc = resolve3(root, name);
         var dir = dirname3(loc);
         var file = basename3(loc);
-        path13 = this.resolve(dir, file);
+        path14 = this.resolve(dir, file);
       }
-      return path13;
+      return path14;
     };
     View.prototype.render = function render(options, callback) {
       var sync = true;
@@ -18847,21 +18847,21 @@ var require_view = __commonJS({
     };
     View.prototype.resolve = function resolve4(dir, file) {
       var ext = this.ext;
-      var path13 = join3(dir, file);
-      var stat4 = tryStat(path13);
+      var path14 = join3(dir, file);
+      var stat4 = tryStat(path14);
       if (stat4 && stat4.isFile()) {
-        return path13;
+        return path14;
       }
-      path13 = join3(dir, basename3(file, ext), "index" + ext);
-      stat4 = tryStat(path13);
+      path14 = join3(dir, basename3(file, ext), "index" + ext);
+      stat4 = tryStat(path14);
       if (stat4 && stat4.isFile()) {
-        return path13;
+        return path14;
       }
     };
-    function tryStat(path13) {
-      debug('stat "%s"', path13);
+    function tryStat(path14) {
+      debug('stat "%s"', path14);
       try {
-        return fs13.statSync(path13);
+        return fs13.statSync(path14);
       } catch (e) {
         return void 0;
       }
@@ -20059,15 +20059,15 @@ var require_dist = __commonJS({
           if (token.type === endType)
             break;
           if (token.type === "char" || token.type === "escape") {
-            let path12 = token.value;
+            let path13 = token.value;
             let cur = tokens[pos];
             while (cur.type === "char" || cur.type === "escape") {
-              path12 += cur.value;
+              path13 += cur.value;
               cur = tokens[++pos];
             }
             output.push({
               type: "text",
-              value: encodePath(path12)
+              value: encodePath(path13)
             });
             continue;
           }
@@ -20091,16 +20091,16 @@ var require_dist = __commonJS({
       }
       return new TokenData(consumeUntil("end"), str);
     }
-    function compile(path12, options = {}) {
+    function compile(path13, options = {}) {
       const { encode = encodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const data = typeof path12 === "object" ? path12 : parse(path12, options);
+      const data = typeof path13 === "object" ? path13 : parse(path13, options);
       const fn = tokensToFunction(data.tokens, delimiter, encode);
-      return function path13(params = {}) {
-        const [path14, ...missing] = fn(params);
+      return function path14(params = {}) {
+        const [path15, ...missing] = fn(params);
         if (missing.length) {
           throw new TypeError(`Missing parameters: ${missing.join(", ")}`);
         }
-        return path14;
+        return path15;
       };
     }
     function tokensToFunction(tokens, delimiter, encode) {
@@ -20156,9 +20156,9 @@ var require_dist = __commonJS({
         return [encodeValue(value)];
       };
     }
-    function match(path12, options = {}) {
+    function match(path13, options = {}) {
       const { decode = decodeURIComponent, delimiter = DEFAULT_DELIMITER } = options;
-      const { regexp, keys } = pathToRegexp(path12, options);
+      const { regexp, keys } = pathToRegexp(path13, options);
       const decoders = keys.map((key) => {
         if (decode === false)
           return NOOP_VALUE;
@@ -20170,7 +20170,7 @@ var require_dist = __commonJS({
         const m = regexp.exec(input);
         if (!m)
           return false;
-        const path13 = m[0];
+        const path14 = m[0];
         const params = /* @__PURE__ */ Object.create(null);
         for (let i = 1; i < m.length; i++) {
           if (m[i] === void 0)
@@ -20179,15 +20179,15 @@ var require_dist = __commonJS({
           const decoder = decoders[i - 1];
           params[key.name] = decoder(m[i]);
         }
-        return { path: path13, params };
+        return { path: path14, params };
       };
     }
-    function pathToRegexp(path12, options = {}) {
+    function pathToRegexp(path13, options = {}) {
       const { delimiter = DEFAULT_DELIMITER, end = true, sensitive = false, trailing = true } = options;
       const keys = [];
       const flags = sensitive ? "" : "i";
       const sources = [];
-      for (const input of pathsToArray(path12, [])) {
+      for (const input of pathsToArray(path13, [])) {
         const data = typeof input === "object" ? input : parse(input, options);
         for (const tokens of flatten(data.tokens, 0, [])) {
           sources.push(toRegExpSource(tokens, delimiter, keys, data.originalPath));
@@ -20317,18 +20317,18 @@ var require_layer = __commonJS({
     var TRAILING_SLASH_REGEXP = /\/+$/;
     var MATCHING_GROUP_REGEXP = /\((?:\?<(.*?)>)?(?!\?)/g;
     module2.exports = Layer;
-    function Layer(path12, options, fn) {
+    function Layer(path13, options, fn) {
       if (!(this instanceof Layer)) {
-        return new Layer(path12, options, fn);
+        return new Layer(path13, options, fn);
       }
-      debug("new %o", path12);
+      debug("new %o", path13);
       const opts = options || {};
       this.handle = fn;
       this.keys = [];
       this.name = fn.name || "<anonymous>";
       this.params = void 0;
       this.path = void 0;
-      this.slash = path12 === "/" && opts.end === false;
+      this.slash = path13 === "/" && opts.end === false;
       function matcher(_path) {
         if (_path instanceof RegExp) {
           const keys = [];
@@ -20367,7 +20367,7 @@ var require_layer = __commonJS({
           decode: decodeParam
         });
       }
-      this.matchers = Array.isArray(path12) ? path12.map(matcher) : [matcher(path12)];
+      this.matchers = Array.isArray(path13) ? path13.map(matcher) : [matcher(path13)];
     }
     Layer.prototype.handleError = function handleError(error, req, res, next) {
       const fn = this.handle;
@@ -20407,9 +20407,9 @@ var require_layer = __commonJS({
         next(err);
       }
     };
-    Layer.prototype.match = function match(path12) {
+    Layer.prototype.match = function match(path13) {
       let match2;
-      if (path12 != null) {
+      if (path13 != null) {
         if (this.slash) {
           this.params = {};
           this.path = "";
@@ -20417,7 +20417,7 @@ var require_layer = __commonJS({
         }
         let i = 0;
         while (!match2 && i < this.matchers.length) {
-          match2 = this.matchers[i](path12);
+          match2 = this.matchers[i](path13);
           i++;
         }
       }
@@ -20445,13 +20445,13 @@ var require_layer = __commonJS({
         throw err;
       }
     }
-    function loosen(path12) {
-      if (path12 instanceof RegExp || path12 === "/") {
-        return path12;
+    function loosen(path13) {
+      if (path13 instanceof RegExp || path13 === "/") {
+        return path13;
       }
-      return Array.isArray(path12) ? path12.map(function(p) {
+      return Array.isArray(path13) ? path13.map(function(p) {
         return loosen(p);
-      }) : String(path12).replace(TRAILING_SLASH_REGEXP, "");
+      }) : String(path13).replace(TRAILING_SLASH_REGEXP, "");
     }
   }
 });
@@ -20467,9 +20467,9 @@ var require_route = __commonJS({
     var flatten = Array.prototype.flat;
     var methods = METHODS.map((method) => method.toLowerCase());
     module2.exports = Route;
-    function Route(path12) {
-      debug("new %o", path12);
-      this.path = path12;
+    function Route(path13) {
+      debug("new %o", path13);
+      this.path = path13;
       this.stack = [];
       this.methods = /* @__PURE__ */ Object.create(null);
     }
@@ -20677,8 +20677,8 @@ var require_router = __commonJS({
         if (++sync > 100) {
           return setImmediate(next, err);
         }
-        const path12 = getPathname(req);
-        if (path12 == null) {
+        const path13 = getPathname(req);
+        if (path13 == null) {
           return done(layerError);
         }
         let layer;
@@ -20686,7 +20686,7 @@ var require_router = __commonJS({
         let route;
         while (match !== true && idx < stack.length) {
           layer = stack[idx++];
-          match = matchLayer(layer, path12);
+          match = matchLayer(layer, path13);
           route = layer.route;
           if (typeof match !== "boolean") {
             layerError = layerError || match;
@@ -20724,18 +20724,18 @@ var require_router = __commonJS({
           } else if (route) {
             layer.handleRequest(req, res, next);
           } else {
-            trimPrefix(layer, layerError, layerPath, path12);
+            trimPrefix(layer, layerError, layerPath, path13);
           }
           sync = 0;
         });
       }
-      function trimPrefix(layer, layerError, layerPath, path12) {
+      function trimPrefix(layer, layerError, layerPath, path13) {
         if (layerPath.length !== 0) {
-          if (layerPath !== path12.substring(0, layerPath.length)) {
+          if (layerPath !== path13.substring(0, layerPath.length)) {
             next(layerError);
             return;
           }
-          const c = path12[layerPath.length];
+          const c = path13[layerPath.length];
           if (c && c !== "/") {
             next(layerError);
             return;
@@ -20759,7 +20759,7 @@ var require_router = __commonJS({
     };
     Router8.prototype.use = function use(handler) {
       let offset = 0;
-      let path12 = "/";
+      let path13 = "/";
       if (typeof handler !== "function") {
         let arg = handler;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -20767,7 +20767,7 @@ var require_router = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path12 = handler;
+          path13 = handler;
         }
       }
       const callbacks = flatten.call(slice.call(arguments, offset), Infinity);
@@ -20779,8 +20779,8 @@ var require_router = __commonJS({
         if (typeof fn !== "function") {
           throw new TypeError("argument handler must be a function");
         }
-        debug("use %o %s", path12, fn.name || "<anonymous>");
-        const layer = new Layer(path12, {
+        debug("use %o %s", path13, fn.name || "<anonymous>");
+        const layer = new Layer(path13, {
           sensitive: this.caseSensitive,
           strict: false,
           end: false
@@ -20790,9 +20790,9 @@ var require_router = __commonJS({
       }
       return this;
     };
-    Router8.prototype.route = function route(path12) {
-      const route2 = new Route(path12);
-      const layer = new Layer(path12, {
+    Router8.prototype.route = function route(path13) {
+      const route2 = new Route(path13);
+      const layer = new Layer(path13, {
         sensitive: this.caseSensitive,
         strict: this.strict,
         end: true
@@ -20805,8 +20805,8 @@ var require_router = __commonJS({
       return route2;
     };
     methods.concat("all").forEach(function(method) {
-      Router8.prototype[method] = function(path12) {
-        const route = this.route(path12);
+      Router8.prototype[method] = function(path13) {
+        const route = this.route(path13);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
@@ -20835,9 +20835,9 @@ var require_router = __commonJS({
       const fqdnIndex = url.substring(0, pathLength).indexOf("://");
       return fqdnIndex !== -1 ? url.substring(0, url.indexOf("/", 3 + fqdnIndex)) : void 0;
     }
-    function matchLayer(layer, path12) {
+    function matchLayer(layer, path13) {
       try {
-        return layer.match(path12);
+        return layer.match(path13);
       } catch (err) {
         return err;
       }
@@ -21065,7 +21065,7 @@ var require_application = __commonJS({
     };
     app2.use = function use(fn) {
       var offset = 0;
-      var path12 = "/";
+      var path13 = "/";
       if (typeof fn !== "function") {
         var arg = fn;
         while (Array.isArray(arg) && arg.length !== 0) {
@@ -21073,7 +21073,7 @@ var require_application = __commonJS({
         }
         if (typeof arg !== "function") {
           offset = 1;
-          path12 = fn;
+          path13 = fn;
         }
       }
       var fns = flatten.call(slice.call(arguments, offset), Infinity);
@@ -21083,12 +21083,12 @@ var require_application = __commonJS({
       var router = this.router;
       fns.forEach(function(fn2) {
         if (!fn2 || !fn2.handle || !fn2.set) {
-          return router.use(path12, fn2);
+          return router.use(path13, fn2);
         }
-        debug(".use app under %s", path12);
-        fn2.mountpath = path12;
+        debug(".use app under %s", path13);
+        fn2.mountpath = path13;
         fn2.parent = this;
-        router.use(path12, function mounted_app(req, res, next) {
+        router.use(path13, function mounted_app(req, res, next) {
           var orig = req.app;
           fn2.handle(req, res, function(err) {
             Object.setPrototypeOf(req, orig.request);
@@ -21100,8 +21100,8 @@ var require_application = __commonJS({
       }, this);
       return this;
     };
-    app2.route = function route(path12) {
-      return this.router.route(path12);
+    app2.route = function route(path13) {
+      return this.router.route(path13);
     };
     app2.engine = function engine(ext, fn) {
       if (typeof fn !== "function") {
@@ -21144,7 +21144,7 @@ var require_application = __commonJS({
       }
       return this;
     };
-    app2.path = function path12() {
+    app2.path = function path13() {
       return this.parent ? this.parent.path() + this.mountpath : "";
     };
     app2.enabled = function enabled(setting) {
@@ -21160,17 +21160,17 @@ var require_application = __commonJS({
       return this.set(setting, false);
     };
     methods.forEach(function(method) {
-      app2[method] = function(path12) {
+      app2[method] = function(path13) {
         if (method === "get" && arguments.length === 1) {
-          return this.set(path12);
+          return this.set(path13);
         }
-        var route = this.route(path12);
+        var route = this.route(path13);
         route[method].apply(route, slice.call(arguments, 1));
         return this;
       };
     });
-    app2.all = function all(path12) {
-      var route = this.route(path12);
+    app2.all = function all(path13) {
+      var route = this.route(path13);
       var args = slice.call(arguments, 1);
       for (var i = 0; i < methods.length; i++) {
         route[methods[i]].apply(route, args);
@@ -22080,7 +22080,7 @@ var require_request = __commonJS({
       var subdomains2 = !isIP(hostname) ? hostname.split(".").reverse() : [hostname];
       return subdomains2.slice(offset);
     });
-    defineGetter(req, "path", function path12() {
+    defineGetter(req, "path", function path13() {
       return parse(this).pathname;
     });
     defineGetter(req, "host", function host() {
@@ -22492,27 +22492,27 @@ var require_send = __commonJS({
     var ms = require_ms();
     var onFinished = require_on_finished();
     var parseRange = require_range_parser();
-    var path12 = require("path");
+    var path13 = require("path");
     var statuses = require_statuses();
     var Stream = require("stream");
     var util = require("util");
-    var extname2 = path12.extname;
-    var join3 = path12.join;
-    var normalize2 = path12.normalize;
-    var resolve3 = path12.resolve;
-    var sep = path12.sep;
+    var extname2 = path13.extname;
+    var join3 = path13.join;
+    var normalize2 = path13.normalize;
+    var resolve3 = path13.resolve;
+    var sep = path13.sep;
     var BYTES_RANGE_REGEXP = /^ *bytes=/;
     var MAX_MAXAGE = 60 * 60 * 24 * 365 * 1e3;
     var UP_PATH_REGEXP = /(?:^|[\\/])\.\.(?:[\\/]|$)/;
     module2.exports = send;
-    function send(req, path13, options) {
-      return new SendStream(req, path13, options);
+    function send(req, path14, options) {
+      return new SendStream(req, path14, options);
     }
-    function SendStream(req, path13, options) {
+    function SendStream(req, path14, options) {
       Stream.call(this);
       var opts = options || {};
       this.options = opts;
-      this.path = path13;
+      this.path = path14;
       this.req = req;
       this._acceptRanges = opts.acceptRanges !== void 0 ? Boolean(opts.acceptRanges) : true;
       this._cacheControl = opts.cacheControl !== void 0 ? Boolean(opts.cacheControl) : true;
@@ -22626,10 +22626,10 @@ var require_send = __commonJS({
       var lastModified = this.res.getHeader("Last-Modified");
       return parseHttpDate(lastModified) <= parseHttpDate(ifRange);
     };
-    SendStream.prototype.redirect = function redirect(path13) {
+    SendStream.prototype.redirect = function redirect(path14) {
       var res = this.res;
       if (hasListeners(this, "directory")) {
-        this.emit("directory", res, path13);
+        this.emit("directory", res, path14);
         return;
       }
       if (this.hasTrailingSlash()) {
@@ -22649,38 +22649,38 @@ var require_send = __commonJS({
     SendStream.prototype.pipe = function pipe(res) {
       var root = this._root;
       this.res = res;
-      var path13 = decode(this.path);
-      if (path13 === -1) {
+      var path14 = decode(this.path);
+      if (path14 === -1) {
         this.error(400);
         return res;
       }
-      if (~path13.indexOf("\0")) {
+      if (~path14.indexOf("\0")) {
         this.error(400);
         return res;
       }
       var parts;
       if (root !== null) {
-        if (path13) {
-          path13 = normalize2("." + sep + path13);
+        if (path14) {
+          path14 = normalize2("." + sep + path14);
         }
-        if (UP_PATH_REGEXP.test(path13)) {
-          debug('malicious path "%s"', path13);
+        if (UP_PATH_REGEXP.test(path14)) {
+          debug('malicious path "%s"', path14);
           this.error(403);
           return res;
         }
-        parts = path13.split(sep);
-        path13 = normalize2(join3(root, path13));
+        parts = path14.split(sep);
+        path14 = normalize2(join3(root, path14));
       } else {
-        if (UP_PATH_REGEXP.test(path13)) {
-          debug('malicious path "%s"', path13);
+        if (UP_PATH_REGEXP.test(path14)) {
+          debug('malicious path "%s"', path14);
           this.error(403);
           return res;
         }
-        parts = normalize2(path13).split(sep);
-        path13 = resolve3(path13);
+        parts = normalize2(path14).split(sep);
+        path14 = resolve3(path14);
       }
       if (containsDotFile(parts)) {
-        debug('%s dotfile "%s"', this._dotfiles, path13);
+        debug('%s dotfile "%s"', this._dotfiles, path14);
         switch (this._dotfiles) {
           case "allow":
             break;
@@ -22694,13 +22694,13 @@ var require_send = __commonJS({
         }
       }
       if (this._index.length && this.hasTrailingSlash()) {
-        this.sendIndex(path13);
+        this.sendIndex(path14);
         return res;
       }
-      this.sendFile(path13);
+      this.sendFile(path14);
       return res;
     };
-    SendStream.prototype.send = function send2(path13, stat4) {
+    SendStream.prototype.send = function send2(path14, stat4) {
       var len = stat4.size;
       var options = this.options;
       var opts = {};
@@ -22712,9 +22712,9 @@ var require_send = __commonJS({
         this.headersAlreadySent();
         return;
       }
-      debug('pipe "%s"', path13);
-      this.setHeader(path13, stat4);
-      this.type(path13);
+      debug('pipe "%s"', path14);
+      this.setHeader(path14, stat4);
+      this.type(path14);
       if (this.isConditionalGET()) {
         if (this.isPreconditionFailure()) {
           this.error(412);
@@ -22763,28 +22763,28 @@ var require_send = __commonJS({
         res.end();
         return;
       }
-      this.stream(path13, opts);
+      this.stream(path14, opts);
     };
-    SendStream.prototype.sendFile = function sendFile(path13) {
+    SendStream.prototype.sendFile = function sendFile(path14) {
       var i = 0;
       var self = this;
-      debug('stat "%s"', path13);
-      fs13.stat(path13, function onstat(err, stat4) {
-        var pathEndsWithSep = path13[path13.length - 1] === sep;
-        if (err && err.code === "ENOENT" && !extname2(path13) && !pathEndsWithSep) {
+      debug('stat "%s"', path14);
+      fs13.stat(path14, function onstat(err, stat4) {
+        var pathEndsWithSep = path14[path14.length - 1] === sep;
+        if (err && err.code === "ENOENT" && !extname2(path14) && !pathEndsWithSep) {
           return next(err);
         }
         if (err) return self.onStatError(err);
-        if (stat4.isDirectory()) return self.redirect(path13);
+        if (stat4.isDirectory()) return self.redirect(path14);
         if (pathEndsWithSep) return self.error(404);
-        self.emit("file", path13, stat4);
-        self.send(path13, stat4);
+        self.emit("file", path14, stat4);
+        self.send(path14, stat4);
       });
       function next(err) {
         if (self._extensions.length <= i) {
           return err ? self.onStatError(err) : self.error(404);
         }
-        var p = path13 + "." + self._extensions[i++];
+        var p = path14 + "." + self._extensions[i++];
         debug('stat "%s"', p);
         fs13.stat(p, function(err2, stat4) {
           if (err2) return next(err2);
@@ -22794,7 +22794,7 @@ var require_send = __commonJS({
         });
       }
     };
-    SendStream.prototype.sendIndex = function sendIndex(path13) {
+    SendStream.prototype.sendIndex = function sendIndex(path14) {
       var i = -1;
       var self = this;
       function next(err) {
@@ -22802,7 +22802,7 @@ var require_send = __commonJS({
           if (err) return self.onStatError(err);
           return self.error(404);
         }
-        var p = join3(path13, self._index[i]);
+        var p = join3(path14, self._index[i]);
         debug('stat "%s"', p);
         fs13.stat(p, function(err2, stat4) {
           if (err2) return next(err2);
@@ -22813,10 +22813,10 @@ var require_send = __commonJS({
       }
       next();
     };
-    SendStream.prototype.stream = function stream(path13, options) {
+    SendStream.prototype.stream = function stream(path14, options) {
       var self = this;
       var res = this.res;
-      var stream2 = fs13.createReadStream(path13, options);
+      var stream2 = fs13.createReadStream(path14, options);
       this.emit("stream", stream2);
       stream2.pipe(res);
       function cleanup() {
@@ -22831,17 +22831,17 @@ var require_send = __commonJS({
         self.emit("end");
       });
     };
-    SendStream.prototype.type = function type(path13) {
+    SendStream.prototype.type = function type(path14) {
       var res = this.res;
       if (res.getHeader("Content-Type")) return;
-      var ext = extname2(path13);
+      var ext = extname2(path14);
       var type2 = mime.contentType(ext) || "application/octet-stream";
       debug("content-type %s", type2);
       res.setHeader("Content-Type", type2);
     };
-    SendStream.prototype.setHeader = function setHeader(path13, stat4) {
+    SendStream.prototype.setHeader = function setHeader(path14, stat4) {
       var res = this.res;
-      this.emit("headers", res, path13, stat4);
+      this.emit("headers", res, path14, stat4);
       if (this._acceptRanges && !res.getHeader("Accept-Ranges")) {
         debug("accept ranges");
         res.setHeader("Accept-Ranges", "bytes");
@@ -22899,9 +22899,9 @@ var require_send = __commonJS({
       }
       return err instanceof Error ? createError(status, err, { expose: false }) : createError(status, err);
     }
-    function decode(path13) {
+    function decode(path14) {
       try {
-        return decodeURIComponent(path13);
+        return decodeURIComponent(path14);
       } catch (err) {
         return -1;
       }
@@ -23045,7 +23045,7 @@ var require_response = __commonJS({
     var http = require("node:http");
     var onFinished = require_on_finished();
     var mime = require_mime_types();
-    var path12 = require("node:path");
+    var path13 = require("node:path");
     var pathIsAbsolute = require("node:path").isAbsolute;
     var statuses = require_statuses();
     var sign = require_cookie_signature().sign;
@@ -23054,8 +23054,8 @@ var require_response = __commonJS({
     var setCharset = require_utils3().setCharset;
     var cookie = require_cookie();
     var send = require_send();
-    var extname2 = path12.extname;
-    var resolve3 = path12.resolve;
+    var extname2 = path13.extname;
+    var resolve3 = path13.resolve;
     var vary = require_vary();
     var { Buffer: Buffer2 } = require("node:buffer");
     var res = Object.create(http.ServerResponse.prototype);
@@ -23201,26 +23201,26 @@ var require_response = __commonJS({
       this.type("txt");
       return this.send(body);
     };
-    res.sendFile = function sendFile(path13, options, callback) {
+    res.sendFile = function sendFile(path14, options, callback) {
       var done = callback;
       var req = this.req;
       var res2 = this;
       var next = req.next;
       var opts = options || {};
-      if (!path13) {
+      if (!path14) {
         throw new TypeError("path argument is required to res.sendFile");
       }
-      if (typeof path13 !== "string") {
+      if (typeof path14 !== "string") {
         throw new TypeError("path must be a string to res.sendFile");
       }
       if (typeof options === "function") {
         done = options;
         opts = {};
       }
-      if (!opts.root && !pathIsAbsolute(path13)) {
+      if (!opts.root && !pathIsAbsolute(path14)) {
         throw new TypeError("path must be absolute or specify root to res.sendFile");
       }
-      var pathname = encodeURI(path13);
+      var pathname = encodeURI(path14);
       opts.etag = this.app.enabled("etag");
       var file = send(req, pathname, opts);
       sendfile(res2, file, opts, function(err) {
@@ -23231,7 +23231,7 @@ var require_response = __commonJS({
         }
       });
     };
-    res.download = function download(path13, filename, options, callback) {
+    res.download = function download(path14, filename, options, callback) {
       var done = callback;
       var name = filename;
       var opts = options || null;
@@ -23248,7 +23248,7 @@ var require_response = __commonJS({
         opts = filename;
       }
       var headers = {
-        "Content-Disposition": contentDisposition(name || path13)
+        "Content-Disposition": contentDisposition(name || path14)
       };
       if (opts && opts.headers) {
         var keys = Object.keys(opts.headers);
@@ -23261,7 +23261,7 @@ var require_response = __commonJS({
       }
       opts = Object.create(opts);
       opts.headers = headers;
-      var fullPath = !opts.root ? resolve3(path13) : path13;
+      var fullPath = !opts.root ? resolve3(path14) : path14;
       return this.sendFile(fullPath, opts, done);
     };
     res.contentType = res.type = function contentType(type) {
@@ -23544,11 +23544,11 @@ var require_serve_static = __commonJS({
         }
         var forwardError = !fallthrough;
         var originalUrl = parseUrl.original(req);
-        var path12 = parseUrl(req).pathname;
-        if (path12 === "/" && originalUrl.pathname.substr(-1) !== "/") {
-          path12 = "";
+        var path13 = parseUrl(req).pathname;
+        if (path13 === "/" && originalUrl.pathname.substr(-1) !== "/") {
+          path13 = "";
         }
-        var stream = send(req, path12, opts);
+        var stream = send(req, path13, opts);
         stream.on("directory", onDirectory);
         if (setHeaders) {
           stream.on("headers", setHeaders);
@@ -23936,23 +23936,33 @@ var require_lib3 = __commonJS({
 // server.ts
 var import_express8 = __toESM(require_express2(), 1);
 var import_cors = __toESM(require_lib3(), 1);
-var import_child_process6 = require("child_process");
+var import_child_process5 = require("child_process");
 var import_fs12 = __toESM(require("fs"), 1);
-var import_path11 = __toESM(require("path"), 1);
+var import_path12 = __toESM(require("path"), 1);
 
 // database.ts
 var import_fs = __toESM(require("fs"), 1);
 var import_path = __toESM(require("path"), 1);
 var import_node_module = require("node:module");
+var import_meta = {};
 var isExe = process.execPath.toLowerCase().endsWith("phantomserver.exe");
-var requireFunc = isExe ? (0, import_node_module.createRequire)(process.execPath) : typeof require !== "undefined" ? require : eval("require");
+var requireFunc;
+if (isExe) {
+  requireFunc = (0, import_node_module.createRequire)(process.execPath);
+} else {
+  try {
+    requireFunc = require;
+  } catch (e) {
+    requireFunc = (0, import_node_module.createRequire)(import_meta.url);
+  }
+}
 var Database = null;
 try {
   const exeDir = isExe ? import_path.default.dirname(process.execPath) : process.cwd();
   const dbPathModule = import_path.default.join(exeDir, "node_modules", "better-sqlite3");
   Database = requireFunc(dbPathModule);
 } catch (e) {
-  console.error("FATAL: First absolute load failed for better-sqlite3:", e);
+  if (isExe) console.error("FATAL: First absolute load failed for better-sqlite3:", e);
   try {
     Database = requireFunc("better-sqlite3");
   } catch (e2) {
@@ -23967,6 +23977,7 @@ var AppDatabase = class {
   }
   initSchema() {
     this.db.pragma("journal_mode = WAL");
+    this.db.pragma("foreign_keys = ON");
     this.db.exec(`
             CREATE TABLE IF NOT EXISTS Categories (
                 id TEXT PRIMARY KEY,
@@ -23996,8 +24007,12 @@ var AppDatabase = class {
                 nodeColor TEXT,
                 syncColor TEXT,
                 coreColor TEXT,
+                configColor TEXT,
+                secretColor TEXT,
                 slimModeEnabled INTEGER,
-                monochromeModeEnabled INTEGER
+                monochromeModeEnabled INTEGER,
+                outlineEnabled INTEGER,
+                primingAnimation TEXT
             );
             
             CREATE TABLE IF NOT EXISTS Games (
@@ -24005,12 +24020,15 @@ var AppDatabase = class {
                 title TEXT,
                 execPath TEXT,
                 source TEXT,
+                sourceId TEXT,
+                platform TEXT,
+                category TEXT,
                 lastPlayed TEXT,
                 lastUpdated INTEGER,
                 cover TEXT,
                 banner TEXT,
                 logo TEXT,
-                hero TEXT,
+                wallpaper TEXT,
                 installDate TEXT,
                 execArgs TEXT
             );
@@ -24047,8 +24065,12 @@ var AppDatabase = class {
       ["nodeColor", "TEXT"],
       ["syncColor", "TEXT"],
       ["coreColor", "TEXT"],
+      ["configColor", "TEXT"],
+      ["secretColor", "TEXT"],
       ["slimModeEnabled", "INTEGER"],
-      ["monochromeModeEnabled", "INTEGER"]
+      ["monochromeModeEnabled", "INTEGER"],
+      ["outlineEnabled", "INTEGER"],
+      ["primingAnimation", "TEXT"]
     ];
     newCols.forEach(([name, type]) => {
       if (!hasColumn(name)) {
@@ -24061,13 +24083,15 @@ var AppDatabase = class {
     });
     const gameColumns = this.db.prepare("PRAGMA table_info(Games)").all();
     const hasGameColumn = (name) => gameColumns.some((c) => c.name === name);
-    if (!hasGameColumn("execArgs")) {
-      try {
-        this.db.prepare("ALTER TABLE Games ADD COLUMN execArgs TEXT").run();
-      } catch (e) {
-        console.error("Failed to add execArgs column to Games:", e);
+    ["execArgs", "sourceId", "platform", "category", "cover", "banner", "logo", "wallpaper", "installDate"].forEach((col) => {
+      if (!hasGameColumn(col)) {
+        try {
+          this.db.prepare(`ALTER TABLE Games ADD COLUMN ${col} TEXT`).run();
+        } catch (e) {
+          console.error(`Failed to add ${col} column to Games:`, e);
+        }
       }
-    }
+    });
   }
   migrateFromJson(jsonPath) {
     if (!import_fs.default.existsSync(jsonPath)) return;
@@ -24076,14 +24100,14 @@ var AppDatabase = class {
       const rawData = import_fs.default.readFileSync(jsonPath, "utf-8");
       if (!rawData.trim()) return;
       const data = JSON.parse(rawData);
-      let categories = [];
+      let categories2 = [];
       if (data.categories) {
-        categories = data.categories;
+        categories2 = data.categories;
       } else if (Array.isArray(data)) {
-        categories = [{ id: "all", name: "ALL GAMES", icon: "grid", color: "#ffffff", enabled: true, games: data }];
+        categories2 = [{ id: "all", name: "ALL GAMES", icon: "grid", color: "#ffffff", enabled: true, games: data }];
       }
-      if (categories.length > 0) {
-        this.saveCategories(categories);
+      if (categories2.length > 0) {
+        this.saveCategories(categories2);
         import_fs.default.renameSync(jsonPath, jsonPath + ".bak");
         console.log("[DB] Migration complete. data.json renamed to data.json.bak");
       } else {
@@ -24105,51 +24129,29 @@ var AppDatabase = class {
             WHERE cg.categoryId = ?
         `);
     return cats.map((cat) => {
-      const games = gamesStmt.all(cat.id).map((g) => ({
-        ...g,
-        // SQLite returns 0/1 for booleans, map them back
-        enabled: g.enabled === 1
-      }));
+      let games;
+      if (cat.id === "all") {
+        games = this.db.prepare("SELECT * FROM Games").all().map((g) => ({
+          ...g,
+          enabled: true
+        }));
+      } else {
+        games = gamesStmt.all(cat.id).map((g) => ({
+          ...g,
+          enabled: true
+        }));
+      }
       return {
-        id: cat.id,
-        name: cat.name,
-        icon: cat.icon,
-        color: cat.color,
+        ...cat,
         enabled: cat.enabled === 1,
-        wallpaper: cat.wallpaper,
-        wallpaperMode: cat.wallpaperMode,
-        gridOpacity: cat.gridOpacity,
-        cardOpacity: cat.cardOpacity,
-        cardBlurEnabled: cat.cardBlurEnabled === 1,
-        cardTransparencyEnabled: cat.cardTransparencyEnabled === 1,
-        innerGlowEnabled: cat.innerGlowEnabled === 1,
-        outerGlowEnabled: cat.outerGlowEnabled === 1,
-        lowResWallpaper: cat.lowResWallpaper === 1,
-        wallpaperAAEnabled: cat.wallpaperAAEnabled === 1,
-        highQualityBlobs: cat.highQualityBlobs === 1,
-        configIcon: cat.configIcon,
-        bgAnimationsEnabled: cat.bgAnimationsEnabled === 1,
-        gridEnabled: cat.gridEnabled === 1,
-        scanlineEnabled: cat.scanlineEnabled === 1,
-        vignetteEnabled: cat.vignetteEnabled === 1,
-        performanceMode: cat.performanceMode,
-        assetColor: cat.assetColor,
-        nodeColor: cat.nodeColor,
-        syncColor: cat.syncColor,
-        coreColor: cat.coreColor,
-        slimModeEnabled: cat.slimModeEnabled === 1,
-        monochromeModeEnabled: cat.monochromeModeEnabled === 1,
         games
       };
     });
   }
-  saveCategories(categories) {
+  saveCategories(categories2) {
     const tx = this.db.transaction(() => {
-      this.db.prepare("DELETE FROM CategoryGames").run();
-      this.db.prepare("DELETE FROM Categories").run();
-      this.db.prepare("DELETE FROM Games").run();
       const insertCat = this.db.prepare(`
-                INSERT INTO Categories (
+                INSERT OR REPLACE INTO Categories (
                     id, name, icon, color, enabled, sortOrder, 
                     wallpaper, wallpaperMode, gridOpacity, cardOpacity, 
                     cardBlurEnabled, cardTransparencyEnabled, innerGlowEnabled, 
@@ -24157,12 +24159,38 @@ var AppDatabase = class {
                     highQualityBlobs, configIcon, bgAnimationsEnabled, 
                     gridEnabled, scanlineEnabled, vignetteEnabled, 
                     performanceMode, assetColor, nodeColor, syncColor, 
-                    coreColor, slimModeEnabled, monochromeModeEnabled
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    coreColor, configColor, secretColor, 
+                    slimModeEnabled, monochromeModeEnabled, outlineEnabled, primingAnimation
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
-      const insertGame = this.db.prepare("INSERT OR IGNORE INTO Games (id, title, execPath, source, lastPlayed, lastUpdated, cover, banner, logo, hero, installDate, execArgs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+      const insertGame = this.db.prepare(`
+                INSERT INTO Games (
+                    id, title, execPath, source, sourceId, platform, category, 
+                    lastPlayed, lastUpdated, cover, banner, logo, wallpaper, 
+                    installDate, execArgs
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    title=excluded.title,
+                    execPath=excluded.execPath,
+                    source=excluded.source,
+                    sourceId=excluded.sourceId,
+                    platform=excluded.platform,
+                    category=excluded.category,
+                    lastPlayed=excluded.lastPlayed,
+                    lastUpdated=excluded.lastUpdated,
+                    cover=excluded.cover,
+                    banner=excluded.banner,
+                    logo=excluded.logo,
+                    wallpaper=excluded.wallpaper,
+                    installDate=excluded.installDate,
+                    execArgs=excluded.execArgs
+            `);
+      const cleanRelations = this.db.prepare("DELETE FROM CategoryGames WHERE categoryId = ?");
       const insertRelation = this.db.prepare("INSERT INTO CategoryGames (categoryId, gameId) VALUES (?, ?)");
-      categories.forEach((cat, index) => {
+      const placeholders = categories2.map(() => "?").join(",");
+      const deleteStmt = this.db.prepare(`DELETE FROM Categories WHERE id NOT IN (${placeholders}) AND id != 'all'`);
+      deleteStmt.run(...categories2.map((c) => c.id));
+      categories2.forEach((cat, index) => {
         insertCat.run(
           cat.id,
           cat.name,
@@ -24191,9 +24219,14 @@ var AppDatabase = class {
           cat.nodeColor || null,
           cat.syncColor || null,
           cat.coreColor || null,
+          cat.configColor || null,
+          cat.secretColor || null,
           cat.slimModeEnabled ? 1 : 0,
-          cat.monochromeModeEnabled ? 1 : 0
+          cat.monochromeModeEnabled ? 1 : 0,
+          cat.outlineEnabled ?? true ? 1 : 0,
+          cat.primingAnimation || "waterfill"
         );
+        cleanRelations.run(cat.id);
         if (Array.isArray(cat.games)) {
           cat.games.forEach((g) => {
             insertGame.run(
@@ -24201,17 +24234,86 @@ var AppDatabase = class {
               g.title,
               g.execPath || "",
               g.source || "",
+              g.sourceId || null,
+              g.platform || null,
+              g.category || null,
               g.lastPlayed || "",
               g.lastUpdated || 0,
               g.cover || "",
               g.banner || "",
               g.logo || "",
-              g.hero || "",
+              g.wallpaper || "",
               g.installDate || "",
               g.execArgs || ""
             );
-            insertRelation.run(cat.id, g.id);
+            if (cat.id !== "all" && cat.id !== "recent") {
+              insertRelation.run(cat.id, g.id);
+            }
           });
+        }
+      });
+    });
+    tx();
+  }
+  importGames(games, categoryId, options = {}) {
+    const tx = this.db.transaction(() => {
+      const insertGame = this.db.prepare(`
+                INSERT INTO Games (
+                    id, title, execPath, source, sourceId, platform, category, 
+                    lastPlayed, lastUpdated, cover, banner, logo, wallpaper, 
+                    installDate, execArgs
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    title=excluded.title,
+                    execPath=excluded.execPath,
+                    source=excluded.source,
+                    sourceId=excluded.sourceId,
+                    platform=excluded.platform,
+                    category=excluded.category,
+                    lastPlayed=CASE WHEN excluded.lastPlayed != '' THEN excluded.lastPlayed ELSE Games.lastPlayed END,
+                    lastUpdated=excluded.lastUpdated,
+                    cover=CASE WHEN excluded.cover != '' THEN excluded.cover ELSE Games.cover END,
+                    banner=CASE WHEN excluded.banner != '' THEN excluded.banner ELSE Games.banner END,
+                    logo=CASE WHEN excluded.logo != '' THEN excluded.logo ELSE Games.logo END,
+                    wallpaper=CASE WHEN excluded.wallpaper != '' THEN excluded.wallpaper ELSE Games.wallpaper END,
+                    installDate=excluded.installDate,
+                    execArgs=CASE WHEN excluded.execArgs != '' THEN excluded.execArgs ELSE Games.execArgs END
+            `);
+      const insertRelation = this.db.prepare("INSERT OR IGNORE INTO CategoryGames (categoryId, gameId) VALUES (?, ?)");
+      const clearRelations = this.db.prepare("DELETE FROM CategoryGames WHERE categoryId = ?");
+      if (options.clearCategory) {
+        clearRelations.run(categoryId);
+      }
+      const categoriesToEnsure = [categoryId, "all"];
+      categoriesToEnsure.forEach((id) => {
+        const catExists = this.db.prepare("SELECT id FROM Categories WHERE id = ?").get(id);
+        if (!catExists) {
+          const catName = id === "all" ? "ALL GAMES" : id === categoryId ? options.categoryName || id.toUpperCase() : id.toUpperCase();
+          const catColor = id === "steam" ? "#66c0f4" : id === "xbox" ? "#107c10" : id === categoryId ? options.categoryColor || "#ffffff" : "#ffffff";
+          const catIcon = id === "all" ? "./res/ui/all.png" : id === "steam" ? "./res/external/steam.png" : id === "xbox" ? "./res/external/xbox.png" : id === categoryId ? options.categoryIcon || "" : "";
+          this.db.prepare("INSERT INTO Categories (id, name, icon, color, enabled, sortOrder) VALUES (?, ?, ?, ?, 1, 999)").run(id, catName, catIcon, catColor);
+        }
+      });
+      games.forEach((g) => {
+        insertGame.run(
+          g.id,
+          g.title,
+          g.execPath || "",
+          g.source || categoryId,
+          g.sourceId || null,
+          g.platform || null,
+          g.category || null,
+          g.lastPlayed || "",
+          g.lastUpdated || 0,
+          g.cover || "",
+          g.banner || "",
+          g.logo || "",
+          g.wallpaper || "",
+          g.installDate || "",
+          g.execArgs || ""
+        );
+        if (categoryId !== "all" && categoryId !== "recent") {
+          insertRelation.run(categoryId, g.id);
         }
       });
     });
@@ -24221,13 +24323,97 @@ var AppDatabase = class {
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
     this.db.prepare("UPDATE Games SET lastPlayed = ? WHERE id = ?").run(timestamp, gameId);
   }
+  updateGameAssets(gameId, assets) {
+    const fields = [];
+    const values = [];
+    if (assets.cover !== void 0) {
+      fields.push("cover = ?");
+      values.push(assets.cover);
+    }
+    if (assets.banner !== void 0) {
+      fields.push("banner = ?");
+      values.push(assets.banner);
+    }
+    if (assets.logo !== void 0) {
+      fields.push("logo = ?");
+      values.push(assets.logo);
+    }
+    if (assets.wallpaper !== void 0) {
+      fields.push("wallpaper = ?");
+      values.push(assets.wallpaper);
+    }
+    if (fields.length === 0) return;
+    values.push(gameId);
+    const sql = `UPDATE Games SET ${fields.join(", ")} WHERE id = ?`;
+    this.db.prepare(sql).run(...values);
+  }
   deleteGame(gameId) {
     this.db.prepare("DELETE FROM Games WHERE id = ?").run(gameId);
+  }
+  searchGames(query, categoryId) {
+    let sql = "SELECT * FROM Games WHERE title LIKE ?";
+    let params = [`%${query}%`];
+    const isSecretQuery = categoryId === "hidden" || categoryId === "secret";
+    if (categoryId && !["all", "recent", "hidden", "secret", "orphaned"].includes(categoryId)) {
+      sql = `
+                SELECT g.* FROM Games g
+                JOIN CategoryGames cg ON g.id = cg.gameId
+                WHERE cg.categoryId = ? AND g.title LIKE ?
+            `;
+      params = [categoryId, `%${query}%`];
+    } else if (categoryId === "orphaned") {
+      sql = `
+                SELECT * FROM Games 
+                WHERE id NOT IN (SELECT gameId FROM CategoryGames)
+                AND title LIKE ?
+            `;
+      params = [`%${query}%`];
+    } else if (isSecretQuery) {
+      sql = `
+                SELECT g.* FROM Games g
+                JOIN CategoryGames cg ON g.id = cg.gameId
+                WHERE cg.categoryId = ? AND g.title LIKE ?
+            `;
+      params = [categoryId, `%${query}%`];
+    }
+    const isSecretSelected = categoryId === "secret" || categoryId === "hidden";
+    if (!isSecretSelected) {
+      sql = `
+                SELECT * FROM (${sql}) AS results
+                WHERE id NOT IN (
+                    SELECT gameId FROM CategoryGames 
+                    WHERE categoryId IN ('hidden', 'secret')
+                )
+            `;
+    }
+    return this.db.prepare(sql).all(...params).map((g) => ({
+      ...g,
+      enabled: true
+    }));
   }
   wipeData() {
     this.db.prepare("DELETE FROM CategoryGames").run();
     this.db.prepare("DELETE FROM Categories").run();
     this.db.prepare("DELETE FROM Games").run();
+    this.db.prepare(`
+            INSERT INTO Categories (
+                id, name, icon, color, enabled, sortOrder, 
+                wallpaperMode, gridOpacity, cardOpacity,
+                cardBlurEnabled, cardTransparencyEnabled, innerGlowEnabled,
+                outerGlowEnabled, lowResWallpaper, wallpaperAAEnabled,
+                highQualityBlobs, bgAnimationsEnabled, gridEnabled,
+                scanlineEnabled, vignetteEnabled, performanceMode,
+                slimModeEnabled, monochromeModeEnabled, outlineEnabled, primingAnimation
+            ) VALUES (
+                'all', 'ALL GAMES', './res/ui/all.png', '#ffffff', 1, 0,
+                'cover', 0.15, 0.7,
+                1, 1, 0,
+                1, 0, 1,
+                0, 1, 1,
+                0, 1, 'high',
+                0, 0, 1, 'waterfill'
+            )
+        `).run();
   }
 };
 
@@ -24235,15 +24421,33 @@ var AppDatabase = class {
 var import_child_process = require("child_process");
 var import_path2 = __toESM(require("path"), 1);
 function launchViaShell(execPath, execArgs = "") {
-  const dir = import_path2.default.dirname(execPath);
-  const psScript = `$shell = New-Object -ComObject Shell.Application; $shell.ShellExecute('${execPath.replace(/'/g, "''")}', '${(execArgs || "").replace(/'/g, "''")}', '${dir.replace(/'/g, "''")}', 'open', 1)`;
-  const encoded = Buffer.from(psScript, "utf16le").toString("base64");
-  (0, import_child_process.exec)(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (error) => {
-    if (error) {
-      console.error("[Launch] Shell.Application failed, fallback:", error.message);
-      (0, import_child_process.exec)(`start "" "${execPath}" ${execArgs}`);
+  const isShortcut = execPath.toLowerCase().endsWith(".lnk") || execPath.toLowerCase().endsWith(".url");
+  const isProtocol = execPath.includes("://") || execPath.startsWith("shell:");
+  try {
+    if (isShortcut || isProtocol) {
+      (0, import_child_process.spawn)("cmd", ["/c", "start", '""', execPath], {
+        detached: true,
+        stdio: "ignore",
+        windowsHide: true
+      }).unref();
+    } else {
+      const args = [];
+      const regex = /[^\s"']+|"([^"]*)"|'([^']*)'/g;
+      let match;
+      while ((match = regex.exec(execArgs)) !== null) {
+        args.push(match[1] || match[2] || match[0]);
+      }
+      (0, import_child_process.spawn)(execPath, args, {
+        cwd: import_path2.default.dirname(execPath),
+        detached: true,
+        stdio: "ignore",
+        windowsHide: false
+      }).unref();
     }
-  });
+    console.log(`[Launch] Success: ${execPath} ${execArgs}`);
+  } catch (e) {
+    console.error(`[Launch] Failed to spawn ${execPath}:`, e.message);
+  }
 }
 
 // server/routes/steamRoutes.ts
@@ -24291,10 +24495,10 @@ var getStoreTags = async (appId) => {
     if (json[appId]?.success) {
       const data = json[appId].data;
       const genres = (data.genres || []).map((g) => g.description.toLowerCase());
-      const categories = (data.categories || []).map((c) => c.description.toLowerCase());
+      const categories2 = (data.categories || []).map((c) => c.description.toLowerCase());
       const adult = data.content_descriptors?.ids?.includes(3) || data.required_age >= 18 ? ["adultonly"] : [];
       const isSoftware = data.type === "software" || data.type === "tool" || data.type === "application" ? ["software"] : [];
-      const tags = [...genres, ...categories, ...adult, ...isSoftware];
+      const tags = [...genres, ...categories2, ...adult, ...isSoftware];
       steamTagCache[appId] = tags;
       return tags;
     }
@@ -24372,15 +24576,25 @@ var findLocalSteamAsset = (appId, type) => {
 var import_fs3 = __toESM(require("fs"), 1);
 var import_node_module2 = require("node:module");
 var import_path4 = __toESM(require("path"), 1);
+var import_meta2 = {};
 var isExe2 = process.execPath.toLowerCase().endsWith("phantomserver.exe");
-var requireFunc2 = isExe2 ? (0, import_node_module2.createRequire)(process.execPath) : typeof require !== "undefined" ? require : eval("require");
+var requireFunc2;
+if (isExe2) {
+  requireFunc2 = (0, import_node_module2.createRequire)(process.execPath);
+} else {
+  try {
+    requireFunc2 = require;
+  } catch (e) {
+    requireFunc2 = (0, import_node_module2.createRequire)(import_meta2.url);
+  }
+}
 var sharp = null;
 try {
   const exeDir = isExe2 ? import_path4.default.dirname(process.execPath) : process.cwd();
   const sharpPath = import_path4.default.join(exeDir, "node_modules", "sharp");
   sharp = requireFunc2(sharpPath);
 } catch (e) {
-  console.error("FATAL: First absolute load failed for sharp:", e);
+  if (isExe2) console.error("FATAL: First absolute load failed for sharp:", e);
   try {
     sharp = requireFunc2("sharp");
   } catch (e2) {
@@ -24412,16 +24626,30 @@ var processImage = async (input, dest, type) => {
       if (isAnimated) {
         sharpInstance = sharpInstance.resize(800, 320, { fit: "inside" }).webp({ effort: 0 });
       } else {
-        sharpInstance = sharpInstance.trim().resize(800, 320, { fit: "inside" });
-        const buffer = await sharpInstance.png().toBuffer();
-        sharpInstance = sharp({
-          create: {
-            width: 800,
-            height: 320,
-            channels: 4,
-            background: { r: 0, g: 0, b: 0, alpha: 0 }
+        const raw = await sharpInstance.raw().toBuffer({ resolveWithObject: true });
+        const { data, info } = raw;
+        let minX = info.width, minY = info.height, maxX = 0, maxY = 0;
+        let hasAlpha = false;
+        for (let y = 0; y < info.height; y++) {
+          for (let x = 0; x < info.width; x++) {
+            const idx = (y * info.width + x) * info.channels;
+            const alpha = info.channels === 4 ? data[idx + 3] : 255;
+            if (alpha > 10) {
+              if (x < minX) minX = x;
+              if (y < minY) minY = y;
+              if (x > maxX) maxX = x;
+              if (y > maxY) maxY = y;
+              hasAlpha = true;
+            }
           }
-        }).composite([{ input: buffer, gravity: "center" }]);
+        }
+        if (hasAlpha) {
+          const cropWidth = maxX - minX + 1;
+          const cropHeight = maxY - minY + 1;
+          sharpInstance = sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels } }).extract({ left: minX, top: minY, width: cropWidth, height: cropHeight }).resize(800, 320, { fit: "inside", withoutEnlargement: true }).png({ palette: true });
+        } else {
+          sharpInstance = sharpInstance.resize(800, 320, { fit: "inside" });
+        }
       }
     }
     await sharpInstance.toFile(dest);
@@ -24448,152 +24676,171 @@ var downloadImage = async (url, dest) => {
     throw e;
   }
 };
+var generateThumbnail = async (input, dest) => {
+  try {
+    if (!sharp) return null;
+    if (!import_fs3.default.existsSync(input)) return null;
+    const destDir = import_path4.default.dirname(dest);
+    if (!import_fs3.default.existsSync(destDir)) import_fs3.default.mkdirSync(destDir, { recursive: true });
+    await sharp(input).resize(64, 64, { fit: "cover" }).blur(3.5).webp({ quality: 40, effort: 6 }).toFile(dest);
+    return dest;
+  } catch (e) {
+    console.error(`[Sharp] Thumbnail failed for ${input}:`, e.message);
+    return null;
+  }
+};
 
 // server/routes/steamRoutes.ts
-function parseVdfPaths(content) {
-  const paths = [];
-  const regex = /"path"\s*"([^"]+)"/gi;
-  let match;
-  while ((match = regex.exec(content)) !== null) paths.push(match[1].replace(/\\\\/g, "\\"));
-  return paths;
-}
-function parseAcfManifest(content) {
-  const appidMatch = content.match(/"appid"\s*"(\d+)"/);
-  const nameMatch = content.match(/"name"\s*"([^"]+)"/);
-  const lastUpdatedMatch = content.match(/"LastUpdated"\s*"(\d+)"/);
-  if (appidMatch && nameMatch) {
-    return { appid: appidMatch[1], name: nameMatch[1], lastUpdated: lastUpdatedMatch ? parseInt(lastUpdatedMatch[1]) : 0 };
-  }
-  return null;
-}
 function createSteamRoutes(ctx2) {
   const router = (0, import_express.Router)();
   router.all("/scan", async (req, res) => {
-    console.log("[Server] Scanning Steam libraries...");
     try {
-      const { includeHidden = false, includeSoftware = false, includeAdultOnly = false } = req.body || {};
-      const vdfPath = "C:\\Program Files (x86)\\Steam\\config\\libraryfolders.vdf";
-      if (!import_fs4.default.existsSync(vdfPath)) {
-        return res.status(404).json({ error: "Steam config not found at default location" });
-      }
-      const hiddenAppIds = /* @__PURE__ */ new Set();
-      const lastPlayedMap = /* @__PURE__ */ new Map();
-      const softwareAppIds = /* @__PURE__ */ new Set([
-        "214850",
-        "250820",
-        "365670",
-        "1486350",
-        "431960",
-        "388080",
-        "993090",
-        "331200",
-        "228980"
-      ]);
-      try {
-        const userdataRoot = "C:\\Program Files (x86)\\Steam\\userdata";
-        if (import_fs4.default.existsSync(userdataRoot)) {
-          const users = import_fs4.default.readdirSync(userdataRoot);
-          for (const user of users) {
-            const configPaths = [
-              import_path5.default.join(userdataRoot, user, "7", "remote", "sharedconfig.vdf"),
-              import_path5.default.join(userdataRoot, user, "config", "localconfig.vdf")
-            ];
-            for (const configPath of configPaths) {
-              if (import_fs4.default.existsSync(configPath)) {
-                const content = import_fs4.default.readFileSync(configPath, "utf-8");
-                const hiddenTagRegex = /"(\d+)"\s*\{[^}]*"tags"\s*\{[^}]*"hidden"/gi;
-                let match;
-                while ((match = hiddenTagRegex.exec(content)) !== null) {
-                  hiddenAppIds.add(match[1]);
-                }
-                const hiddenKeyRegex = /"(\d+)"\s*\{[^}]*"Hidden"\s*"1"/gi;
-                while ((match = hiddenKeyRegex.exec(content)) !== null) {
-                  hiddenAppIds.add(match[1]);
-                }
-                const lastPlayedRegex = /"([^"]+)"\s*\{[^}]*"LastPlayed"\s*"(\d+)"/gi;
-                while ((match = lastPlayedRegex.exec(content)) !== null) {
-                  lastPlayedMap.set(match[1], parseInt(match[2]));
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("[Server] Failed to parse local configs:", e);
-      }
-      const vdfContent = import_fs4.default.readFileSync(vdfPath, "utf-8");
-      const libraryPaths = parseVdfPaths(vdfContent);
-      const games = [];
-      const softwareKeywords = ["Steamworks", "Redistributable", "Soundtrack", "Artbook", "SDK", "Dedicated Server", "Benchmark", "Tool", "Utility", "Studio", "Editor", "Engine", "Framework", "Application", "Software", "Demo", "Player", "Workshop", "Server", "Client", "Driver", "Config"];
-      for (const libPath of libraryPaths) {
-        const appsPath = import_path5.default.join(libPath, "steamapps");
-        if (import_fs4.default.existsSync(appsPath)) {
-          const files = import_fs4.default.readdirSync(appsPath);
-          for (const file of files) {
-            if (file.startsWith("appmanifest_") && file.endsWith(".acf")) {
-              try {
-                const manifestContent = import_fs4.default.readFileSync(import_path5.default.join(appsPath, file), "utf-8");
-                const info = parseAcfManifest(manifestContent);
-                if (info) {
-                  let isSoftware = softwareAppIds.has(info.appid) || softwareKeywords.some((kw) => info.name.toLowerCase().includes(kw.toLowerCase())) || softwareKeywords.some((kw) => file.toLowerCase().includes(kw.toLowerCase()));
-                  const tags = await getStoreTags(info.appid);
-                  if (tags.includes("software") || tags.includes("audio production") || tags.includes("utilities")) {
-                    isSoftware = true;
-                  }
-                  const isAdultOnly = tags.includes("adultonly") || tags.includes("nsfw");
-                  if (!includeSoftware && isSoftware) continue;
-                  if (!includeAdultOnly && isAdultOnly) continue;
-                  const isHidden = hiddenAppIds.has(info.appid);
-                  if (!includeHidden && isHidden) continue;
-                  const gameId = `steam_${info.appid}`;
-                  const steamAssets = [
-                    { type: "cover", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_600x900.jpg`, local: findLocalSteamAsset(info.appid, "cover") },
-                    { type: "banner", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/header.jpg`, local: findLocalSteamAsset(info.appid, "banner") },
-                    { type: "logo", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/logo.png`, local: findLocalSteamAsset(info.appid, "logo") },
-                    { type: "hero", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_hero.jpg`, local: findLocalSteamAsset(info.appid, "hero") }
-                  ];
-                  const gameObj = {
-                    id: gameId,
-                    title: info.name,
-                    execPath: `steam://rungameid/${info.appid}`,
-                    source: "steam",
-                    lastUpdated: lastPlayedMap.get(info.appid) || info.lastUpdated || 0
-                  };
-                  for (const asset of steamAssets) {
-                    const source = asset.local || asset.remote;
-                    const ext = source.toLowerCase().includes(".png") ? ".png" : ".jpg";
-                    const assetSubDir = import_path5.default.join("steam", info.appid.toString());
-                    const fullAssetDir = import_path5.default.join(ctx2.ASSETS_DIR, assetSubDir);
-                    if (!import_fs4.default.existsSync(fullAssetDir)) import_fs4.default.mkdirSync(fullAssetDir, { recursive: true });
-                    const dest = import_path5.default.join(fullAssetDir, `${asset.type}${ext}`);
-                    gameObj[asset.type] = import_path5.default.resolve(dest);
-                    (async () => {
-                      if (source.startsWith("http")) {
-                        if (!import_fs4.default.existsSync(dest)) await downloadImage(source, dest).catch(() => {
-                        });
-                      } else {
-                        try {
-                          if (!import_fs4.default.existsSync(dest)) import_fs4.default.copyFileSync(source, dest);
-                        } catch (e) {
-                        }
-                      }
-                    })();
-                  }
-                  games.push(gameObj);
-                }
-              } catch (e) {
-              }
-            }
-          }
-        }
-      }
-      saveTagCache();
-      res.json({ games: games.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0)) });
+      const { includeSoftware = false, includeAdultOnly = false } = req.body || {};
+      const games = await performSteamScan(ctx2, { includeSoftware, includeAdultOnly });
+      res.json({ games });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
   });
+  router.post("/sync", async (req, res) => {
+    try {
+      const { includeSoftware = false, includeAdultOnly = false } = req.body || {};
+      const games = await performSteamScan(ctx2, { includeSoftware, includeAdultOnly });
+      ctx2.db.importGames(games, "steam", { clearCategory: true });
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
+      res.json({ success: true, count: games.length });
+    } catch (e) {
+      console.error("[Steam] Sync error:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
   return router;
+}
+async function performSteamScan(ctx2, options) {
+  const { includeSoftware, includeAdultOnly } = options;
+  const vdfPath = "C:\\Program Files (x86)\\Steam\\config\\libraryfolders.vdf";
+  if (!import_fs4.default.existsSync(vdfPath)) {
+    throw new Error("Steam config not found at default location");
+  }
+  const hiddenAppIds = /* @__PURE__ */ new Set();
+  const lastPlayedMap = /* @__PURE__ */ new Map();
+  const softwareAppIds = /* @__PURE__ */ new Set([
+    "214850",
+    "250820",
+    "365670",
+    "1486350",
+    "431960",
+    "388080",
+    "993090",
+    "331200",
+    "228980"
+  ]);
+  try {
+    const userdataRoot = "C:\\Program Files (x86)\\Steam\\userdata";
+    if (import_fs4.default.existsSync(userdataRoot)) {
+      const users = import_fs4.default.readdirSync(userdataRoot);
+      for (const user of users) {
+        const configPaths = [
+          import_path5.default.join(userdataRoot, user, "7", "remote", "sharedconfig.vdf"),
+          import_path5.default.join(userdataRoot, user, "config", "localconfig.vdf")
+        ];
+        for (const configPath of configPaths) {
+          if (import_fs4.default.existsSync(configPath)) {
+            const content = import_fs4.default.readFileSync(configPath, "utf-8");
+            const hiddenTagRegex = /"(\d+)"\s*\{[^}]*"tags"\s*\{[^}]*"hidden"/gi;
+            let match;
+            while ((match = hiddenTagRegex.exec(content)) !== null) {
+              hiddenAppIds.add(match[1]);
+            }
+            const hiddenKeyRegex = /"(\d+)"\s*\{[^}]*"Hidden"\s*"1"/gi;
+            while ((match = hiddenKeyRegex.exec(content)) !== null) {
+              hiddenAppIds.add(match[1]);
+            }
+            const lastPlayedRegex = /"([^"]+)"\s*\{[^}]*"LastPlayed"\s*"(\d+)"/gi;
+            while ((match = lastPlayedRegex.exec(content)) !== null) {
+              lastPlayedMap.set(match[1], parseInt(match[2]));
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[Server] Failed to parse local configs:", e);
+  }
+  const vdfContent = import_fs4.default.readFileSync(vdfPath, "utf-8");
+  const libraryPaths = (vdfContent.match(/"path"\s*"([^"]+)"/gi) || []).map((m) => m.match(/"path"\s*"([^"]+)"/i)[1].replace(/\\\\/g, "\\"));
+  const games = [];
+  const softwareKeywords = ["Steamworks", "Redistributable", "Soundtrack", "Artbook", "SDK", "Dedicated Server", "Benchmark", "Tool", "Utility", "Studio", "Editor", "Engine", "Framework", "Application", "Software", "Demo", "Player", "Workshop", "Server", "Client", "Driver", "Config"];
+  for (const libPath of libraryPaths) {
+    const appsPath = import_path5.default.join(libPath, "steamapps");
+    if (import_fs4.default.existsSync(appsPath)) {
+      const files = import_fs4.default.readdirSync(appsPath);
+      for (const file of files) {
+        if (file.startsWith("appmanifest_") && file.endsWith(".acf")) {
+          try {
+            const manifestPath = import_path5.default.join(appsPath, file);
+            const manifestContent = import_fs4.default.readFileSync(manifestPath, "utf-8");
+            const appidMatch = manifestContent.match(/"appid"\s*"(\d+)"/);
+            const nameMatch = manifestContent.match(/"name"\s*"([^"]+)"/);
+            const lastUpdatedMatch = manifestContent.match(/"LastUpdated"\s*"(\d+)"/);
+            if (appidMatch && nameMatch) {
+              const info = { appid: appidMatch[1], name: nameMatch[1], lastUpdated: lastUpdatedMatch ? parseInt(lastUpdatedMatch[1]) : 0 };
+              let isSoftware = softwareAppIds.has(info.appid) || softwareKeywords.some((kw) => info.name.toLowerCase().includes(kw.toLowerCase())) || softwareKeywords.some((kw) => file.toLowerCase().includes(kw.toLowerCase()));
+              const tags = await getStoreTags(info.appid);
+              if (tags.includes("software") || tags.includes("audio production") || tags.includes("utilities")) {
+                isSoftware = true;
+              }
+              const isAdultOnly = tags.includes("adultonly") || tags.includes("nsfw");
+              if (!includeSoftware && isSoftware) continue;
+              if (!includeAdultOnly && isAdultOnly) continue;
+              const gameId = `steam_${info.appid}`;
+              const assetSubDir = import_path5.default.join("steam", info.appid.toString());
+              const fullAssetDir = import_path5.default.join(ctx2.ASSETS_DIR, assetSubDir);
+              if (!import_fs4.default.existsSync(fullAssetDir)) import_fs4.default.mkdirSync(fullAssetDir, { recursive: true });
+              const urlPath = import_path5.default.join(fullAssetDir, "launch.url");
+              const urlContent = `[InternetShortcut]
+URL=steam://rungameid/${info.appid}
+`;
+              import_fs4.default.writeFileSync(urlPath, urlContent);
+              const steamAssets = [
+                { type: "cover", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_600x900.jpg`, local: findLocalSteamAsset(info.appid, "cover") },
+                { type: "banner", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/header.jpg`, local: findLocalSteamAsset(info.appid, "banner") },
+                { type: "logo", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/logo.png`, local: findLocalSteamAsset(info.appid, "logo") },
+                { type: "hero", remote: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${info.appid}/library_hero.jpg`, local: findLocalSteamAsset(info.appid, "hero") }
+              ];
+              const gameObj = {
+                id: gameId,
+                title: info.name,
+                execPath: import_path5.default.resolve(urlPath),
+                source: "steam",
+                lastUpdated: lastPlayedMap.get(info.appid) || info.lastUpdated || 0
+              };
+              for (const asset of steamAssets) {
+                const source = asset.local || asset.remote;
+                if (!source) continue;
+                const ext = source.toLowerCase().includes(".png") ? ".png" : ".jpg";
+                const dest = import_path5.default.join(fullAssetDir, `${asset.type}${ext}`);
+                gameObj[asset.type] = import_path5.default.resolve(dest);
+                if (source.startsWith("http")) {
+                  if (!import_fs4.default.existsSync(dest)) downloadImage(source, dest).catch(() => {
+                  });
+                } else {
+                  try {
+                    if (!import_fs4.default.existsSync(dest)) import_fs4.default.copyFileSync(source, dest);
+                  } catch (e) {
+                  }
+                }
+              }
+              games.push(gameObj);
+            }
+          } catch (e) {
+          }
+        }
+      }
+    }
+  }
+  saveTagCache();
+  return games.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
 }
 
 // server/routes/xboxRoutes.ts
@@ -24603,123 +24850,98 @@ var import_path6 = __toESM(require("path"), 1);
 var import_child_process2 = require("child_process");
 function createXboxRoutes(ctx2) {
   const router = (0, import_express2.Router)();
-  router.all("/scan", async (req, res) => {
-    console.log("[Server] Scanning Xbox/Store games...");
+  router.post("/sync", async (req, res) => {
     try {
-      const assetsDirPs = ctx2.ASSETS_DIR.replace(/\\/g, "\\\\");
-      const psScript = `
+      const { includeAssets = true } = req.body || {};
+      const games = await performXboxScan(ctx2, { includeAssets });
+      ctx2.db.importGames(games, "xbox", { clearCategory: true });
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
+      res.json({ success: true, count: games.length, games });
+    } catch (e) {
+      console.error("[Xbox] Sync error:", e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+  return router;
+}
+async function performXboxScan(ctx2, options) {
+  const { includeAssets } = options;
+  return new Promise((resolve3, reject) => {
+    const psScript = `
 $ErrorActionPreference = 'SilentlyContinue'
-$assetsDir = "${assetsDirPs}"
-$WScript = New-Object -ComObject WScript.Shell
-
 $packages = Get-AppxPackage | Where-Object { $_.IsFramework -eq $false -and $_.SignatureKind -eq "Store" }
 $packageMap = @{}
 foreach ($p in $packages) {
     if ($p.PackageFamilyName) { $packageMap[$p.PackageFamilyName] = $p }
 }
-
 $startApps = Get-StartApps
 $games = @()
-
 foreach ($app in $startApps) {
     if (-not $app.AppID.Contains("!")) { continue }
-    
     $pfn = $app.AppID.Split("!")[0]
     $pkg = $packageMap[$pfn]
-    
     if ($pkg) {
         $installLoc = $pkg.InstallLocation
         $isGame = $false
-        
         if ($installLoc -and (Test-Path $installLoc)) {
             $manifestPath = Join-Path $installLoc "AppxManifest.xml"
             if (Test-Path $manifestPath) {
                 try {
                     $content = Get-Content $manifestPath -Raw
-                    if ($content -match "ms-xbl-[a-f0-9]+" -or $content -match "uap:GameMode" -or $content -match "Category=\`"windows.game\`"") { 
-                        $isGame = $true 
-                    }
+                    if ($content -match "ms-xbl-[a-f0-9]+" -or $content -match "uap:GameMode" -or $content -match "Category=\`"windows.game\`"") { $isGame = $true }
                 } catch {}
             }
         }
-
         if ($isGame) {
-             $logoPath = ""
-            if ($pkg.Logo -and $installLoc) {
-                $possibleLogo = Join-Path $installLoc $pkg.Logo
-                if (Test-Path $possibleLogo) { $logoPath = $possibleLogo }
-            }
-            
-            # Create Shortcut
-            $gameId = "xbox_" + $pkg.Name
-            $gameDir = Join-Path $assetsDir $gameId
-            if (-not (Test-Path $gameDir)) { New-Item -ItemType Directory -Path $gameDir -Force | Out-Null }
-            
-            $lnkPath = Join-Path $gameDir "launch.lnk"
-            try {
-                $s = $WScript.CreateShortcut($lnkPath)
-                $s.TargetPath = "explorer.exe"
-                $s.Arguments = 'shell:AppsFolder' + $app.AppID
-                $s.IconLocation = "$logoPath,0"
-                $s.Save()
-            } catch {
-                Write-Host "Failed to create shortcut for $($app.Name): $_"
-            }
-
-            $games += [PSCustomObject]@{
-                Title = $app.Name
-                Id = $gameId
-                ExecPath = $lnkPath
-                Logo = $logoPath
-                InstallDate = (Get-Item $installLoc).CreationTime.ToString("yyyy-MM-dd HH:mm:ss")
-            }
+            $logoPath = ""
+            if ($pkg.Logo -and $installLoc) { $possibleLogo = Join-Path $installLoc $pkg.Logo; if (Test-Path $possibleLogo) { $logoPath = $possibleLogo } }
+            $games += [PSCustomObject]@{ Title = $app.Name; Id = "xbox_" + $pkg.Name; AppID = $app.AppID; Logo = $logoPath; InstallDate = (Get-Item $installLoc).CreationTime.ToString("yyyy-MM-dd HH:mm:ss") }
         }
     }
 }
 $games | Sort-Object InstallDate -Descending | ConvertTo-Json -Depth 2
 `;
-      const encodedCommand = Buffer.from(psScript, "utf16le").toString("base64");
-      const command = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
-      (0, import_child_process2.exec)(command, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout) => {
-        if (error) return res.status(500).json({ error: "Failed to scan Xbox games" });
-        try {
-          const rawGames = JSON.parse(stdout || "[]");
-          const { includeAssets = true } = req.body || {};
-          const psGames = Array.isArray(rawGames) ? rawGames : [rawGames];
-          const games = [];
-          for (const g of psGames) {
-            if (!g.Id) continue;
-            const gameId = g.Id;
-            let localLogoPath = null;
-            if (includeAssets && g.Logo && import_fs5.default.existsSync(g.Logo)) {
-              const assetSubDir = import_path6.default.join("xbox", gameId);
-              const fullAssetDir = import_path6.default.join(ctx2.ASSETS_DIR, assetSubDir);
-              if (!import_fs5.default.existsSync(fullAssetDir)) import_fs5.default.mkdirSync(fullAssetDir, { recursive: true });
-              const logoDestPng = import_path6.default.join(fullAssetDir, "logo.png");
-              try {
-                import_fs5.default.copyFileSync(g.Logo, logoDestPng);
-                localLogoPath = import_path6.default.resolve(logoDestPng);
-              } catch (e) {
-              }
+    const encodedCommand = Buffer.from(psScript, "utf16le").toString("base64");
+    const command = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedCommand}`;
+    (0, import_child_process2.exec)(command, { maxBuffer: 1024 * 1024 * 10 }, async (error, stdout) => {
+      if (error) return reject(new Error("Failed to scan Xbox games"));
+      try {
+        const rawGames = JSON.parse(stdout || "[]");
+        const psGames = Array.isArray(rawGames) ? rawGames : [rawGames];
+        const games = [];
+        const { spawnSync: spawnSync3 } = await import("child_process");
+        for (const g of psGames) {
+          if (!g.Id || !g.AppID) continue;
+          const gameId = g.Id;
+          const assetSubDir = import_path6.default.join("xbox", gameId);
+          const fullAssetDir = import_path6.default.join(ctx2.ASSETS_DIR, assetSubDir);
+          if (!import_fs5.default.existsSync(fullAssetDir)) import_fs5.default.mkdirSync(fullAssetDir, { recursive: true });
+          const lnkPath = import_path6.default.resolve(import_path6.default.join(fullAssetDir, "launch.lnk"));
+          const psScript2 = `
+                    $s = (New-Object -COM WScript.Shell).CreateShortcut('${lnkPath.replace(/'/g, "''")}')
+                    $s.TargetPath = 'C:\\Windows\\explorer.exe'
+                    $s.Arguments = 'shell:AppsFolder\\${g.AppID}'
+                    $s.Save()
+                    `;
+          const encoded = Buffer.from(psScript2, "utf16le").toString("base64");
+          spawnSync3("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], { windowsHide: true });
+          let localLogoPath = "";
+          if (includeAssets && g.Logo && import_fs5.default.existsSync(g.Logo)) {
+            const logoDestPng = import_path6.default.join(fullAssetDir, "logo.png");
+            try {
+              import_fs5.default.copyFileSync(g.Logo, logoDestPng);
+              localLogoPath = import_path6.default.resolve(logoDestPng);
+            } catch (e) {
             }
-            games.push({
-              id: gameId,
-              title: g.Title,
-              execPath: g.ExecPath,
-              source: "xbox",
-              logo: localLogoPath || ""
-            });
           }
-          res.json({ games });
-        } catch (parseError) {
-          res.json({ games: [] });
+          games.push({ id: gameId, title: g.Title, execPath: import_path6.default.resolve(lnkPath), source: "xbox", logo: localLogoPath });
         }
-      });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
+        resolve3(games);
+      } catch (e) {
+        resolve3([]);
+      }
+    });
   });
-  return router;
 }
 
 // server/routes/emuRoutes.ts
@@ -24744,26 +24966,90 @@ var PLATFORM_NAMES = {
   "psp": "PLAYSTATION PORTABLE",
   "psv": "PLAYSTATION VITA",
   "gba": "GAME BOY ADVANCE",
+  "gb": "GAME BOY",
+  "gbc": "GAME BOY COLOR",
+  "nes": "NES",
+  "snes": "SNES",
+  "genesis": "SEGA GENESIS",
+  "ms": "MASTER SYSTEM",
+  "gg": "GAME GEAR",
   "xbox360": "XBOX 360",
   "multi": "RETROARCH"
+};
+var PLATFORM_COLORS = {
+  "3ds": "#ce181e",
+  "n64": "#316231",
+  "nds": "#ffffff",
+  "ngc": "#6a5acd",
+  "nsw": "#e60012",
+  "wii": "#ffffff",
+  "wiu": "#009ac7",
+  "ps1": "#003791",
+  "ps2": "#003791",
+  "ps3": "#000000",
+  "ps4": "#003791",
+  "psp": "#000000",
+  "psv": "#201e1f",
+  "gba": "#2d1b6b",
+  "gb": "#8b9bb4",
+  "gbc": "#fb06d2",
+  "nes": "#e4000f",
+  "snes": "#8265a1",
+  "genesis": "#000000",
+  "ms": "#0000ff",
+  "gg": "#107c10",
+  "xbox360": "#107c10",
+  "multi": "#3fe0d0"
+};
+var PLATFORM_ICONS = {
+  "3ds": "./res/external/3ds.png",
+  "n64": "./res/external/n64.png",
+  "nds": "./res/external/nds.png",
+  "ngc": "./res/external/ngc.png",
+  "nsw": "./res/external/nsw.png",
+  "wii": "./res/external/wii.png",
+  "wiu": "./res/external/wiu.png",
+  "ps1": "./res/external/ps1.png",
+  "ps2": "./res/external/ps2.png",
+  "ps3": "./res/external/ps3.png",
+  "ps4": "./res/external/ps4.png",
+  "psp": "./res/external/psp.png",
+  "psv": "./res/external/psv.png",
+  "gba": "./res/external/gba.png",
+  "gb": "./res/external/gb.png",
+  "gbc": "./res/external/gbc.png",
+  "nes": "./res/external/nes.png",
+  "snes": "./res/external/snes.png",
+  "genesis": "./res/external/genesis.png",
+  "ms": "./res/external/ms.png",
+  "gg": "./res/external/gg.png",
+  "xbox360": "./res/external/xbox.png",
+  "multi": "./res/external/Emu.png"
 };
 var EMU_PLATFORMS = {
   "3ds": { extensions: [".3ds", ".cia"], mode: "FILE", defaultArgs: "--fullscreen" },
   "n64": { extensions: [".z64", ".n64", ".v64"], mode: "FILE", defaultArgs: "--fullscreen" },
   "nds": { extensions: [".nds"], mode: "FILE", defaultArgs: "-f" },
-  "ngc": { extensions: [".iso", ".gcm", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
-  "nsw": { extensions: [".nsp", ".xci"], mode: "FILE", defaultArgs: "-f" },
-  "wii": { extensions: [".iso", ".wbfs", ".rvz"], mode: "FILE", defaultArgs: "-f -e" },
+  "ngc": { extensions: [".iso", ".gcm", ".rvz", ".7z", ".zip"], mode: "FILE", defaultArgs: "-f -e" },
+  "nsw": { extensions: [".nsp", ".xci", ".7z", ".zip"], mode: "FILE", defaultArgs: "-f" },
+  "wii": { extensions: [".iso", ".wbfs", ".rvz", ".7z", ".zip"], mode: "FILE", defaultArgs: "-f -e" },
   "wiu": { extensions: [".wud", ".wux", ".rpx"], mode: "FILE", defaultArgs: "-f" },
-  "ps1": { extensions: [".cue", ".iso", ".chd", ".pbp"], mode: "FILE", defaultArgs: "--fullscreen" },
-  "ps2": { extensions: [".iso", ".bin", ".chd"], mode: "FILE", defaultArgs: "--fullscreen --no-gui" },
+  "ps1": { extensions: [".cue", ".iso", ".chd", ".pbp", ".7z", ".zip"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "ps2": { extensions: [".iso", ".bin", ".chd", ".7z", ".zip"], mode: "FILE", defaultArgs: "--fullscreen --no-gui" },
   "ps3": { extensions: [], mode: "FOLDER", defaultArgs: "--fullscreen" },
   "ps4": { extensions: [], mode: "FOLDER", defaultArgs: "" },
   "psp": { extensions: [".iso", ".cso"], mode: "FILE", defaultArgs: "--fullscreen" },
   "psv": { extensions: [".vpk"], mode: "FILE", defaultArgs: "" },
-  "gba": { extensions: [".gba", ".zip"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "gba": { extensions: [".gba", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "gb": { extensions: [".gb", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "gbc": { extensions: [".gbc", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "nes": { extensions: [".nes", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "snes": { extensions: [".sfc", ".smc", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "genesis": { extensions: [".md", ".smd", ".gen", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "ms": { extensions: [".sms", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
+  "gg": { extensions: [".gg", ".zip", ".7z"], mode: "FILE", defaultArgs: "--fullscreen" },
   "xbox360": { extensions: [".iso", ".xex"], mode: "FILE", defaultArgs: "--fullscreen" },
-  "multi": { extensions: [".iso", ".zip", ".rom"], mode: "FILE", defaultArgs: '-L "%CORE%" "%ROM%"' },
+  "multi": { extensions: [".iso", ".zip", ".rom", ".gba", ".gb", ".gbc", ".nes", ".sfc", ".md"], mode: "FILE", defaultArgs: '-L "%CORE%" "%ROM%"' },
   "custom": { extensions: [], mode: "FILE", defaultArgs: "" }
 };
 function cleanEmuTitle(filename) {
@@ -24772,7 +25058,7 @@ function cleanEmuTitle(filename) {
   name = name.replace(/\s*\[.*?\]/g, "");
   name = name.replace(/_/g, " ");
   name = name.replace(/^\d+\s*-\s*/, "");
-  return name.trim();
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 function extractTitleFromSFO(sfoPath) {
   try {
@@ -24814,136 +25100,129 @@ function createEmuRoutes(ctx2) {
       if (!platformId || !romsDir || !emuExe) {
         return res.status(400).json({ error: "Missing platformId, romsDir or emuExe" });
       }
-      const config = EMU_PLATFORMS[platformId];
-      if (!config) return res.status(400).json({ error: "Invalid platformId" });
-      if (!import_fs7.default.existsSync(romsDir)) return res.status(404).json({ error: "ROMs directory not found" });
-      const games = [];
-      const shortcutTasks = [];
-      const scan = (dir, depth = 0) => {
-        if (!import_fs7.default.existsSync(dir) || depth > 4) return;
-        const files = import_fs7.default.readdirSync(dir);
-        for (const file of files) {
-          if (file.startsWith(".")) continue;
-          const fullPath = import_path7.default.join(dir, file);
-          const stat4 = import_fs7.default.statSync(fullPath);
-          if (config.mode === "FILE" && !stat4.isDirectory()) {
-            const ext = import_path7.default.extname(file).toLowerCase();
-            const targetExtensions = platformId === "custom" && extension ? extension.split(",").map((e) => e.trim().toLowerCase()) : config.extensions;
-            if (targetExtensions.includes(ext)) {
-              if (platformId === "nsw") {
-                const lowerFile = file.toLowerCase();
-                const versionLimitRegex = /(?:\[v|[\s_]v)([1-9]\d*(\.\d+)*)/i;
-                const hasUpdateTag = lowerFile.includes("[upd]") || lowerFile.includes("update") || lowerFile.includes("patch") || versionLimitRegex.test(file);
-                const hasDlcTag = lowerFile.includes("[dlc]") || lowerFile.includes("dlc") || lowerFile.includes("addon");
-                const titleIdMatch = file.match(/\[([0-9a-fA-F]{16})\]/);
-                if (titleIdMatch) {
-                  const titleId = titleIdMatch[1].toUpperCase();
-                  if (!titleId.endsWith("000")) continue;
-                } else if (hasUpdateTag || hasDlcTag) {
-                  continue;
-                }
-              }
-              const gameId = `emu_${platformId}_${ctx2.slugify(file)}`;
-              const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, gameId);
-              if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
-              const lnkPath = import_path7.default.join(gameDir, "launch.lnk");
-              let finalArgs = execArgs || config.defaultArgs || '"%ROM%"';
-              if (finalArgs.includes("%ROM%")) {
-                finalArgs = finalArgs.replace(/%ROM%/g, fullPath);
-              } else {
-                finalArgs = `${finalArgs} "${fullPath}"`;
-              }
-              shortcutTasks.push({ lnkPath, targetExe: emuExe, args: finalArgs });
-              games.push({
-                id: gameId,
-                title: cleanEmuTitle(file),
-                execPath: import_path7.default.resolve(lnkPath),
-                execArgs: "",
-                // Arguments are inside the shortcut
-                source: "emulator",
-                sourceId: platformId,
-                platform: platformId,
-                category: PLATFORM_NAMES[platformId] || platformId.toUpperCase()
-              });
-            }
-          } else if (config.mode === "FOLDER" && stat4.isDirectory()) {
-            let folderArgs = `"${fullPath}"`;
-            let detectedTitle = cleanEmuTitle(file);
-            if (platformId === "ps3") {
-              const sfoPath = import_path7.default.join(fullPath, "PS3_GAME", "PARAM.SFO");
-              const sfoTitle = extractTitleFromSFO(sfoPath);
-              if (sfoTitle) detectedTitle = sfoTitle;
-              const eboot = import_path7.default.join(fullPath, "PS3_GAME", "USRDIR", "EBOOT.BIN");
-              if (import_fs7.default.existsSync(eboot)) folderArgs = `"${eboot}"`;
-            } else if (platformId === "ps4") {
-              const sfoPath = import_path7.default.join(fullPath, "sce_sys", "param.sfo");
-              const sfoTitle = extractTitleFromSFO(sfoPath);
-              if (sfoTitle) detectedTitle = sfoTitle;
-            }
-            const gameId = `emu_${platformId}_${ctx2.slugify(file)}`;
-            const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, gameId);
-            if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
-            const lnkPath = import_path7.default.join(gameDir, "launch.lnk");
-            shortcutTasks.push({ lnkPath, targetExe: emuExe, args: folderArgs });
-            games.push({
-              id: gameId,
-              title: detectedTitle,
-              execPath: import_path7.default.resolve(lnkPath),
-              execArgs: "",
-              // Arguments are inside the shortcut
-              source: "emulator",
-              platform: platformId
-            });
-          } else if (stat4.isDirectory()) {
-            scan(fullPath, depth + 1);
-          }
-        }
-      };
-      scan(romsDir, 0);
-      if (shortcutTasks.length > 0) {
-        console.log(`[EmuScan] Creating ${shortcutTasks.length} shortcuts...`);
-        const psLines = shortcutTasks.map((t) => {
-          const lnk = t.lnkPath.replace(/'/g, "''");
-          const target = t.targetExe.replace(/'/g, "''");
-          const args = t.args.replace(/'/g, "''");
-          return `$s=$w.CreateShortcut('${lnk}');$s.TargetPath='${target}';$s.Arguments='${args}';$s.Save()`;
-        });
-        const psScript = `$ErrorActionPreference = 'Stop'
-$w=New-Object -ComObject WScript.Shell
-${psLines.join("\n")}`;
-        const tempScriptPath = import_path7.default.join(ctx2.ASSETS_DIR, `sync_${Date.now()}.ps1`);
-        import_fs7.default.writeFileSync(tempScriptPath, "\uFEFF" + psScript, "utf8");
-        await new Promise((resolve3, reject) => {
-          (0, import_child_process3.exec)(
-            `powershell -NoProfile -ExecutionPolicy Bypass -File "${tempScriptPath}"`,
-            { maxBuffer: 1024 * 1024 * 10 },
-            (err) => {
-              try {
-                if (import_fs7.default.existsSync(tempScriptPath)) import_fs7.default.unlinkSync(tempScriptPath);
-              } catch (e) {
-              }
-              if (err) {
-                console.error("[EmuScan] Shortcut creation failed:", err.message);
-                reject(err);
-              } else {
-                console.log(`[EmuScan] ${shortcutTasks.length} shortcuts created`);
-                resolve3();
-              }
-            }
-          );
-        });
-      }
-      res.json({ games });
+      const games = await performEmuScan(ctx2, { platformId, romsDir, emuExe, execArgs, extension });
+      const catId = `emu_${platformId}`;
+      ctx2.db.importGames(games, catId, {
+        clearCategory: true,
+        categoryName: PLATFORM_NAMES[platformId] || platformId.toUpperCase(),
+        categoryColor: PLATFORM_COLORS[platformId] || "#ffffff",
+        categoryIcon: PLATFORM_ICONS[platformId] || ""
+      });
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
+      res.json({ success: true, count: games.length, games });
     } catch (e) {
+      console.error("[Emu] Sync error:", e);
       res.status(500).json({ error: e.message });
     }
   });
   return router;
 }
+async function performEmuScan(ctx2, options) {
+  const { platformId, romsDir, emuExe, execArgs, extension } = options;
+  const config = EMU_PLATFORMS[platformId];
+  if (!config) throw new Error("Invalid platformId");
+  if (!import_fs7.default.existsSync(romsDir)) throw new Error("ROMs directory not found");
+  const games = [];
+  const scan = (dir, depth = 0) => {
+    if (!import_fs7.default.existsSync(dir) || depth > 4) return;
+    const files = import_fs7.default.readdirSync(dir);
+    for (const file of files) {
+      if (file.startsWith(".")) continue;
+      const fullPath = import_path7.default.join(dir, file);
+      const stat4 = import_fs7.default.statSync(fullPath);
+      if (config.mode === "FILE" && !stat4.isDirectory()) {
+        const ext = import_path7.default.extname(file).toLowerCase();
+        const targetExtensions = platformId === "custom" && extension ? extension.split(",").map((e) => e.trim().toLowerCase()) : config.extensions;
+        if (targetExtensions.includes(ext)) {
+          if (platformId === "nsw") {
+            const lowerFile = file.toLowerCase();
+            const versionLimitRegex = /(?:\[v|[\s_]v)([1-9]\d*(\.\d+)*)/i;
+            const hasUpdateTag = lowerFile.includes("[upd]") || lowerFile.includes("update") || lowerFile.includes("patch") || versionLimitRegex.test(file);
+            const hasDlcTag = lowerFile.includes("[dlc]") || lowerFile.includes("dlc") || lowerFile.includes("addon");
+            const titleIdMatch = file.match(/\[([0-9a-fA-F]{16})\]/);
+            if (titleIdMatch) {
+              const titleId = titleIdMatch[1].toUpperCase();
+              if (!titleId.endsWith("000")) continue;
+            } else if (hasUpdateTag || hasDlcTag) continue;
+          }
+          const cleanFilename = ctx2.slugify(file);
+          const gameId = `emu_${platformId}_${cleanFilename}`;
+          const assetSubDir = import_path7.default.join("emulator", platformId, cleanFilename);
+          const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, assetSubDir);
+          if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
+          let finalArgs = execArgs || config.defaultArgs || '"%ROM%"';
+          if (finalArgs.includes("%ROM%")) {
+            finalArgs = finalArgs.replace(/%ROM%/g, `"${fullPath}"`);
+          } else if (!finalArgs.includes(fullPath)) {
+            finalArgs = `${finalArgs} "${fullPath}"`;
+          }
+          const lnkPath = import_path7.default.resolve(import_path7.default.join(gameDir, "launch.lnk"));
+          const workingDir = import_path7.default.resolve(import_path7.default.dirname(emuExe));
+          const psScript = `
+                    $s = (New-Object -COM WScript.Shell).CreateShortcut('${lnkPath.replace(/'/g, "''")}')
+                    $s.TargetPath = '${emuExe.replace(/'/g, "''")}'
+                    $s.Arguments = '${finalArgs.replace(/'/g, "''")}'
+                    $s.WorkingDirectory = '${workingDir.replace(/'/g, "''")}'
+                    $s.Save()
+                    `;
+          const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+          (0, import_child_process3.spawnSync)("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], { windowsHide: true });
+          games.push({
+            id: gameId,
+            title: cleanEmuTitle(file),
+            execPath: import_path7.default.resolve(lnkPath),
+            execArgs: "",
+            source: "emu",
+            sourceId: platformId,
+            platform: platformId,
+            category: PLATFORM_NAMES[platformId] || platformId.toUpperCase(),
+            romPath: fullPath
+          });
+        }
+      } else if (config.mode === "FOLDER" && stat4.isDirectory()) {
+        let folderArgs = `"${fullPath}"`;
+        let detectedTitle = cleanEmuTitle(file);
+        if (platformId === "ps3") {
+          const sfoPath = import_path7.default.join(fullPath, "PS3_GAME", "PARAM.SFO");
+          const sfoTitle = extractTitleFromSFO(sfoPath);
+          if (sfoTitle) detectedTitle = sfoTitle;
+          const eboot = import_path7.default.join(fullPath, "PS3_GAME", "USRDIR", "EBOOT.BIN");
+          if (import_fs7.default.existsSync(eboot)) folderArgs = `"${eboot}"`;
+        } else if (platformId === "ps4") {
+          const sfoPath = import_path7.default.join(fullPath, "sce_sys", "param.sfo");
+          const sfoTitle = extractTitleFromSFO(sfoPath);
+          if (sfoTitle) detectedTitle = sfoTitle;
+        }
+        const cleanFolderName = ctx2.slugify(file);
+        const gameId = `emu_${platformId}_${cleanFolderName}`;
+        const assetSubDir = import_path7.default.join("emulator", platformId, cleanFolderName);
+        const gameDir = import_path7.default.join(ctx2.ASSETS_DIR, assetSubDir);
+        if (!import_fs7.default.existsSync(gameDir)) import_fs7.default.mkdirSync(gameDir, { recursive: true });
+        const lnkPath = import_path7.default.resolve(import_path7.default.join(gameDir, "launch.lnk"));
+        const workingDir = import_path7.default.resolve(import_path7.default.dirname(emuExe));
+        const psScript = `
+                    $s = (New-Object -COM WScript.Shell).CreateShortcut('${lnkPath.replace(/'/g, "''")}')
+                    $s.TargetPath = '${emuExe.replace(/'/g, "''")}'
+                    $s.Arguments = '${folderArgs.replace(/'/g, "''")}'
+                    $s.WorkingDirectory = '${workingDir.replace(/'/g, "''")}'
+                    $s.Save()
+                    `;
+        const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+        (0, import_child_process3.spawnSync)("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], { windowsHide: true });
+        games.push({ id: gameId, title: detectedTitle, execPath: import_path7.default.resolve(lnkPath), execArgs: "", source: "emu", platform: platformId, romPath: fullPath });
+      } else if (stat4.isDirectory()) {
+        scan(fullPath, depth + 1);
+      }
+    }
+  };
+  scan(romsDir, 0);
+  return games;
+}
 
 // server/routes/dataRoutes.ts
 var import_express4 = __toESM(require_express2(), 1);
 var import_fs8 = __toESM(require("fs"), 1);
+var import_path8 = __toESM(require("path"), 1);
 function createDataRoutes(ctx2) {
   const router = (0, import_express4.Router)();
   const getSGDBKey = () => {
@@ -24992,14 +25271,16 @@ function createDataRoutes(ctx2) {
   });
   router.post("/data", (req, res) => {
     try {
-      const categories = req.body;
-      if (!Array.isArray(categories)) {
+      const categories2 = req.body;
+      if (!Array.isArray(categories2)) {
         return res.status(400).json({ error: "Body must be a categories array" });
       }
-      ctx2.db.saveCategories(categories);
+      ctx2.db.saveCategories(categories2);
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
       res.json({ success: true });
     } catch (e) {
-      res.status(500).json({ error: "Failed to save data" });
+      console.error("[Data] Save error:", e);
+      res.status(500).json({ error: "Failed to save data", details: e.message });
     }
   });
   router.get("/sgdb/search/:query", async (req, res) => {
@@ -25086,14 +25367,131 @@ function createDataRoutes(ctx2) {
       res.status(500).json({ success: false, error: "PROXY_ASSETS_EXCEPTION", detail: e.message });
     }
   });
+  router.post("/verify-paths", (req, res) => {
+    try {
+      const { paths } = req.body;
+      if (!Array.isArray(paths)) return res.status(400).json({ error: "paths must be an array" });
+      const results = {};
+      for (const p of paths) {
+        if (typeof p !== "string") continue;
+        try {
+          if (p.startsWith("http") || p.startsWith("steam://") || p.startsWith("ms-")) {
+            results[p] = true;
+            continue;
+          }
+          results[p] = import_fs8.default.existsSync(p);
+        } catch {
+          results[p] = false;
+        }
+      }
+      res.json({ results });
+    } catch (e) {
+      res.status(500).json({ error: "Failed to verify paths" });
+    }
+  });
+  router.get("/integrity/scan-orphans", (req, res) => {
+    try {
+      const recovered = [];
+      const assetsDir = ctx2.ASSETS_DIR;
+      if (!import_fs8.default.existsSync(assetsDir)) return res.json({ recovered: [] });
+      const scanDir = (dir, depth = 0) => {
+        const items = import_fs8.default.readdirSync(dir, { withFileTypes: true });
+        for (const item of items) {
+          if (item.isDirectory()) {
+            const fullPath = import_path8.default.join(dir, item.name);
+            const possibleLaunchFiles = ["launch.lnk", "launch.url"];
+            const foundFile = possibleLaunchFiles.find((f) => import_fs8.default.existsSync(import_path8.default.join(fullPath, f)));
+            if (foundFile) {
+              const launchPath = import_path8.default.join(fullPath, foundFile);
+              const relative3 = import_path8.default.relative(assetsDir, fullPath).replace(/\\/g, "/");
+              const parts = relative3.split("/");
+              let source = "manual";
+              let platform = null;
+              let gameId = item.name;
+              if (parts[0] === "emulator" && parts.length >= 3) {
+                source = "emu";
+                platform = parts[1];
+                gameId = `emu_${platform}_${parts[2]}`;
+              } else if (parts[0] === "steam") {
+                source = "steam";
+                gameId = `steam_${parts[1]}`;
+              } else if (parts[0] === "xbox") {
+                source = "xbox";
+                gameId = `xbox_${parts[1]}`;
+              }
+              const game = {
+                id: gameId,
+                title: item.name.replace(/_/g, " ").toUpperCase(),
+                execPath: import_path8.default.resolve(launchPath),
+                source,
+                platform,
+                cover: import_fs8.default.existsSync(import_path8.default.join(fullPath, "cover.png")) ? import_path8.default.join(fullPath, "cover.png") : import_fs8.default.existsSync(import_path8.default.join(fullPath, "cover.jpg")) ? import_path8.default.join(fullPath, "cover.jpg") : "",
+                banner: import_fs8.default.existsSync(import_path8.default.join(fullPath, "banner.png")) ? import_path8.default.join(fullPath, "banner.png") : import_fs8.default.existsSync(import_path8.default.join(fullPath, "banner.jpg")) ? import_path8.default.join(fullPath, "banner.jpg") : "",
+                logo: import_fs8.default.existsSync(import_path8.default.join(fullPath, "logo.png")) ? import_path8.default.join(fullPath, "logo.png") : import_fs8.default.existsSync(import_path8.default.join(fullPath, "logo.jpg")) ? import_path8.default.join(fullPath, "logo.jpg") : "",
+                wallpaper: import_fs8.default.existsSync(import_path8.default.join(fullPath, "wallpaper.png")) ? import_path8.default.join(fullPath, "wallpaper.png") : import_fs8.default.existsSync(import_path8.default.join(fullPath, "wallpaper.jpg")) ? import_path8.default.join(fullPath, "wallpaper.jpg") : ""
+              };
+              recovered.push(game);
+            } else if (depth < 2) {
+              scanDir(fullPath, depth + 1);
+            }
+          }
+        }
+      };
+      scanDir(assetsDir);
+      res.json({ recovered });
+    } catch (e) {
+      console.error("[Integrity] Orphan scan error:", e);
+      res.status(500).json({ error: "Failed to scan for orphaned folders" });
+    }
+  });
+  router.get("/games/search", (req, res) => {
+    try {
+      const query = req.query.q || "";
+      const categoryId = req.query.cat || "all";
+      const games = ctx2.db.searchGames(query, categoryId);
+      res.json({ games });
+    } catch (e) {
+      console.error("[Data] Search error:", e);
+      res.status(500).json({ error: "Search failed" });
+    }
+  });
+  router.post("/games/update-assets", (req, res) => {
+    try {
+      const { gameId, assets } = req.body;
+      if (!gameId || !assets) {
+        return res.status(400).json({ error: "Missing gameId or assets" });
+      }
+      ctx2.db.updateGameAssets(gameId, assets);
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
+      res.json({ success: true });
+    } catch (e) {
+      console.error("[Data] Game update error:", e);
+      res.status(500).json({ error: "Failed to update game assets", details: e.message });
+    }
+  });
+  router.post("/data/wipe", (req, res) => {
+    try {
+      console.log("[System] Initializing Factory Reset protocol...");
+      ctx2.db.wipeData();
+      if (import_fs8.default.existsSync(ctx2.STORAGE_DIR)) {
+        console.log(`[System] Purging storage at: ${ctx2.STORAGE_DIR}`);
+        import_fs8.default.rmSync(ctx2.STORAGE_DIR, { recursive: true, force: true });
+        import_fs8.default.mkdirSync(ctx2.ASSETS_DIR, { recursive: true });
+      }
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
+      res.json({ success: true });
+    } catch (e) {
+      console.error("[System] Factory Reset failed:", e);
+      res.status(500).json({ error: "Failed to perform factory reset", details: e.message });
+    }
+  });
   return router;
 }
 
 // server/routes/assetRoutes.ts
 var import_express5 = __toESM(require_express2(), 1);
 var import_fs9 = __toESM(require("fs"), 1);
-var import_path8 = __toESM(require("path"), 1);
-var import_child_process4 = require("child_process");
+var import_path9 = __toESM(require("path"), 1);
 function createAssetRoutes(ctx2) {
   const router = (0, import_express5.Router)();
   router.post("/import", async (req, res) => {
@@ -25102,61 +25500,61 @@ function createAssetRoutes(ctx2) {
       return res.status(400).json({ error: "Missing required fields" });
     }
     try {
-      const gameDir = import_path8.default.join(ctx2.ASSETS_DIR, gameId);
+      const gameDir = import_path9.default.join(ctx2.ASSETS_DIR, gameId);
       if (!import_fs9.default.existsSync(gameDir)) import_fs9.default.mkdirSync(gameDir, { recursive: true });
-      const sourceExt = import_path8.default.extname(sourcePath).toLowerCase();
-      const processedExt = assetType === "logo" || assetType === "icon" || sourceExt === ".png" || sourceExt === ".gif" || sourceExt === ".apng" ? sourceExt : ".jpg";
-      const targetPath = import_path8.default.join(gameDir, `${assetType}${processedExt}`);
-      const tempPath = import_path8.default.join(gameDir, `_temp_${assetType}${processedExt}`);
       if (assetType === "launch") {
-        const internalLnk = import_path8.default.join(gameDir, "launch.lnk");
-        if (sourcePath.toLowerCase().endsWith(".lnk")) {
-          import_fs9.default.copyFileSync(sourcePath, internalLnk);
-          res.json({ path: import_path8.default.resolve(internalLnk) });
-        } else {
-          const combinedScript = `
-$targetPath = '${internalLnk.replace(/'/g, "''")}';
-$finalTarget = '${sourcePath.replace(/'/g, "''")}';
-if ($finalTarget -like '*.url') {
-    if (Test-Path $finalTarget) {
-        $content = Get-Content $finalTarget -Raw;
-        if ($content -match 'URL=(.*)') { $finalTarget = $matches[1].Trim() }
-    }
-}
-$WScript = New-Object -ComObject WScript.Shell;
-$newS = $WScript.CreateShortcut($targetPath);
-$newS.TargetPath = $finalTarget;
-$newS.Save();
+        const isSteam = sourcePath.startsWith("steam://");
+        if (isSteam) {
+          const targetUrlFile = import_path9.default.join(gameDir, "launch.url");
+          const urlContent = `[InternetShortcut]
+URL=${sourcePath}
 `;
-          const encoded = Buffer.from(combinedScript, "utf16le").toString("base64");
-          (0, import_child_process4.exec)(`powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err) => {
-            if (err) return res.status(500).json({ error: "Shortcut creation failed" });
-            if (import_fs9.default.existsSync(internalLnk)) {
-              res.json({ path: import_path8.default.resolve(internalLnk) });
-            } else {
-              res.status(500).json({ error: "Verification failed: launch.lnk not found" });
-            }
-          });
+          import_fs9.default.writeFileSync(targetUrlFile, urlContent);
+          return res.json({ path: import_path9.default.resolve(targetUrlFile) });
         }
-        return;
+        const lnkPath = import_path9.default.resolve(import_path9.default.join(gameDir, "launch.lnk"));
+        if (sourcePath.toLowerCase().endsWith(".lnk")) {
+          import_fs9.default.copyFileSync(sourcePath, lnkPath);
+          return res.json({ path: import_path9.default.resolve(lnkPath) });
+        }
+        const { spawnSync: spawnSync3 } = await import("child_process");
+        const workingDir = import_path9.default.resolve(import_path9.default.dirname(sourcePath));
+        const psScript = `
+                $s = (New-Object -COM WScript.Shell).CreateShortcut('${lnkPath.replace(/'/g, "''")}')
+                $s.TargetPath = '${import_path9.default.resolve(sourcePath).replace(/'/g, "''")}'
+                $s.WorkingDirectory = '${workingDir.replace(/'/g, "''")}'
+                $s.Save()
+                `;
+        const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+        try {
+          spawnSync3("powershell.exe", [
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-EncodedCommand",
+            encoded
+          ], { windowsHide: true });
+          return res.json({ path: import_path9.default.resolve(lnkPath) });
+        } catch (err) {
+          console.error("[Import] Shortcut creation failed:", err);
+          return res.status(500).json({ error: "Shortcut creation failed" });
+        }
       }
+      const sourceExt = import_path9.default.extname(sourcePath).toLowerCase();
+      const processedExt = assetType === "logo" || assetType === "icon" || sourceExt === ".png" || sourceExt === ".gif" || sourceExt === ".apng" ? sourceExt : ".jpg";
+      const targetPath = import_path9.default.join(gameDir, `${assetType}${processedExt}`);
+      const tempPath = import_path9.default.join(gameDir, `_temp_${assetType}${processedExt}`);
       if (sourcePath.startsWith("http")) {
         await downloadImage(sourcePath, tempPath);
         await processImage(tempPath, targetPath, assetType);
         if (import_fs9.default.existsSync(tempPath)) import_fs9.default.unlinkSync(tempPath);
-        res.json({ path: import_path8.default.resolve(targetPath) });
-      } else if ([".exe", ".lnk", ".bat", ".url"].includes(import_path8.default.extname(sourcePath).toLowerCase())) {
-        const lnkPath = import_path8.default.join(gameDir, `launch${import_path8.default.extname(sourcePath).toLowerCase() === ".lnk" ? "" : ".lnk"}`);
-        const psCommand = `$s=(New-Object -COM WScript.Shell).CreateShortcut('${lnkPath}');$s.TargetPath='${sourcePath}';$s.Save()`;
-        (0, import_child_process4.exec)(`powershell -Command "${psCommand}"`, (err) => {
-          if (err) return res.status(500).json({ error: "Shortcut creation failed" });
-          res.json({ path: import_path8.default.resolve(lnkPath) });
-        });
+        return res.json({ path: import_path9.default.resolve(targetPath) });
       } else {
         await processImage(sourcePath, targetPath, assetType);
-        res.json({ path: import_path8.default.resolve(targetPath) });
+        return res.json({ path: import_path9.default.resolve(targetPath) });
       }
     } catch (e) {
+      console.error("[Import] Critical error:", e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -25165,10 +25563,11 @@ $newS.Save();
     if (!gameId) return res.status(400).json({ error: "gameId required" });
     try {
       ctx2.db.deleteGame(gameId);
-      const gameDir = import_path8.default.join(ctx2.ASSETS_DIR, gameId);
+      const gameDir = import_path9.default.join(ctx2.ASSETS_DIR, gameId);
       if (import_fs9.default.existsSync(gameDir)) {
         import_fs9.default.rmSync(gameDir, { recursive: true, force: true });
       }
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -25178,8 +25577,8 @@ $newS.Save();
     try {
       const brokenIds = [];
       const gamesMap = /* @__PURE__ */ new Map();
-      const categories = ctx2.db.getCategories();
-      categories.forEach((cat) => {
+      const categories2 = ctx2.db.getCategories();
+      categories2.forEach((cat) => {
         cat.games?.forEach((g) => {
           if (!gamesMap.has(g.id)) gamesMap.set(g.id, g);
         });
@@ -25198,8 +25597,8 @@ $newS.Save();
   router.post("/fetch-missing", async (req, res) => {
     try {
       const { categoryId } = req.body;
-      const categories = ctx2.db.getCategories();
-      const cat = categories.find((c) => c.id === categoryId);
+      const categories2 = ctx2.db.getCategories();
+      const cat = categories2.find((c) => c.id === categoryId);
       if (!cat) return res.status(404).json({ error: "Category not found" });
       res.json({ success: true, count: cat.games.filter((g) => !g.logo || !g.cover || !g.banner).length });
     } catch (e) {
@@ -25213,9 +25612,57 @@ $newS.Save();
         import_fs9.default.rmSync(ctx2.STORAGE_DIR, { recursive: true, force: true });
         import_fs9.default.mkdirSync(ctx2.ASSETS_DIR, { recursive: true });
       }
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: e.message });
+    }
+  });
+  router.get("/optimized-bg/:gameId", async (req, res) => {
+    try {
+      const { gameId } = req.params;
+      const cacheDir = import_path9.default.join(ctx2.STORAGE_DIR, "cache", "thumbs");
+      if (!import_fs9.default.existsSync(cacheDir)) import_fs9.default.mkdirSync(cacheDir, { recursive: true });
+      const targetPath = import_path9.default.join(cacheDir, `${gameId}.webp`);
+      const categories2 = ctx2.db.getCategories();
+      let game = null;
+      for (const cat of categories2) {
+        game = cat.games.find((g) => g.id === gameId);
+        if (game) break;
+      }
+      let sourceCover = game?.cover;
+      if (!sourceCover || !import_fs9.default.existsSync(sourceCover)) {
+        const physicalDir = import_path9.default.join(ctx2.ASSETS_DIR, gameId);
+        const possibleFiles = ["cover.png", "cover.jpg", "cover.jpeg", "cover.webp"];
+        for (const f of possibleFiles) {
+          const full = import_path9.default.join(physicalDir, f);
+          if (import_fs9.default.existsSync(full)) {
+            sourceCover = full;
+            break;
+          }
+        }
+      }
+      if (!sourceCover || !import_fs9.default.existsSync(sourceCover)) {
+        return res.status(204).end();
+      }
+      if (import_fs9.default.existsSync(targetPath)) {
+        const sourceStats = import_fs9.default.statSync(sourceCover);
+        const cacheStats = import_fs9.default.statSync(targetPath);
+        if (sourceStats.mtime > cacheStats.mtime) {
+          import_fs9.default.unlinkSync(targetPath);
+        } else {
+          return res.sendFile(import_path9.default.resolve(targetPath));
+        }
+      }
+      const result = await generateThumbnail(sourceCover, targetPath);
+      if (result && import_fs9.default.existsSync(targetPath)) {
+        res.sendFile(import_path9.default.resolve(targetPath));
+      } else {
+        res.sendFile(import_path9.default.resolve(sourceCover));
+      }
+    } catch (e) {
+      console.error("[Assets] Optimization error (silent fallback):", e);
+      res.status(204).end();
     }
   });
   return router;
@@ -25224,8 +25671,8 @@ $newS.Save();
 // server/routes/fileRoutes.ts
 var import_express6 = __toESM(require_express2(), 1);
 var import_fs10 = __toESM(require("fs"), 1);
-var import_path9 = __toESM(require("path"), 1);
-var import_child_process5 = require("child_process");
+var import_path10 = __toESM(require("path"), 1);
+var import_child_process4 = require("child_process");
 function createFileRoutes(ctx2) {
   const router = (0, import_express6.Router)();
   router.get("/drives", (req, res) => {
@@ -25248,12 +25695,14 @@ function createFileRoutes(ctx2) {
                     Downloads = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
                 };
                 $folders | ConvertTo-Json
-            `.replace(/\n/g, " ").trim();
-      (0, import_child_process5.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
+            `;
+      const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+      try {
+        const result = (0, import_child_process4.spawnSync)("powershell.exe", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], { encoding: "utf8", windowsHide: true });
         let libraries = [];
-        if (!err && stdout) {
+        if (!result.error && result.stdout) {
           try {
-            const paths = JSON.parse(stdout);
+            const paths = JSON.parse(result.stdout);
             libraries = Object.entries(paths).map(([name, p]) => {
               if (!p) return null;
               const pathStr = p;
@@ -25269,7 +25718,7 @@ function createFileRoutes(ctx2) {
         if (libraries.length === 0) {
           const userProfile = process.env.USERPROFILE || "";
           const checkPath = (folderName) => {
-            const stdPath = import_path9.default.join(userProfile, folderName) + "\\";
+            const stdPath = import_path10.default.join(userProfile, folderName) + "\\";
             return import_fs10.default.existsSync(stdPath) ? stdPath : null;
           };
           libraries = [
@@ -25282,7 +25731,9 @@ function createFileRoutes(ctx2) {
           ].filter((lib) => lib.path !== null);
         }
         res.json({ drives, libraries });
-      });
+      } catch (err) {
+        res.status(500).json({ error: "Failed to list drives" });
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to list drives" });
     }
@@ -25291,10 +25742,10 @@ function createFileRoutes(ctx2) {
     const { dirPath } = req.body;
     if (!dirPath) return res.status(400).json({ error: "dirPath is required" });
     try {
-      const resolvedPath = import_path9.default.resolve(dirPath);
+      const resolvedPath = import_path10.default.resolve(dirPath);
       let items = import_fs10.default.readdirSync(resolvedPath, { withFileTypes: true });
       const contents = items.map((item) => {
-        const fullPath = import_path9.default.join(resolvedPath, item.name);
+        const fullPath = import_path10.default.join(resolvedPath, item.name);
         try {
           const stats = import_fs10.default.statSync(fullPath);
           return {
@@ -25302,7 +25753,7 @@ function createFileRoutes(ctx2) {
             path: fullPath,
             isDir: item.isDirectory(),
             size: stats.size,
-            ext: import_path9.default.extname(item.name).toLowerCase()
+            ext: import_path10.default.extname(item.name).toLowerCase()
           };
         } catch (e) {
           return null;
@@ -25316,17 +25767,17 @@ function createFileRoutes(ctx2) {
   router.post("/info", (req, res) => {
     const { filePath } = req.body;
     if (!filePath) return res.status(400).json({ error: "filePath is required" });
-    const ext = import_path9.default.extname(filePath).toLowerCase();
+    const ext = import_path10.default.extname(filePath).toLowerCase();
     if (ext === ".lnk") {
       const psScript = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${filePath.replace(/'/g, "''")}'); $obj = @{ TargetPath = $s.TargetPath; Arguments = $s.Arguments; WorkingDirectory = $s.WorkingDirectory }; $obj | ConvertTo-Json`;
-      (0, import_child_process5.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
-        if (err) return res.status(500).json({ error: "Failed to read shortcut" });
-        try {
-          res.json(JSON.parse(stdout));
-        } catch (e) {
-          res.status(500).json({ error: "Parse failed" });
-        }
-      });
+      const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+      try {
+        const result = (0, import_child_process4.spawnSync)("powershell.exe", ["-NoProfile", "-EncodedCommand", encoded], { encoding: "utf8", windowsHide: true });
+        if (result.error) return res.status(500).json({ error: "Failed to read shortcut" });
+        res.json(JSON.parse(result.stdout));
+      } catch (e) {
+        res.status(500).json({ error: "Parse failed" });
+      }
     } else if (ext === ".url") {
       try {
         const content = import_fs10.default.readFileSync(filePath, "utf-8");
@@ -25341,19 +25792,22 @@ function createFileRoutes(ctx2) {
   });
   router.post("/select-folder", (req, res) => {
     const psScript = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; if($f.ShowDialog() -eq 'OK'){ $f.SelectedPath }`;
-    (0, import_child_process5.exec)(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
-      if (err) return res.status(500).json({ error: "Failed to open dialog" });
-      res.json({ path: stdout.trim() || null });
-    });
+    const encoded = Buffer.from(psScript, "utf16le").toString("base64");
+    try {
+      const result = (0, import_child_process4.spawnSync)("powershell.exe", ["-NoProfile", "-NonInteractive", "-EncodedCommand", encoded], { encoding: "utf8", windowsHide: true });
+      res.json({ path: result.stdout.trim() || null });
+    } catch (err) {
+      res.status(500).json({ error: "Failed" });
+    }
   });
   router.post("/select-file", (req, res) => {
     const { filter = "exe", returnBase64 = false } = req.body;
     const fileFilter = filter === "exe" ? "Executables (*.exe;*.lnk;*.bat;*.url)|*.exe;*.lnk;*.bat;*.url" : "Images|*.jpg;*.jpeg;*.png;*.webp;*.gif;*.apng";
     const psScript = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "${fileFilter}"; $f.DereferenceLinks = $false; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
     const encoded = Buffer.from(psScript, "utf16le").toString("base64");
-    (0, import_child_process5.exec)(`powershell -NoProfile -Sta -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err, stdout) => {
-      if (err) return res.status(500).json({ error: "Failed" });
-      const p = stdout.trim();
+    try {
+      const result = (0, import_child_process4.spawnSync)("powershell.exe", ["-NoProfile", "-Sta", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], { encoding: "utf8", windowsHide: true });
+      const p = result.stdout.trim();
       if (p && returnBase64) {
         try {
           res.json({ path: p, base64: import_fs10.default.readFileSync(p).toString("base64") });
@@ -25363,7 +25817,9 @@ function createFileRoutes(ctx2) {
       } else {
         res.json({ path: p || null });
       }
-    });
+    } catch (err) {
+      res.status(500).json({ error: "Failed" });
+    }
   });
   return router;
 }
@@ -25371,7 +25827,7 @@ function createFileRoutes(ctx2) {
 // server/routes/proxyRoutes.ts
 var import_express7 = __toESM(require_express2(), 1);
 var import_fs11 = __toESM(require("fs"), 1);
-var import_path10 = __toESM(require("path"), 1);
+var import_path11 = __toESM(require("path"), 1);
 function createProxyRoutes(ctx2) {
   const router = (0, import_express7.Router)();
   const PROXY_CACHE_VERSION = "v4";
@@ -25395,7 +25851,7 @@ function createProxyRoutes(ctx2) {
         break;
       }
       if (p.includes("/storage/assets/")) {
-        const altPath = import_path10.default.join(ctx2.BASE_DIR, p.split("/storage/assets/")[1]);
+        const altPath = import_path11.default.join(ctx2.BASE_DIR, p.split("/storage/assets/")[1]);
         if (import_fs11.default.existsSync(altPath)) {
           finalPath = altPath;
           break;
@@ -25408,16 +25864,16 @@ function createProxyRoutes(ctx2) {
           try {
             const parts = p.split(/[\\/]/);
             const assetsIdx = parts.lastIndexOf("assets");
-            const subPath = parts.slice(assetsIdx + 1).join(import_path10.default.sep);
-            const dir = import_path10.default.join(ctx2.BASE_DIR, "storage", "assets");
+            const subPath = parts.slice(assetsIdx + 1).join(import_path11.default.sep);
+            const dir = import_path11.default.join(ctx2.BASE_DIR, "storage", "assets");
             const gameId = parts[assetsIdx + 1];
             const assetName = parts[parts.length - 1];
-            const targetDir = import_path10.default.join(dir, gameId);
+            const targetDir = import_path11.default.join(dir, gameId);
             if (import_fs11.default.existsSync(targetDir)) {
               const files = import_fs11.default.readdirSync(targetDir);
               const match = files.find((f) => f.toLowerCase().startsWith(assetName.split(".")[0].toLowerCase()));
               if (match) {
-                finalPath = import_path10.default.join(targetDir, match);
+                finalPath = import_path11.default.join(targetDir, match);
                 break;
               }
             }
@@ -25428,15 +25884,15 @@ function createProxyRoutes(ctx2) {
     }
     if (!finalPath || !import_fs11.default.existsSync(finalPath)) {
       const fallbackType = width && width >= 800 ? "hero" : "cover";
-      finalPath = import_path10.default.join(ctx2.BASE_DIR, "front", "assets", `fallback_${fallbackType}.jpg`);
+      finalPath = import_path11.default.join(ctx2.BASE_DIR, "front", "assets", `fallback_${fallbackType}.jpg`);
       if (!import_fs11.default.existsSync(finalPath)) return res.status(404).send("Not Found");
     }
     if (width || height) {
-      const ext = import_path10.default.extname(finalPath) || ".png";
+      const ext = import_path11.default.extname(finalPath) || ".png";
       const stats = import_fs11.default.statSync(finalPath);
       const cacheKey = `${ctx2.slugify(finalPath)}_${stats.mtimeMs}_${stats.size}_w${width}_h${height}_${PROXY_CACHE_VERSION}`;
-      const cacheDir = import_path10.default.join(ctx2.STORAGE_DIR, "cache");
-      const cachePath = import_path10.default.join(cacheDir, `${cacheKey}${ext}`);
+      const cacheDir = import_path11.default.join(ctx2.STORAGE_DIR, "cache");
+      const cachePath = import_path11.default.join(cacheDir, `${cacheKey}${ext}`);
       if (import_fs11.default.existsSync(cachePath)) return res.sendFile(cachePath);
       if (!import_fs11.default.existsSync(cacheDir)) import_fs11.default.mkdirSync(cacheDir, { recursive: true });
       try {
@@ -25549,7 +26005,7 @@ var ReaddirpStream = class extends import_node_stream.Readable {
     this._directoryFilter = normalizeFilter(opts.directoryFilter);
     const statMethod = opts.lstat ? import_promises.lstat : import_promises.stat;
     if (wantBigintFsStats) {
-      this._stat = (path12) => statMethod(path12, { bigint: true });
+      this._stat = (path13) => statMethod(path13, { bigint: true });
     } else {
       this._stat = statMethod;
     }
@@ -25574,8 +26030,8 @@ var ReaddirpStream = class extends import_node_stream.Readable {
         const par = this.parent;
         const fil = par && par.files;
         if (fil && fil.length > 0) {
-          const { path: path12, depth } = par;
-          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path12));
+          const { path: path13, depth } = par;
+          const slice = fil.splice(0, batch).map((dirent) => this._formatEntry(dirent, path13));
           const awaited = await Promise.all(slice);
           for (const entry of awaited) {
             if (!entry)
@@ -25615,20 +26071,20 @@ var ReaddirpStream = class extends import_node_stream.Readable {
       this.reading = false;
     }
   }
-  async _exploreDir(path12, depth) {
+  async _exploreDir(path13, depth) {
     let files;
     try {
-      files = await (0, import_promises.readdir)(path12, this._rdOptions);
+      files = await (0, import_promises.readdir)(path13, this._rdOptions);
     } catch (error) {
       this._onError(error);
     }
-    return { files, depth, path: path12 };
+    return { files, depth, path: path13 };
   }
-  async _formatEntry(dirent, path12) {
+  async _formatEntry(dirent, path13) {
     let entry;
     const basename3 = this._isDirent ? dirent.name : dirent;
     try {
-      const fullPath = (0, import_node_path.resolve)((0, import_node_path.join)(path12, basename3));
+      const fullPath = (0, import_node_path.resolve)((0, import_node_path.join)(path13, basename3));
       entry = { path: (0, import_node_path.relative)(this._root, fullPath), fullPath, basename: basename3 };
       entry[this._statsProp] = this._isDirent ? dirent : await this._stat(fullPath);
     } catch (err) {
@@ -26028,16 +26484,16 @@ var delFromSet = (main, prop, item) => {
 };
 var isEmptySet = (val) => val instanceof Set ? val.size === 0 : !val;
 var FsWatchInstances = /* @__PURE__ */ new Map();
-function createFsWatchInstance(path12, options, listener, errHandler, emitRaw) {
+function createFsWatchInstance(path13, options, listener, errHandler, emitRaw) {
   const handleEvent = (rawEvent, evPath) => {
-    listener(path12);
-    emitRaw(rawEvent, evPath, { watchedPath: path12 });
-    if (evPath && path12 !== evPath) {
-      fsWatchBroadcast(sp.resolve(path12, evPath), KEY_LISTENERS, sp.join(path12, evPath));
+    listener(path13);
+    emitRaw(rawEvent, evPath, { watchedPath: path13 });
+    if (evPath && path13 !== evPath) {
+      fsWatchBroadcast(sp.resolve(path13, evPath), KEY_LISTENERS, sp.join(path13, evPath));
     }
   };
   try {
-    return (0, import_node_fs.watch)(path12, {
+    return (0, import_node_fs.watch)(path13, {
       persistent: options.persistent
     }, handleEvent);
   } catch (error) {
@@ -26053,12 +26509,12 @@ var fsWatchBroadcast = (fullPath, listenerType, val1, val2, val3) => {
     listener(val1, val2, val3);
   });
 };
-var setFsWatchListener = (path12, fullPath, options, handlers) => {
+var setFsWatchListener = (path13, fullPath, options, handlers) => {
   const { listener, errHandler, rawEmitter } = handlers;
   let cont = FsWatchInstances.get(fullPath);
   let watcher;
   if (!options.persistent) {
-    watcher = createFsWatchInstance(path12, options, listener, errHandler, rawEmitter);
+    watcher = createFsWatchInstance(path13, options, listener, errHandler, rawEmitter);
     if (!watcher)
       return;
     return watcher.close.bind(watcher);
@@ -26069,7 +26525,7 @@ var setFsWatchListener = (path12, fullPath, options, handlers) => {
     addAndConvert(cont, KEY_RAW, rawEmitter);
   } else {
     watcher = createFsWatchInstance(
-      path12,
+      path13,
       options,
       fsWatchBroadcast.bind(null, fullPath, KEY_LISTENERS),
       errHandler,
@@ -26084,7 +26540,7 @@ var setFsWatchListener = (path12, fullPath, options, handlers) => {
         cont.watcherUnusable = true;
       if (isWindows && error.code === "EPERM") {
         try {
-          const fd = await (0, import_promises2.open)(path12, "r");
+          const fd = await (0, import_promises2.open)(path13, "r");
           await fd.close();
           broadcastErr(error);
         } catch (err) {
@@ -26115,7 +26571,7 @@ var setFsWatchListener = (path12, fullPath, options, handlers) => {
   };
 };
 var FsWatchFileInstances = /* @__PURE__ */ new Map();
-var setFsWatchFileListener = (path12, fullPath, options, handlers) => {
+var setFsWatchFileListener = (path13, fullPath, options, handlers) => {
   const { listener, rawEmitter } = handlers;
   let cont = FsWatchFileInstances.get(fullPath);
   const copts = cont && cont.options;
@@ -26137,7 +26593,7 @@ var setFsWatchFileListener = (path12, fullPath, options, handlers) => {
         });
         const currmtime = curr.mtimeMs;
         if (curr.size !== prev.size || currmtime > prev.mtimeMs || currmtime === 0) {
-          foreach(cont.listeners, (listener2) => listener2(path12, curr));
+          foreach(cont.listeners, (listener2) => listener2(path13, curr));
         }
       })
     };
@@ -26167,13 +26623,13 @@ var NodeFsHandler = class {
    * @param listener on fs change
    * @returns closer for the watcher instance
    */
-  _watchWithNodeFs(path12, listener) {
+  _watchWithNodeFs(path13, listener) {
     const opts = this.fsw.options;
-    const directory = sp.dirname(path12);
-    const basename3 = sp.basename(path12);
+    const directory = sp.dirname(path13);
+    const basename3 = sp.basename(path13);
     const parent = this.fsw._getWatchedDir(directory);
     parent.add(basename3);
-    const absolutePath = sp.resolve(path12);
+    const absolutePath = sp.resolve(path13);
     const options = {
       persistent: opts.persistent
     };
@@ -26183,12 +26639,12 @@ var NodeFsHandler = class {
     if (opts.usePolling) {
       const enableBin = opts.interval !== opts.binaryInterval;
       options.interval = enableBin && isBinaryPath(basename3) ? opts.binaryInterval : opts.interval;
-      closer = setFsWatchFileListener(path12, absolutePath, options, {
+      closer = setFsWatchFileListener(path13, absolutePath, options, {
         listener,
         rawEmitter: this.fsw._emitRaw
       });
     } else {
-      closer = setFsWatchListener(path12, absolutePath, options, {
+      closer = setFsWatchListener(path13, absolutePath, options, {
         listener,
         errHandler: this._boundHandleError,
         rawEmitter: this.fsw._emitRaw
@@ -26210,7 +26666,7 @@ var NodeFsHandler = class {
     let prevStats = stats;
     if (parent.has(basename3))
       return;
-    const listener = async (path12, newStats) => {
+    const listener = async (path13, newStats) => {
       if (!this.fsw._throttle(THROTTLE_MODE_WATCH, file, 5))
         return;
       if (!newStats || newStats.mtimeMs === 0) {
@@ -26224,11 +26680,11 @@ var NodeFsHandler = class {
             this.fsw._emit(EV.CHANGE, file, newStats2);
           }
           if ((isMacos || isLinux || isFreeBSD) && prevStats.ino !== newStats2.ino) {
-            this.fsw._closeFile(path12);
+            this.fsw._closeFile(path13);
             prevStats = newStats2;
             const closer2 = this._watchWithNodeFs(file, listener);
             if (closer2)
-              this.fsw._addPathCloser(path12, closer2);
+              this.fsw._addPathCloser(path13, closer2);
           } else {
             prevStats = newStats2;
           }
@@ -26260,7 +26716,7 @@ var NodeFsHandler = class {
    * @param item basename of this item
    * @returns true if no more processing is needed for this entry.
    */
-  async _handleSymlink(entry, directory, path12, item) {
+  async _handleSymlink(entry, directory, path13, item) {
     if (this.fsw.closed) {
       return;
     }
@@ -26270,7 +26726,7 @@ var NodeFsHandler = class {
       this.fsw._incrReadyCount();
       let linkPath;
       try {
-        linkPath = await (0, import_promises2.realpath)(path12);
+        linkPath = await (0, import_promises2.realpath)(path13);
       } catch (e) {
         this.fsw._emitReady();
         return true;
@@ -26280,12 +26736,12 @@ var NodeFsHandler = class {
       if (dir.has(item)) {
         if (this.fsw._symlinkPaths.get(full) !== linkPath) {
           this.fsw._symlinkPaths.set(full, linkPath);
-          this.fsw._emit(EV.CHANGE, path12, entry.stats);
+          this.fsw._emit(EV.CHANGE, path13, entry.stats);
         }
       } else {
         dir.add(item);
         this.fsw._symlinkPaths.set(full, linkPath);
-        this.fsw._emit(EV.ADD, path12, entry.stats);
+        this.fsw._emit(EV.ADD, path13, entry.stats);
       }
       this.fsw._emitReady();
       return true;
@@ -26315,9 +26771,9 @@ var NodeFsHandler = class {
         return;
       }
       const item = entry.path;
-      let path12 = sp.join(directory, item);
+      let path13 = sp.join(directory, item);
       current.add(item);
-      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path12, item)) {
+      if (entry.stats.isSymbolicLink() && await this._handleSymlink(entry, directory, path13, item)) {
         return;
       }
       if (this.fsw.closed) {
@@ -26326,8 +26782,8 @@ var NodeFsHandler = class {
       }
       if (item === target || !target && !previous.has(item)) {
         this.fsw._incrReadyCount();
-        path12 = sp.join(dir, sp.relative(dir, path12));
-        this._addToNodeFs(path12, initialAdd, wh, depth + 1);
+        path13 = sp.join(dir, sp.relative(dir, path13));
+        this._addToNodeFs(path13, initialAdd, wh, depth + 1);
       }
     }).on(EV.ERROR, this._boundHandleError);
     return new Promise((resolve3, reject) => {
@@ -26396,13 +26852,13 @@ var NodeFsHandler = class {
    * @param depth Child path actually targeted for watch
    * @param target Child path actually targeted for watch
    */
-  async _addToNodeFs(path12, initialAdd, priorWh, depth, target) {
+  async _addToNodeFs(path13, initialAdd, priorWh, depth, target) {
     const ready = this.fsw._emitReady;
-    if (this.fsw._isIgnored(path12) || this.fsw.closed) {
+    if (this.fsw._isIgnored(path13) || this.fsw.closed) {
       ready();
       return false;
     }
-    const wh = this.fsw._getWatchHelpers(path12);
+    const wh = this.fsw._getWatchHelpers(path13);
     if (priorWh) {
       wh.filterPath = (entry) => priorWh.filterPath(entry);
       wh.filterDir = (entry) => priorWh.filterDir(entry);
@@ -26418,8 +26874,8 @@ var NodeFsHandler = class {
       const follow = this.fsw.options.followSymlinks;
       let closer;
       if (stats.isDirectory()) {
-        const absPath = sp.resolve(path12);
-        const targetPath = follow ? await (0, import_promises2.realpath)(path12) : path12;
+        const absPath = sp.resolve(path13);
+        const targetPath = follow ? await (0, import_promises2.realpath)(path13) : path13;
         if (this.fsw.closed)
           return;
         closer = await this._handleDir(wh.watchPath, stats, initialAdd, depth, target, wh, targetPath);
@@ -26429,29 +26885,29 @@ var NodeFsHandler = class {
           this.fsw._symlinkPaths.set(absPath, targetPath);
         }
       } else if (stats.isSymbolicLink()) {
-        const targetPath = follow ? await (0, import_promises2.realpath)(path12) : path12;
+        const targetPath = follow ? await (0, import_promises2.realpath)(path13) : path13;
         if (this.fsw.closed)
           return;
         const parent = sp.dirname(wh.watchPath);
         this.fsw._getWatchedDir(parent).add(wh.watchPath);
         this.fsw._emit(EV.ADD, wh.watchPath, stats);
-        closer = await this._handleDir(parent, stats, initialAdd, depth, path12, wh, targetPath);
+        closer = await this._handleDir(parent, stats, initialAdd, depth, path13, wh, targetPath);
         if (this.fsw.closed)
           return;
         if (targetPath !== void 0) {
-          this.fsw._symlinkPaths.set(sp.resolve(path12), targetPath);
+          this.fsw._symlinkPaths.set(sp.resolve(path13), targetPath);
         }
       } else {
         closer = this._handleFile(wh.watchPath, stats, initialAdd);
       }
       ready();
       if (closer)
-        this.fsw._addPathCloser(path12, closer);
+        this.fsw._addPathCloser(path13, closer);
       return false;
     } catch (error) {
       if (this.fsw._handleError(error)) {
         ready();
-        return path12;
+        return path13;
       }
     }
   }
@@ -26494,24 +26950,24 @@ function createPattern(matcher) {
   }
   return () => false;
 }
-function normalizePath(path12) {
-  if (typeof path12 !== "string")
+function normalizePath(path13) {
+  if (typeof path13 !== "string")
     throw new Error("string expected");
-  path12 = sp2.normalize(path12);
-  path12 = path12.replace(/\\/g, "/");
+  path13 = sp2.normalize(path13);
+  path13 = path13.replace(/\\/g, "/");
   let prepend = false;
-  if (path12.startsWith("//"))
+  if (path13.startsWith("//"))
     prepend = true;
-  path12 = path12.replace(DOUBLE_SLASH_RE, "/");
+  path13 = path13.replace(DOUBLE_SLASH_RE, "/");
   if (prepend)
-    path12 = "/" + path12;
-  return path12;
+    path13 = "/" + path13;
+  return path13;
 }
 function matchPatterns(patterns, testString, stats) {
-  const path12 = normalizePath(testString);
+  const path13 = normalizePath(testString);
   for (let index = 0; index < patterns.length; index++) {
     const pattern = patterns[index];
-    if (pattern(path12, stats)) {
+    if (pattern(path13, stats)) {
       return true;
     }
   }
@@ -26549,19 +27005,19 @@ var toUnix = (string) => {
   }
   return str;
 };
-var normalizePathToUnix = (path12) => toUnix(sp2.normalize(toUnix(path12)));
-var normalizeIgnored = (cwd = "") => (path12) => {
-  if (typeof path12 === "string") {
-    return normalizePathToUnix(sp2.isAbsolute(path12) ? path12 : sp2.join(cwd, path12));
+var normalizePathToUnix = (path13) => toUnix(sp2.normalize(toUnix(path13)));
+var normalizeIgnored = (cwd = "") => (path13) => {
+  if (typeof path13 === "string") {
+    return normalizePathToUnix(sp2.isAbsolute(path13) ? path13 : sp2.join(cwd, path13));
   } else {
-    return path12;
+    return path13;
   }
 };
-var getAbsolutePath = (path12, cwd) => {
-  if (sp2.isAbsolute(path12)) {
-    return path12;
+var getAbsolutePath = (path13, cwd) => {
+  if (sp2.isAbsolute(path13)) {
+    return path13;
   }
-  return sp2.join(cwd, path12);
+  return sp2.join(cwd, path13);
 };
 var EMPTY_SET = Object.freeze(/* @__PURE__ */ new Set());
 var DirEntry = class {
@@ -26626,10 +27082,10 @@ var WatchHelper = class {
   dirParts;
   followSymlinks;
   statMethod;
-  constructor(path12, follow, fsw) {
+  constructor(path13, follow, fsw) {
     this.fsw = fsw;
-    const watchPath = path12;
-    this.path = path12 = path12.replace(REPLACER_RE, "");
+    const watchPath = path13;
+    this.path = path13 = path13.replace(REPLACER_RE, "");
     this.watchPath = watchPath;
     this.fullWatchPath = sp2.resolve(watchPath);
     this.dirParts = [];
@@ -26769,20 +27225,20 @@ var FSWatcher = class extends import_node_events.EventEmitter {
     this._closePromise = void 0;
     let paths = unifyPaths(paths_);
     if (cwd) {
-      paths = paths.map((path12) => {
-        const absPath = getAbsolutePath(path12, cwd);
+      paths = paths.map((path13) => {
+        const absPath = getAbsolutePath(path13, cwd);
         return absPath;
       });
     }
-    paths.forEach((path12) => {
-      this._removeIgnoredPath(path12);
+    paths.forEach((path13) => {
+      this._removeIgnoredPath(path13);
     });
     this._userIgnored = void 0;
     if (!this._readyCount)
       this._readyCount = 0;
     this._readyCount += paths.length;
-    Promise.all(paths.map(async (path12) => {
-      const res = await this._nodeFsHandler._addToNodeFs(path12, !_internal, void 0, 0, _origAdd);
+    Promise.all(paths.map(async (path13) => {
+      const res = await this._nodeFsHandler._addToNodeFs(path13, !_internal, void 0, 0, _origAdd);
       if (res)
         this._emitReady();
       return res;
@@ -26804,17 +27260,17 @@ var FSWatcher = class extends import_node_events.EventEmitter {
       return this;
     const paths = unifyPaths(paths_);
     const { cwd } = this.options;
-    paths.forEach((path12) => {
-      if (!sp2.isAbsolute(path12) && !this._closers.has(path12)) {
+    paths.forEach((path13) => {
+      if (!sp2.isAbsolute(path13) && !this._closers.has(path13)) {
         if (cwd)
-          path12 = sp2.join(cwd, path12);
-        path12 = sp2.resolve(path12);
+          path13 = sp2.join(cwd, path13);
+        path13 = sp2.resolve(path13);
       }
-      this._closePath(path12);
-      this._addIgnoredPath(path12);
-      if (this._watched.has(path12)) {
+      this._closePath(path13);
+      this._addIgnoredPath(path13);
+      if (this._watched.has(path13)) {
         this._addIgnoredPath({
-          path: path12,
+          path: path13,
           recursive: true
         });
       }
@@ -26878,38 +27334,38 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param stats arguments to be passed with event
    * @returns the error if defined, otherwise the value of the FSWatcher instance's `closed` flag
    */
-  async _emit(event, path12, stats) {
+  async _emit(event, path13, stats) {
     if (this.closed)
       return;
     const opts = this.options;
     if (isWindows)
-      path12 = sp2.normalize(path12);
+      path13 = sp2.normalize(path13);
     if (opts.cwd)
-      path12 = sp2.relative(opts.cwd, path12);
-    const args = [path12];
+      path13 = sp2.relative(opts.cwd, path13);
+    const args = [path13];
     if (stats != null)
       args.push(stats);
     const awf = opts.awaitWriteFinish;
     let pw;
-    if (awf && (pw = this._pendingWrites.get(path12))) {
+    if (awf && (pw = this._pendingWrites.get(path13))) {
       pw.lastChange = /* @__PURE__ */ new Date();
       return this;
     }
     if (opts.atomic) {
       if (event === EVENTS.UNLINK) {
-        this._pendingUnlinks.set(path12, [event, ...args]);
+        this._pendingUnlinks.set(path13, [event, ...args]);
         setTimeout(() => {
-          this._pendingUnlinks.forEach((entry, path13) => {
+          this._pendingUnlinks.forEach((entry, path14) => {
             this.emit(...entry);
             this.emit(EVENTS.ALL, ...entry);
-            this._pendingUnlinks.delete(path13);
+            this._pendingUnlinks.delete(path14);
           });
         }, typeof opts.atomic === "number" ? opts.atomic : 100);
         return this;
       }
-      if (event === EVENTS.ADD && this._pendingUnlinks.has(path12)) {
+      if (event === EVENTS.ADD && this._pendingUnlinks.has(path13)) {
         event = EVENTS.CHANGE;
-        this._pendingUnlinks.delete(path12);
+        this._pendingUnlinks.delete(path13);
       }
     }
     if (awf && (event === EVENTS.ADD || event === EVENTS.CHANGE) && this._readyEmitted) {
@@ -26927,16 +27383,16 @@ var FSWatcher = class extends import_node_events.EventEmitter {
           this.emitWithAll(event, args);
         }
       };
-      this._awaitWriteFinish(path12, awf.stabilityThreshold, event, awfEmit);
+      this._awaitWriteFinish(path13, awf.stabilityThreshold, event, awfEmit);
       return this;
     }
     if (event === EVENTS.CHANGE) {
-      const isThrottled = !this._throttle(EVENTS.CHANGE, path12, 50);
+      const isThrottled = !this._throttle(EVENTS.CHANGE, path13, 50);
       if (isThrottled)
         return this;
     }
     if (opts.alwaysStat && stats === void 0 && (event === EVENTS.ADD || event === EVENTS.ADD_DIR || event === EVENTS.CHANGE)) {
-      const fullPath = opts.cwd ? sp2.join(opts.cwd, path12) : path12;
+      const fullPath = opts.cwd ? sp2.join(opts.cwd, path13) : path13;
       let stats2;
       try {
         stats2 = await (0, import_promises3.stat)(fullPath);
@@ -26967,23 +27423,23 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param timeout duration of time to suppress duplicate actions
    * @returns tracking object or false if action should be suppressed
    */
-  _throttle(actionType, path12, timeout) {
+  _throttle(actionType, path13, timeout) {
     if (!this._throttled.has(actionType)) {
       this._throttled.set(actionType, /* @__PURE__ */ new Map());
     }
     const action = this._throttled.get(actionType);
     if (!action)
       throw new Error("invalid throttle");
-    const actionPath = action.get(path12);
+    const actionPath = action.get(path13);
     if (actionPath) {
       actionPath.count++;
       return false;
     }
     let timeoutObject;
     const clear = () => {
-      const item = action.get(path12);
+      const item = action.get(path13);
       const count = item ? item.count : 0;
-      action.delete(path12);
+      action.delete(path13);
       clearTimeout(timeoutObject);
       if (item)
         clearTimeout(item.timeoutObject);
@@ -26991,7 +27447,7 @@ var FSWatcher = class extends import_node_events.EventEmitter {
     };
     timeoutObject = setTimeout(clear, timeout);
     const thr = { timeoutObject, clear, count: 0 };
-    action.set(path12, thr);
+    action.set(path13, thr);
     return thr;
   }
   _incrReadyCount() {
@@ -27005,44 +27461,44 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param event
    * @param awfEmit Callback to be called when ready for event to be emitted.
    */
-  _awaitWriteFinish(path12, threshold, event, awfEmit) {
+  _awaitWriteFinish(path13, threshold, event, awfEmit) {
     const awf = this.options.awaitWriteFinish;
     if (typeof awf !== "object")
       return;
     const pollInterval = awf.pollInterval;
     let timeoutHandler;
-    let fullPath = path12;
-    if (this.options.cwd && !sp2.isAbsolute(path12)) {
-      fullPath = sp2.join(this.options.cwd, path12);
+    let fullPath = path13;
+    if (this.options.cwd && !sp2.isAbsolute(path13)) {
+      fullPath = sp2.join(this.options.cwd, path13);
     }
     const now = /* @__PURE__ */ new Date();
     const writes = this._pendingWrites;
     function awaitWriteFinishFn(prevStat) {
       (0, import_node_fs2.stat)(fullPath, (err, curStat) => {
-        if (err || !writes.has(path12)) {
+        if (err || !writes.has(path13)) {
           if (err && err.code !== "ENOENT")
             awfEmit(err);
           return;
         }
         const now2 = Number(/* @__PURE__ */ new Date());
         if (prevStat && curStat.size !== prevStat.size) {
-          writes.get(path12).lastChange = now2;
+          writes.get(path13).lastChange = now2;
         }
-        const pw = writes.get(path12);
+        const pw = writes.get(path13);
         const df = now2 - pw.lastChange;
         if (df >= threshold) {
-          writes.delete(path12);
+          writes.delete(path13);
           awfEmit(void 0, curStat);
         } else {
           timeoutHandler = setTimeout(awaitWriteFinishFn, pollInterval, curStat);
         }
       });
     }
-    if (!writes.has(path12)) {
-      writes.set(path12, {
+    if (!writes.has(path13)) {
+      writes.set(path13, {
         lastChange: now,
         cancelWait: () => {
-          writes.delete(path12);
+          writes.delete(path13);
           clearTimeout(timeoutHandler);
           return event;
         }
@@ -27053,8 +27509,8 @@ var FSWatcher = class extends import_node_events.EventEmitter {
   /**
    * Determines whether user has asked to ignore this path.
    */
-  _isIgnored(path12, stats) {
-    if (this.options.atomic && DOT_RE.test(path12))
+  _isIgnored(path13, stats) {
+    if (this.options.atomic && DOT_RE.test(path13))
       return true;
     if (!this._userIgnored) {
       const { cwd } = this.options;
@@ -27064,17 +27520,17 @@ var FSWatcher = class extends import_node_events.EventEmitter {
       const list = [...ignoredPaths.map(normalizeIgnored(cwd)), ...ignored];
       this._userIgnored = anymatch(list, void 0);
     }
-    return this._userIgnored(path12, stats);
+    return this._userIgnored(path13, stats);
   }
-  _isntIgnored(path12, stat4) {
-    return !this._isIgnored(path12, stat4);
+  _isntIgnored(path13, stat4) {
+    return !this._isIgnored(path13, stat4);
   }
   /**
    * Provides a set of common helpers and properties relating to symlink handling.
    * @param path file or directory pattern being watched
    */
-  _getWatchHelpers(path12) {
-    return new WatchHelper(path12, this.options.followSymlinks, this);
+  _getWatchHelpers(path13) {
+    return new WatchHelper(path13, this.options.followSymlinks, this);
   }
   // Directory helpers
   // -----------------
@@ -27106,63 +27562,63 @@ var FSWatcher = class extends import_node_events.EventEmitter {
    * @param item      base path of item/directory
    */
   _remove(directory, item, isDirectory) {
-    const path12 = sp2.join(directory, item);
-    const fullPath = sp2.resolve(path12);
-    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path12) || this._watched.has(fullPath);
-    if (!this._throttle("remove", path12, 100))
+    const path13 = sp2.join(directory, item);
+    const fullPath = sp2.resolve(path13);
+    isDirectory = isDirectory != null ? isDirectory : this._watched.has(path13) || this._watched.has(fullPath);
+    if (!this._throttle("remove", path13, 100))
       return;
     if (!isDirectory && this._watched.size === 1) {
       this.add(directory, item, true);
     }
-    const wp = this._getWatchedDir(path12);
+    const wp = this._getWatchedDir(path13);
     const nestedDirectoryChildren = wp.getChildren();
-    nestedDirectoryChildren.forEach((nested) => this._remove(path12, nested));
+    nestedDirectoryChildren.forEach((nested) => this._remove(path13, nested));
     const parent = this._getWatchedDir(directory);
     const wasTracked = parent.has(item);
     parent.remove(item);
     if (this._symlinkPaths.has(fullPath)) {
       this._symlinkPaths.delete(fullPath);
     }
-    let relPath = path12;
+    let relPath = path13;
     if (this.options.cwd)
-      relPath = sp2.relative(this.options.cwd, path12);
+      relPath = sp2.relative(this.options.cwd, path13);
     if (this.options.awaitWriteFinish && this._pendingWrites.has(relPath)) {
       const event = this._pendingWrites.get(relPath).cancelWait();
       if (event === EVENTS.ADD)
         return;
     }
-    this._watched.delete(path12);
+    this._watched.delete(path13);
     this._watched.delete(fullPath);
     const eventName = isDirectory ? EVENTS.UNLINK_DIR : EVENTS.UNLINK;
-    if (wasTracked && !this._isIgnored(path12))
-      this._emit(eventName, path12);
-    this._closePath(path12);
+    if (wasTracked && !this._isIgnored(path13))
+      this._emit(eventName, path13);
+    this._closePath(path13);
   }
   /**
    * Closes all watchers for a path
    */
-  _closePath(path12) {
-    this._closeFile(path12);
-    const dir = sp2.dirname(path12);
-    this._getWatchedDir(dir).remove(sp2.basename(path12));
+  _closePath(path13) {
+    this._closeFile(path13);
+    const dir = sp2.dirname(path13);
+    this._getWatchedDir(dir).remove(sp2.basename(path13));
   }
   /**
    * Closes only file-specific watchers
    */
-  _closeFile(path12) {
-    const closers = this._closers.get(path12);
+  _closeFile(path13) {
+    const closers = this._closers.get(path13);
     if (!closers)
       return;
     closers.forEach((closer) => closer());
-    this._closers.delete(path12);
+    this._closers.delete(path13);
   }
-  _addPathCloser(path12, closer) {
+  _addPathCloser(path13, closer) {
     if (!closer)
       return;
-    let list = this._closers.get(path12);
+    let list = this._closers.get(path13);
     if (!list) {
       list = [];
-      this._closers.set(path12, list);
+      this._closers.set(path13, list);
     }
     list.push(closer);
   }
@@ -27209,6 +27665,7 @@ function setupSyncEngine(ctx2, app2) {
 
 `));
   };
+  app2.broadcastSyncEvent = broadcastSyncEvent;
   try {
     const steamConfigPath = "C:/Program Files (x86)/Steam/userdata/*/config/grid";
     const watchPaths = [ctx2.ASSETS_DIR, steamConfigPath];
@@ -27236,30 +27693,37 @@ var slugify = (text) => {
   return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "");
 };
 var app = (0, import_express8.default)();
-var port = 3e3;
+var port = 3001;
 app.use((0, import_cors.default)());
-app.use(import_express8.default.json());
+app.use(import_express8.default.json({ limit: "50mb" }));
+app.use(import_express8.default.urlencoded({ limit: "50mb", extended: true }));
 var isExe3 = process.execPath.toLowerCase().endsWith("phantomserver.exe");
-var BASE_DIR2 = isExe3 ? import_path11.default.dirname(process.execPath) : process.cwd();
-var DATA_FILE = import_path11.default.join(BASE_DIR2, "data.json");
-var STORAGE_DIR = import_path11.default.join(BASE_DIR2, "storage");
-var ASSETS_DIR = import_path11.default.join(STORAGE_DIR, "assets");
-var CONFIG_FILE = import_path11.default.join(BASE_DIR2, "config.json");
+var BASE_DIR2 = isExe3 ? import_path12.default.dirname(process.execPath) : process.cwd();
+var DATA_FILE = import_path12.default.join(BASE_DIR2, "data.json");
+var STORAGE_DIR = import_path12.default.join(BASE_DIR2, "storage");
+var ASSETS_DIR = import_path12.default.join(STORAGE_DIR, "assets");
+var CONFIG_FILE = import_path12.default.join(BASE_DIR2, "config.json");
 console.log(`[Server] Environment: ${isExe3 ? "PACKAGE_EXE" : "NODE_DEV"}`);
 console.log(`[Server] Base Storage: ${BASE_DIR2}`);
 app.use("/res/storage", import_express8.default.static(STORAGE_DIR));
 [STORAGE_DIR, ASSETS_DIR].forEach((dir) => {
   if (!import_fs12.default.existsSync(dir)) import_fs12.default.mkdirSync(dir, { recursive: true });
 });
-var DB_FILE = import_path11.default.join(BASE_DIR2, "phantom.db");
+var DB_FILE = import_path12.default.join(BASE_DIR2, "phantom.db");
 var db = new AppDatabase(DB_FILE);
 db.migrateFromJson(DATA_FILE);
-if (db.getCategories().length === 0) {
-  console.log("[Init] Creating initial categories in SQLite...");
+var categories = db.getCategories();
+var hasAll = categories.some((c) => c.id === "all");
+if (!hasAll) {
+  console.log('[Init] Creating mandatory "ALL GAMES" category...');
   db.saveCategories([
-    { id: "all", name: "ALL GAMES", icon: "grid", color: "#ffffff", games: [], enabled: true },
-    { id: "favorites", name: "FAVORITES", icon: "heart", color: "#ff4444", games: [], enabled: true }
+    ...categories,
+    { id: "all", name: "ALL GAMES", icon: "./res/ui/all.png", color: "#ffffff", games: [], enabled: true }
   ]);
+}
+if (categories.some((c) => c.id === "favorites")) {
+  console.log("[Cleanup] Removing legacy favorites category...");
+  db.saveCategories(db.getCategories().filter((c) => c.id !== "favorites"));
 }
 var ctx = { db, ASSETS_DIR, STORAGE_DIR, CONFIG_FILE, BASE_DIR: BASE_DIR2, slugify };
 app.use("/api/steam", createSteamRoutes(ctx));
@@ -27277,21 +27741,32 @@ app.get("/api/health", (req, res) => {
 });
 app.post("/api/launch", (req, res) => {
   try {
-    const { path: execPath, args: execArgs = "", gameId } = req.body;
+    const { path: execPath, args: execArgs = "", gameId, romPath } = req.body;
     if (!execPath) return res.status(400).json({ error: "No path provided" });
-    console.log(`[Server] Executing: ${execPath} ${execArgs}`);
+    let finalArgs = execArgs;
+    if (romPath) {
+      finalArgs = finalArgs.replace(/%ROM%/g, romPath);
+      finalArgs = finalArgs.replace(/%EXEC_DIR%/g, import_path12.default.dirname(romPath));
+    }
+    if (execPath.toLowerCase().endsWith(".lnk") && finalArgs.includes("%ROM%")) {
+      console.log(`[Server] Detected internal .lnk launch for ${gameId}. Clearing redundant template args.`);
+      finalArgs = "";
+    }
+    console.log(`[Server] Final Execution: ${execPath} ${finalArgs}`);
     if (gameId) {
       try {
         db.updateGameLastPlayed(gameId);
         console.log(`[Server] Updated lastPlayed for ${gameId} in DB`);
+        app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
       } catch (err) {
         console.error("[Server] Failed to update lastPlayed:", err);
       }
     }
     if (execPath.startsWith("http") || execPath.startsWith("steam://")) {
-      (0, import_child_process6.exec)(`start "" "${execPath}"`);
+      (0, import_child_process5.exec)(`start "" "${execPath}"`);
     } else {
-      launchViaShell(execPath, execArgs);
+      launchViaShell(execPath, finalArgs);
+      req.app.broadcastSyncEvent?.({ type: "DATA_UPDATED" });
     }
     res.json({ success: true });
   } catch (e) {
@@ -27300,23 +27775,23 @@ app.post("/api/launch", (req, res) => {
   }
 });
 var findFrontend = () => {
-  const exeDir = import_path11.default.dirname(process.execPath);
-  const localFront = import_path11.default.join(exeDir, "front");
-  const possiblePaths = [localFront, import_path11.default.join(exeDir, "..", "front"), import_path11.default.join(process.cwd(), "phantom_app/front")];
+  const exeDir = import_path12.default.dirname(process.execPath);
+  const localFront = import_path12.default.join(exeDir, "front");
+  const possiblePaths = [localFront, import_path12.default.join(exeDir, "..", "front"), import_path12.default.join(process.cwd(), "phantom_app/front")];
   for (const p of possiblePaths) {
-    if (import_fs12.default.existsSync(p) && import_fs12.default.existsSync(import_path11.default.join(p, "index.html"))) return p;
+    if (import_fs12.default.existsSync(p) && import_fs12.default.existsSync(import_path12.default.join(p, "index.html"))) return p;
   }
   return null;
 };
 var frontPath = findFrontend();
 if (frontPath) {
   app.use(import_express8.default.static(frontPath));
-  app.get(/^(?!\/api).+/, (req, res) => res.sendFile(import_path11.default.join(frontPath, "index.html")));
+  app.get(/^(?!\/api).+/, (req, res) => res.sendFile(import_path12.default.join(frontPath, "index.html")));
 } else {
   app.get("/", (req, res) => res.send(`Phantom Server Running.<br>Frontend NOT FOUND.`));
 }
 setupSyncEngine(ctx, app);
-app.listen(port, "127.0.0.1", () => console.log(`[Server] Phantom Launcher Backend running at http://127.0.0.1:${port}`));
+app.listen(port, () => console.log(`[Server] Phantom Launcher Backend running at http://0.0.0.0:${port}`));
 /*! Bundled license information:
 
 depd/index.js:

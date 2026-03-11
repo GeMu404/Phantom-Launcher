@@ -2,12 +2,12 @@ import { useMemo } from 'react';
 import { Category } from '../types';
 import { ASSETS } from '../constants';
 
-export function useLibrary(categories: Category[], isSecretUnlocked: boolean, t: (key: string) => string) {
+export function useLibrary(categories: Category[], isSecretUnlocked: boolean, isBackendOnline: boolean | 'checking', t: (key: string) => string) {
     const displayCategories = useMemo(() => {
-        // 1. Get all hidden game IDs to exclude them from recent
+        // 1. Get all hidden/secret game IDs to exclude them from recent
         const hiddenGameIds = new Set(
             categories
-                .filter(c => c.id === 'hidden')
+                .filter(c => c.id === 'hidden' || c.id === 'secret')
                 .flatMap(c => c.games.map(g => g.id))
         );
 
@@ -35,47 +35,66 @@ export function useLibrary(categories: Category[], isSecretUnlocked: boolean, t:
             ...storedRecent,
             id: 'recent',
             name: storedRecent?.name || t('app.recent'),
-            icon: storedRecent?.icon || ASSETS.templates.icon,
+            icon: storedRecent?.icon || './res/ui/recent.png',
             color: storedRecent?.color || '#00ffcc',
             games: recentGames,
             enabled: storedRecent?.enabled ?? true,
-            wallpaper: storedRecent?.wallpaper || '',
+            wallpaper: storedRecent?.wallpaper || '', // EXPLICIT OVERRIDE
             wallpaperMode: storedRecent?.wallpaperMode || 'cover',
             gridOpacity: storedRecent?.gridOpacity ?? 0.15,
             cardOpacity: storedRecent?.cardOpacity ?? 0.7
         };
 
-        if (recentGames.length === 0) {
-            recentCategory.games = [{
-                id: 'placeholder_recent',
-                title: t('app.no_recent_activity'),
-                cover: ASSETS.templates.icon,
-                banner: '',
-                logo: '',
-                execPath: '',
-                source: 'manual'
-            } as any];
-        }
-
-        const newCats = categories.filter(c => c.id !== 'recent' && c.id !== 'hidden');
-        const allIndex = newCats.findIndex(c => c.id === 'all');
+        const newCats = categories.filter(c => c.id !== 'recent' && c.id !== 'hidden' && c.id !== 'secret');
 
         // Final Assembly in strict order: [All, Recent, Hidden, ...others]
         const finalCats: Category[] = [];
-        const allCat = newCats.find(c => c.id === 'all');
-        if (allCat) finalCats.push(allCat);
-        finalCats.push(recentCategory as any);
+        let allCat = newCats.find(c => c.id === 'all');
+        if (!allCat) {
+            allCat = {
+                id: 'all',
+                name: 'ALL GAMES',
+                icon: ASSETS.templates.icon,
+                color: '#ffffff',
+                games: [],
+                enabled: true,
+                wallpaper: '', // DEFAULT
+                wallpaperMode: 'cover',
+                gridOpacity: 0.15
+            };
+        } else {
+            // Ensure even if found, we maintain its specific wallpaper or none
+            allCat = { ...allCat, wallpaper: allCat.wallpaper || '' };
+        }
+        finalCats.push({ ...allCat, enabled: true });
+        finalCats.push({ ...recentCategory, enabled: true } as any);
 
         if (isSecretUnlocked) {
             const hiddenCat = categories.find(c => c.id === 'hidden');
             if (hiddenCat) finalCats.push(hiddenCat);
+
+            let secretCat = categories.find(c => c.id === 'secret');
+            if (!secretCat) {
+                secretCat = {
+                    id: 'secret',
+                    name: 'SECRET_CORE',
+                    icon: ASSETS.external.hidden,
+                    color: '#b829da',
+                    games: [],
+                    enabled: true,
+                    wallpaper: '',
+                    wallpaperMode: 'cover',
+                    gridOpacity: 0.15
+                };
+            }
+            finalCats.push(secretCat);
         }
 
         const remainingCats = newCats.filter(c => c.id !== 'all');
         finalCats.push(...remainingCats);
 
         return finalCats.filter(c => c.enabled !== false);
-    }, [categories, isSecretUnlocked, t]);
+    }, [categories, isSecretUnlocked, isBackendOnline, t]);
 
     return { displayCategories };
 }

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import ScrollIndicator from '../../ui/ScrollIndicator';
 
 interface ModularAssetSearchModuleProps {
     accentColor: string;
@@ -26,6 +27,7 @@ const ModularAssetSearchModule: React.FC<ModularAssetSearchModuleProps> = ({
     const [loading, setLoading] = useState(false);
     const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const resultsScrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (initialQuery) {
@@ -92,7 +94,7 @@ const ModularAssetSearchModule: React.FC<ModularAssetSearchModuleProps> = ({
 
     const hardwareClip = `polygon(0 0, 100% 0, 100% 100%, 20px 100%, 0 calc(100% - 20px))`;
     const reverseHardwareClip = `polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%)`;
-    const dualClip = `polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%)`;
+    const dualClip = `polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px))`;
 
     const isWide = assetType === 'banner' || assetType === 'hero';
 
@@ -123,7 +125,8 @@ const ModularAssetSearchModule: React.FC<ModularAssetSearchModuleProps> = ({
             </div>
 
             {/* Results Area */}
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-4">
+            <div ref={resultsScrollRef} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-4 relative">
+                <ScrollIndicator scrollRef={resultsScrollRef} color={accentColor} />
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4 opacity-30">
                         <div className="w-8 h-8 rounded-full border-b-2 animate-spin" style={{ borderColor: accentColor }}></div>
@@ -169,11 +172,17 @@ const ModularAssetSearchModule: React.FC<ModularAssetSearchModuleProps> = ({
                             {assets.map((asset, idx) => {
                                 const isVertical = assetType === 'grid';
                                 const isLogo = assetType === 'logo';
+                                const isBanner = assetType === 'banner';
+
+                                let aspectClass = 'aspect-video';
+                                if (isVertical) aspectClass = 'aspect-[2/3]';
+                                else if (isBanner) aspectClass = 'aspect-[460/215]';
+
                                 return (
                                     <div
                                         key={idx}
                                         onClick={() => onSelect(asset.url)}
-                                        className={`${isVertical ? 'aspect-[2/3]' : 'aspect-video'} relative cursor-pointer group`}
+                                        className={`${aspectClass} relative cursor-pointer group`}
                                     >
                                         <div style={{ clipPath: dualClip, backgroundColor: `${accentColor}26`, padding: '1px' }} className="w-full h-full group-hover:bg-white/10 transition-colors">
                                             <div style={{ clipPath: dualClip, backgroundColor: `${accentColor}1a` }} className="w-full h-full overflow-hidden relative">

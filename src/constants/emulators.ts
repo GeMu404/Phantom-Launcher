@@ -27,10 +27,10 @@ export const EMU_PLATFORMS: EmuPlatform[] = [
     {
         id: 'ps2',
         name: 'PLAYSTATION_2',
-        patterns: ['pcsx2'],
+        patterns: ['pcsx2', 'pcsx2-qt'],
         icon: './res/external/ps2.png',
         defaultArgs: '"%ROM%"',
-        desc: 'EE_CORE_INITIALIZED'
+        desc: 'EE_CORE_INITIALIZED::QT_WRAPPER_ACTIVE'
     },
     {
         id: 'ps1',
@@ -89,9 +89,65 @@ export const EMU_PLATFORMS: EmuPlatform[] = [
         desc: 'ARM7_DECRYPTION_ACTIVE'
     },
     {
+        id: 'gb',
+        name: 'GAME_BOY',
+        patterns: ['mgba', 'visualboyadvance', 'bgb', 'retroarch'],
+        icon: './res/external/gb.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'LR35902_CPU_EMULATION::READY'
+    },
+    {
+        id: 'gbc',
+        name: 'GAME_BOY_COLOR',
+        patterns: ['mgba', 'visualboyadvance', 'bgb', 'retroarch'],
+        icon: './res/external/gbc.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'CGB_BOOT_ROM_VERIFIED'
+    },
+    {
+        id: 'nes',
+        name: 'NES',
+        patterns: ['mesen', 'nestopia', 'fceux', 'retroarch'],
+        icon: './res/external/nes.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'RICOH_2A03_READY'
+    },
+    {
+        id: 'snes',
+        name: 'SNES',
+        patterns: ['mesen', 'snes9x', 'bsnes', 'higan', 'retroarch'],
+        icon: './res/external/snes.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'RICOH_5A22_SYNC_OK'
+    },
+    {
+        id: 'genesis',
+        name: 'SEGA_GENESIS',
+        patterns: ['kega', 'gens', 'blastem', 'retroarch'],
+        icon: './res/external/genesis.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'MOTOROLA_68000_INITIALIZED'
+    },
+    {
+        id: 'ms',
+        name: 'MASTER_SYSTEM',
+        patterns: ['kega', 'gens', 'retroarch'],
+        icon: './res/external/ms.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'Z80_PROCESSOR_LINKED'
+    },
+    {
+        id: 'gg',
+        name: 'GAME_GEAR',
+        patterns: ['kega', 'gens', 'retroarch'],
+        icon: './res/external/gg.png',
+        defaultArgs: '"%ROM%"',
+        desc: 'VDP_COLOR_PALETTE_LOADED'
+    },
+    {
         id: 'n64',
         name: 'NINTENDO_64',
-        patterns: ['project64', 'mupen64', 'retroarch'],
+        patterns: ['project64', 'mupen64', 'rmg', 'retroarch'],
         icon: './res/external/n64.png',
         defaultArgs: '"%ROM%"',
         desc: 'REALITY_CO_PROCESSOR::READY'

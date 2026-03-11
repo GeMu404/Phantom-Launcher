@@ -14,13 +14,14 @@ export const ASSETS = {
     logo: './res/templates/logo.png',
     icon: './res/templates/icon.png',
   },
-  ui: {
-    config: './res/ui/config.png',
-    wallpaper: './res/ui/wallpaper.jpg',
-  },
   external: {
     steam: './res/external/steam.png',
     hidden: './res/external/hidden.png'
+  },
+  ui: {
+    config: './res/ui/config.png',
+    all: './res/ui/all.png',
+    wallpaper: './res/ui/wallpaper.jpg',
   }
 };
 
@@ -28,22 +29,23 @@ export const CATEGORIES: Category[] = [
   {
     id: 'all',
     name: 'ALL GAMES',
-    icon: ASSETS.templates.icon,
+    icon: ASSETS.ui.all,
     color: '#ffffff',
-    assetColor: '#00ffff',
-    nodeColor: '#ff00ff',
     syncColor: '#ffff00',
     coreColor: '#00ff00',
-    explorerColor: '#00ffff',
-    sgdbColor: '#66c0f4',
+    configColor: '#ffffff',
+    secretColor: '#b829da',
+    assetColor: '#a855f7',
+    nodeColor: '#ff00ff',
     wallpaper: '',
     wallpaperMode: 'cover',
     gridOpacity: 0.15,
     cardOpacity: 0.7,
     bgAnimationsEnabled: true,
     gridEnabled: true,
-    scanlineEnabled: true,
+    scanlineEnabled: false,
     vignetteEnabled: true,
+    outlineEnabled: true,
     configIcon: ASSETS.ui.config,
     games: []
   }

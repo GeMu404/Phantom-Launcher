@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
+import { exec, spawnSync } from 'child_process';
 import { ServerContext } from '../context.js';
 
 export function createFileRoutes(ctx: ServerContext): Router {
@@ -15,7 +15,7 @@ export function createFileRoutes(ctx: ServerContext): Router {
                 try { if (fs.existsSync(drive)) drives.push(drive); } catch (e) { }
             }
 
-            // Query actual Windows Shell folder paths via PowerShell
+            // Query actual Windows Shell folder paths via robust PowerShell
             const psScript = `
                 $folders = @{
                     Desktop = [Environment]::GetFolderPath('Desktop');
@@ -26,13 +26,15 @@ export function createFileRoutes(ctx: ServerContext): Router {
                     Downloads = (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
                 };
                 $folders | ConvertTo-Json
-            `.replace(/\n/g, ' ').trim();
+            `;
+            const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
 
-            exec(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
+            try {
+                const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { encoding: 'utf8', windowsHide: true });
                 let libraries = [];
-                if (!err && stdout) {
+                if (!result.error && result.stdout) {
                     try {
-                        const paths = JSON.parse(stdout);
+                        const paths = JSON.parse(result.stdout);
                         libraries = Object.entries(paths).map(([name, p]) => {
                             if (!p) return null;
                             const pathStr = (p as string);
@@ -64,7 +66,9 @@ export function createFileRoutes(ctx: ServerContext): Router {
                 }
 
                 res.json({ drives, libraries });
-            });
+            } catch (err) {
+                res.status(500).json({ error: 'Failed to list drives' });
+            }
         } catch (error: any) {
             res.status(500).json({ error: 'Failed to list drives' });
         }
@@ -102,10 +106,12 @@ export function createFileRoutes(ctx: ServerContext): Router {
         const ext = path.extname(filePath).toLowerCase();
         if (ext === '.lnk') {
             const psScript = `$s=(New-Object -ComObject WScript.Shell).CreateShortcut('${filePath.replace(/'/g, "''")}'); $obj = @{ TargetPath = $s.TargetPath; Arguments = $s.Arguments; WorkingDirectory = $s.WorkingDirectory }; $obj | ConvertTo-Json`;
-            exec(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
-                if (err) return res.status(500).json({ error: 'Failed to read shortcut' });
-                try { res.json(JSON.parse(stdout)); } catch (e) { res.status(500).json({ error: 'Parse failed' }); }
-            });
+            const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+            try {
+                const result = spawnSync('powershell.exe', ['-NoProfile', '-EncodedCommand', encoded], { encoding: 'utf8', windowsHide: true });
+                if (result.error) return res.status(500).json({ error: 'Failed to read shortcut' });
+                res.json(JSON.parse(result.stdout));
+            } catch (e) { res.status(500).json({ error: 'Parse failed' }); }
         } else if (ext === '.url') {
             try {
                 const content = fs.readFileSync(filePath, 'utf-8');
@@ -119,10 +125,13 @@ export function createFileRoutes(ctx: ServerContext): Router {
 
     router.post('/select-folder', (req, res) => {
         const psScript = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; if($f.ShowDialog() -eq 'OK'){ $f.SelectedPath }`;
-        exec(`powershell -NoProfile -Command "${psScript}"`, (err, stdout) => {
-            if (err) return res.status(500).json({ error: 'Failed to open dialog' });
-            res.json({ path: stdout.trim() || null });
-        });
+        const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+        try {
+            const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { encoding: 'utf8', windowsHide: true });
+            res.json({ path: result.stdout.trim() || null });
+        } catch (err) {
+            res.status(500).json({ error: 'Failed' });
+        }
     });
 
     router.post('/select-file', (req, res) => {
@@ -130,13 +139,17 @@ export function createFileRoutes(ctx: ServerContext): Router {
         const fileFilter = filter === 'exe' ? "Executables (*.exe;*.lnk;*.bat;*.url)|*.exe;*.lnk;*.bat;*.url" : "Images|*.jpg;*.jpeg;*.png;*.webp;*.gif;*.apng";
         const psScript = `Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.OpenFileDialog; $f.Filter = "${fileFilter}"; $f.DereferenceLinks = $false; if($f.ShowDialog() -eq 'OK'){ $f.FileName }`;
         const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
-        exec(`powershell -NoProfile -Sta -ExecutionPolicy Bypass -EncodedCommand ${encoded}`, (err, stdout) => {
-            if (err) return res.status(500).json({ error: 'Failed' });
-            const p = stdout.trim();
+
+        try {
+            // Sta mode for dialogs
+            const result = spawnSync('powershell.exe', ['-NoProfile', '-Sta', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { encoding: 'utf8', windowsHide: true });
+            const p = result.stdout.trim();
             if (p && returnBase64) {
                 try { res.json({ path: p, base64: fs.readFileSync(p).toString('base64') }); } catch (e) { res.status(500).json({ error: 'B64 failed' }); }
             } else { res.json({ path: p || null }); }
-        });
+        } catch (err) {
+            res.status(500).json({ error: 'Failed' });
+        }
     });
 
     return router;

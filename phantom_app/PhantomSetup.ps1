@@ -18,7 +18,6 @@ Add-Type -AssemblyName System.Drawing
 
 try {
     # --- Configuration ---
-    $appName = "Phantom Launcher"
     $installDir = "$env:LOCALAPPDATA\PhantomLauncher"
     $shortcutPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\PhantomLauncher.lnk"
     
@@ -27,12 +26,10 @@ try {
     $currentDir = Split-Path -Parent $script:SetupPath
 
     # Check Status
-    # We check if the server exe exists to confirm installation
     $isInstalled = Test-Path "$installDir\system\PhantomServer.exe"
-    # We check if we are RUNNING from the installed location (comparing standardized paths)
     $isRunningFromInstall = ($currentDir.TrimEnd('\') -eq $installDir.TrimEnd('\'))
     
-    # --- XAML UI Definition (Cyberpunk Style) ---
+    # --- XAML UI Definition (Sketch-Based Architecture) ---
     [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -41,10 +38,16 @@ try {
         AllowsTransparency="True" Background="Transparent">
     
     <Window.Resources>
-        <!-- CYBERPUNK BUTTON STYLE -->
-        <Style x:Key="CyberButton" TargetType="Button">
-            <Setter Property="Background" Value="#111111"/>
-            <Setter Property="Foreground" Value="#00FFFF"/>
+        <Style x:Key="AccentText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#D4FF58"/>
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <!-- Octagonal Button Style (All Corners Notched) -->
+        <Style x:Key="ModularButton" TargetType="Button">
+            <Setter Property="Background" Value="#101010"/>
+            <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="FontSize" Value="14"/>
@@ -52,29 +55,27 @@ try {
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <!-- Cut Corner Shape - Uses Stretch=Fill to adapt to any size -->
-                            <Path Name="BtnBorder" Stroke="#00FFFF" StrokeThickness="1" Fill="{TemplateBinding Background}" Stretch="Fill">
+                            <Path Name="BtnBorder" Stroke="#D4FF58" StrokeThickness="1.5" Fill="{TemplateBinding Background}" Stretch="Fill">
                                 <Path.Data>
-                                    <PathGeometry Figures="M 10,0 L 190,0 L 200,10 L 200,45 L 10,45 L 0,35 L 0,0 Z"/>
+                                    <PathGeometry Figures="M 10,0 L 190,0 L 200,10 L 200,35 L 190,45 L 10,45 L 0,35 L 0,10 Z"/>
                                 </Path.Data>
-                                <Path.Effect>
-                                    <DropShadowEffect Color="#00FFFF" BlurRadius="5" ShadowDepth="0" Opacity="0.4"/>
-                                </Path.Effect>
                             </Path>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <ContentPresenter.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Margin="20,0"/>
+                                    </DataTemplate>
+                                </ContentPresenter.ContentTemplate>
+                            </ContentPresenter>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="BtnBorder" Property="Fill" Value="#002222"/>
-                                <Setter TargetName="BtnBorder" Property="Effect">
-                                    <Setter.Value>
-                                        <DropShadowEffect Color="#00FFFF" BlurRadius="10" ShadowDepth="0" Opacity="0.8"/>
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter TargetName="BtnBorder" Property="Fill" Value="#D4FF58"/>
+                                <Setter Property="Foreground" Value="Black"/>
                                 <Setter Property="Cursor" Value="Hand"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="BtnBorder" Property="Fill" Value="#00FFFF"/>
+                                <Setter TargetName="BtnBorder" Property="Fill" Value="White"/>
                                 <Setter Property="Foreground" Value="Black"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -83,43 +84,18 @@ try {
             </Setter>
         </Style>
 
-         <Style x:Key="CyberDanger" TargetType="Button" BasedOn="{StaticResource CyberButton}">
-             <Setter Property="Foreground" Value="#FF3333"/>
-             <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                           <Path Name="BtnBorder" Stroke="#FF3333" StrokeThickness="1" Fill="#110000" Stretch="Fill">
-                                <Path.Data>
-                                    <PathGeometry Figures="M 0,0 L 140,0 L 150,10 L 150,40 L 0,40 Z"/>
-                                </Path.Data>
-                            </Path>
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="BtnBorder" Property="Fill" Value="#330000"/>
-                                <Setter TargetName="BtnBorder" Property="Effect">
-                                    <Setter.Value>
-                                         <DropShadowEffect Color="#FF3333" BlurRadius="8" ShadowDepth="0" Opacity="0.8"/>
-                                    </Setter.Value>
-                                </Setter>
-                                <Setter Property="Cursor" Value="Hand"/>
-                            </Trigger>
-                         </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-             </Setter>
-        </Style>
-
         <Style x:Key="CloseButton" TargetType="Button">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <TextBlock Text="[X]" Foreground="#666666" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border BorderBrush="#D4FF58" BorderThickness="1" Background="Transparent" Padding="8,4">
+                            <TextBlock Text="[X]" Foreground="#D4FF58" FontSize="11" FontFamily="Consolas" FontWeight="Bold"/>
+                        </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Background" Value="#FF4444"/>
+                                <Setter Property="BorderBrush" Value="White"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -129,79 +105,68 @@ try {
         </Style>
     </Window.Resources>
 
-    <!-- Main Window Shape -->
-     <Grid>
-         <Path Stroke="#00FFFF" StrokeThickness="1" Fill="#050505" Stretch="Fill">
+    <Grid>
+        <!-- Window Frame (Top-Left & Bottom-Right Notches only) -->
+         <Path Stroke="#D4FF58" StrokeThickness="2" Fill="#0A0A0A" Stretch="Fill">
             <Path.Effect>
-                <DropShadowEffect Color="#00FFFF" BlurRadius="15" ShadowDepth="0" Opacity="0.3"/>
+                <DropShadowEffect Color="#D4FF58" BlurRadius="15" ShadowDepth="0" Opacity="0.15"/>
             </Path.Effect>
             <Path.Data>
-                <PathGeometry Figures="M 30,0 L 720,0 L 750,30 L 750,500 L 30,500 L 0,470 L 0,0 Z"/>
+                <PathGeometry Figures="M 40,0 L 750,0 L 750,460 L 710,500 L 0,500 L 0,40 Z"/>
             </Path.Data>
         </Path>
 
-        <Grid Margin="15">
+        <Grid Margin="20">
             <Grid.RowDefinitions>
-                <RowDefinition Height="50"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="40"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Header / Drag Bar -->
-            <Grid Grid.Row="0" Background="Transparent" Name="DragArea">
-                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="50"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text=">> SYSTEM_SETUP_V2.0" Foreground="#00FFFF" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="25,0,0,0" FontFamily="Consolas" FontSize="16" IsHitTestVisible="False">
-                    <TextBlock.Effect>
-                        <DropShadowEffect Color="#00FFFF" BlurRadius="5" ShadowDepth="0" Opacity="0.6"/>
-                    </TextBlock.Effect>
-                </TextBlock>
-                <Button Grid.Column="1" Name="BtnClose" Width="40" Height="40" HorizontalAlignment="Right" Margin="0,0,15,0" Style="{StaticResource CloseButton}"/>
+            <!-- Header -->
+            <Grid Grid.Row="0" Name="DragArea" Background="Transparent" Margin="20,10,10,0">
+                <TextBlock Text="[ MODULAR_SETUP_V0.9 ]" Style="{StaticResource AccentText}" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <Button Name="BtnClose" HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource CloseButton}"/>
             </Grid>
 
-            <!-- Main Content -->
-            <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <TextBlock Text="PHANTOM" FontSize="60" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" FontFamily="Segoe UI Black"/>
-                <TextBlock Text="LAUNCHER // OS" FontSize="20" FontWeight="Normal" Foreground="#00FFFF" HorizontalAlignment="Right" Margin="0,-10,10,30" FontFamily="Consolas"/>
-                
-                <TextBlock Name="TxtStatus" Text="WAITING FOR COMMAND..." Foreground="#888888" HorizontalAlignment="Center" Margin="0,0,0,30" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="500" FontFamily="Consolas"/>
-
-                <!-- Action Buttons Container -->
-                <StackPanel Name="PanelActions" Orientation="Vertical" HorizontalAlignment="Center" Width="200">
-                    <Button Name="BtnInstall" Content="INITIALIZE SYSTEM" Height="45" Style="{StaticResource CyberButton}" Visibility="Collapsed" Margin="0,5"/>
-                    <Button Name="BtnUpdate" Content="UPDATE SYSTEM" Height="45" Style="{StaticResource CyberButton}" Visibility="Collapsed" Margin="0,5"/>
-                    <Button Name="BtnLaunch" Content="EXECUTE ENTRY" Height="45" Style="{StaticResource CyberButton}" Visibility="Collapsed" Margin="0,5"/>
+            <!-- Main Content (Centered) -->
+            <Grid Grid.Row="1">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="Phantom Launcher V 0.9" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" FontFamily="Segoe UI" Margin="0,0,0,40"/>
                     
-                    <Button Name="BtnUninstall" Content="PURGE SYSTEM" Height="40" Style="{StaticResource CyberDanger}" Visibility="Visible" Margin="0,20,0,0"/>
-                </StackPanel>
+                    <TextBlock Name="TxtStatus" Text="READY_TO_INITIALIZE" Foreground="#666666" FontSize="11" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,30"/>
 
-                <!-- Success/Feedback Panel (Initially Collapsed) -->
-                <StackPanel Name="PanelSuccess" Orientation="Vertical" HorizontalAlignment="Center" Width="400" Visibility="Collapsed">
-                    <TextBlock Text="OPERATION COMPLETE" FontSize="20" FontWeight="Bold" Foreground="#00FF00" HorizontalAlignment="Center" Margin="0,0,0,10" FontFamily="Consolas"/>
-                    <TextBlock Name="TxtSuccessMsg" Text="System installed successfully." FontSize="14" Foreground="#CCCCCC" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,20" FontFamily="Consolas"/>
-                    <TextBlock Text=">> The system tray icon is now active." FontSize="12" Foreground="#00FFFF" HorizontalAlignment="Center" Margin="0,0,0,30" FontFamily="Consolas"/>
-                    
-                    <Button Name="BtnFinish" Content="ACKNOWLEDGE" Height="45" Style="{StaticResource CyberButton}"/>
-                </StackPanel>
+                    <Grid Name="PanelActions">
+                        <StackPanel Opacity="0.9">
+                            <Button Name="BtnInstall" Content="install" Width="300" Height="50" Style="{StaticResource ModularButton}" Visibility="Collapsed" Margin="0,10"/>
+                            <Button Name="BtnUpdate" Content="update" Width="300" Height="50" Style="{StaticResource ModularButton}" Visibility="Collapsed" Margin="0,10"/>
+                            <Button Name="BtnLaunch" Content="execute" Width="300" Height="50" Style="{StaticResource ModularButton}" Visibility="Collapsed" Margin="0,10"/>
+                            <Button Name="BtnUninstall" Content="uninstall" Width="300" Height="50" Style="{StaticResource ModularButton}" Foreground="#FF6666" Margin="0,10"/>
+                        </StackPanel>
+                    </Grid>
 
-                <!-- Confirmation Panel (Initially Collapsed) -->
-                <StackPanel Name="PanelConfirm" Orientation="Vertical" HorizontalAlignment="Center" Width="400" Visibility="Collapsed">
-                    <TextBlock Text="WARNING: PERMANENT ACTION" FontSize="18" FontWeight="Bold" Foreground="#FF3333" HorizontalAlignment="Center" Margin="0,0,0,10" FontFamily="Consolas"/>
-                    <TextBlock Name="TxtConfirmMsg" Text="Are you sure you want to proceed?" FontSize="14" Foreground="#CCCCCC" HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,20" FontFamily="Consolas"/>
-                    
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Name="BtnConfirmYes" Content="CONFIRM" Width="120" Height="40" Style="{StaticResource CyberDanger}" Margin="0,0,10,0"/>
-                        <Button Name="BtnConfirmNo" Content="CANCEL" Width="120" Height="40" Style="{StaticResource CyberButton}" Margin="10,0,0,0"/>
+                    <StackPanel Name="PanelSuccess" Visibility="Collapsed">
+                        <TextBlock Text="SUCCESS" Style="{StaticResource AccentText}" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        <TextBlock Name="TxtSuccessMsg" Text="Protocol Complete." Foreground="#888888" FontFamily="Consolas" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,30"/>
+                        <Button Name="BtnFinish" Content="acknowledge" Width="200" Height="45" Style="{StaticResource ModularButton}"/>
+                    </StackPanel>
+
+                    <StackPanel Name="PanelConfirm" Visibility="Collapsed">
+                        <TextBlock Text="CONFIRM_ACTION" FontSize="20" Foreground="#FF4444" FontFamily="Consolas" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        <TextBlock Name="TxtConfirmMsg" Text="Proceed with destructive operation?" Foreground="#888888" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Name="BtnConfirmYes" Content="confirm" Width="140" Height="45" Style="{StaticResource ModularButton}" Foreground="#FF4444" Margin="0,0,10,0"/>
+                            <Button Name="BtnConfirmNo" Content="cancel" Width="140" Height="45" Style="{StaticResource ModularButton}"/>
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
-
-
-            </StackPanel>
+            </Grid>
 
             <!-- Footer -->
-            <TextBlock Grid.Row="2" Text="SECURE CONNECTION ESTABLISHED" Foreground="#222222" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="10" FontFamily="Consolas"/>
+            <Grid Grid.Row="2" Margin="20,0,20,10">
+                <TextBlock Text="made by GeMu404" Foreground="#333333" FontSize="10" FontFamily="Consolas" HorizontalAlignment="Left" VerticalAlignment="Bottom"/>
+                <TextBlock Text="PHANTOM_SHELL_INITIALIZER" Foreground="#222222" FontSize="9" FontFamily="Consolas" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+            </Grid>
         </Grid>
     </Grid>
 </Window>
@@ -232,10 +197,7 @@ try {
     
     $script:isUninstalling = $false
 
-    # --- Logic Functions ---
-
-    # --- Async Logic (DispatcherTimer) ---
-    # True non-blocking approach. No Wait loops.
+    # --- Logic ---
     $asyncTimer = New-Object System.Windows.Threading.DispatcherTimer
     $asyncTimer.Interval = [TimeSpan]::FromMilliseconds(100)
     $script:currentTask = $null
@@ -246,289 +208,112 @@ try {
                 $asyncTimer.Stop()
                 $ps = $script:currentTask.Power
                 $handle = $script:currentTask.Handle
-            
                 try {
-                    $ps.EndInvoke($handle) # Check for exceptions
-                
-                    # Check stream errors
-                    if ($ps.Streams.Error.Count -gt 0) {
-                        throw $ps.Streams.Error[0].ToString()
-                    }
-                
-                    # Run Success Callback
+                    $ps.EndInvoke($handle)
+                    if ($ps.Streams.Error.Count -gt 0) { throw $ps.Streams.Error[0].ToString() }
                     if ($script:onSuccess) { & $script:onSuccess }
                 }
-                catch {
-                    Set-Status "ERROR: $_" "#FF0000"
-                }
-                finally {
-                    $ps.Dispose()
-                    $script:currentTask = $null
-                }
+                catch { Set-Status "ERROR: $_" "#FF0000" }
+                finally { $ps.Dispose(); $script:currentTask = $null }
             }
         })
 
     function Start-Worker($scriptBlock, $argsList, $successAction) {
-        $ps = [PowerShell]::Create()
-        $ps.AddScript($scriptBlock) | Out-Null
-        
-        # CORRECT ARGUMENT PASSING (Fixes path concatenation bug)
-        if ($argsList) {
-            foreach ($arg in $argsList) {
-                $ps.AddArgument($arg) | Out-Null
-            }
-        }
-        
+        $ps = [PowerShell]::Create(); $ps.AddScript($scriptBlock) | Out-Null
+        if ($argsList) { foreach ($arg in $argsList) { $ps.AddArgument($arg) | Out-Null } }
         $handle = $ps.BeginInvoke()
-        
-        $script:currentTask = @{ Power = $ps; Handle = $handle }
-        $script:onSuccess = $successAction
+        $script:currentTask = @{ Power = $ps; Handle = $handle }; $script:onSuccess = $successAction
         $asyncTimer.Start()
     }
 
-    function Set-Status($msg, $color = "#CCCCCC") {
+    function Set-Status($msg, $color = "#666666") {
         $txtStatus.Text = $msg
         $txtStatus.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($color)
-        $window.UpdateLayout() # Force refresh
+        $window.UpdateLayout()
     }
     
     function Show-Success($details) {
-        $panelActions.Visibility = "Collapsed"
-        $panelConfirm.Visibility = "Collapsed"
-        $panelSuccess.Visibility = "Visible"
-        $txtStatus.Visibility = "Collapsed" 
+        $panelActions.Visibility = "Collapsed"; $panelConfirm.Visibility = "Collapsed"; $panelSuccess.Visibility = "Visible"
         $txtSuccessMsg.Text = $details
     }
 
     function Show-Confirm($msg) {
-        $panelActions.Visibility = "Collapsed"
-        $panelSuccess.Visibility = "Collapsed"
-        $panelConfirm.Visibility = "Visible"
+        $panelActions.Visibility = "Collapsed"; $panelSuccess.Visibility = "Collapsed"; $panelConfirm.Visibility = "Visible"
         $txtConfirmMsg.Text = $msg
     }
 
     function Show-Main {
-        $panelActions.Visibility = "Visible"
-        $panelSuccess.Visibility = "Collapsed"
-        $panelConfirm.Visibility = "Collapsed"
-        $txtStatus.Visibility = "Visible"
+        $panelActions.Visibility = "Visible"; $panelSuccess.Visibility = "Collapsed"; $panelConfirm.Visibility = "Collapsed"
         Set-Status "READY."
     }
 
     function Force-Kill-Process($name) {
-        # WMI to find process and children, works better than Stop-Process for stubborn tasks
         $procs = Get-CimInstance Win32_Process -Filter "Name = '$name'"
-        foreach ($p in $procs) {
-            try { 
-                Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue 
-            }
-            catch {}
-        }
+        foreach ($p in $procs) { try { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue } catch {} }
     }
 
     function Kill-Processes {
-        Set-Status "TERMINATING ACTIVE PROCESSES..." "#FFFF00"
-        Start-Sleep -Milliseconds 200
-    
-        # 1. Standard Kill
+        Set-Status "TERMINATING PROCESSES..." "#D4FF58"
         Force-Kill-Process "PhantomServer.exe"
         Force-Kill-Process "node.exe"
-    
-        # 2. Kill PowerShell Tray Script (Regex match on command line)
         $psProcs = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe' OR Name = 'pwsh.exe'"
-        foreach ($p in $psProcs) {
-            if ($p.CommandLine -match "PhantomTray") {
-                try { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
-            }
-        }
-    
+        foreach ($p in $psProcs) { if ($p.CommandLine -match "PhantomTray") { try { Stop-Process -Id $p.ProcessId -Force } catch {} } }
         Start-Sleep -Seconds 1
     }
 
     function Create-Shortcut {
         $WshShell = New-Object -ComObject WScript.Shell
         if (Test-Path $shortcutPath) { Remove-Item $shortcutPath -Force }
-    
         $Shortcut = $WshShell.CreateShortcut($shortcutPath)
-        # Target Run.vbs for silent startup
-        if (Test-Path "$installDir\system\Run.vbs") {
-            $Shortcut.TargetPath = "$installDir\system\Run.vbs"
-        }
-        else {
-            $Shortcut.TargetPath = "powershell.exe"
-            $Shortcut.Arguments = "-WindowStyle Hidden -Sta -ExecutionPolicy Bypass -File `"$installDir\system\PhantomTray.ps1`""
-        }
-    
-        $Shortcut.WorkingDirectory = "$installDir\system"
-        $Shortcut.IconLocation = "$installDir\system\PhantomServer.exe,0"
-        $Shortcut.Save()
-    }
-
-    function Do-Events {
-        [System.Windows.Forms.Application]::DoEvents()
+        if (Test-Path "$installDir\system\Run.vbs") { $Shortcut.TargetPath = "$installDir\system\Run.vbs" }
+        else { $Shortcut.TargetPath = "powershell.exe"; $Shortcut.Arguments = "-WindowStyle Hidden -Sta -Bypass -File `"$installDir\system\PhantomTray.ps1`"" }
+        $Shortcut.WorkingDirectory = "$installDir\system"; $Shortcut.IconLocation = "$installDir\system\PhantomServer.exe,0"; $Shortcut.Save()
     }
 
     function Start-Install {
         if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
-    
         $sourceSystem = Join-Path $currentDir "system"
         if (-not (Test-Path $sourceSystem)) { $sourceSystem = Join-Path $currentDir "phantom_app\system" }
-
         if (Test-Path $sourceSystem) {
-            Set-Status "INSTALLING CORE SYSTEM..." "#00FFFF"
-            
+            Set-Status "DEPLOYING SYSTEM CORE..." "#D4FF58"
             $destSystem = Join-Path $installDir "system"
             if (-not (Test-Path $destSystem)) { New-Item -ItemType Directory -Path $destSystem -Force | Out-Null }
-            
-            # WORKER SCRIPT
-            $sb = {
-                param($src, $dst)
-                Copy-Item -Path "$src\*" -Destination $dst -Recurse -Force | Out-Null
-            }
-            
-            # START ASYNC
+            $sb = { param($src, $dst); Copy-Item -Path "$src\*" -Destination $dst -Recurse -Force | Out-Null }
             Start-Worker $sb @($sourceSystem, $destSystem) {
-                # ON SUCCESS
-                Set-Status "REGISTERING STARTUP..." "#00FFFF"
                 Create-Shortcut
-                
-                # Copy Self (Fast enough to do sync)
-                if ($script:SetupPath -and (Test-Path $script:SetupPath)) {
-                    Copy-Item -Path $script:SetupPath -Destination "$installDir\PhantomSetup.ps1" -Force
-                }
-                
-                Set-Status "SYSTEM READY." "#00FF00"
-                Show-Success "System installed successfully.`n`nThe 'Phantom Launcher' service is now running in your system tray (bottom right icon)."
+                if ($script:SetupPath -and (Test-Path $script:SetupPath)) { Copy-Item -Path $script:SetupPath -Destination "$installDir\PhantomSetup.ps1" -Force }
+                Set-Status "SUCCESS." "#00FF00"
+                Show-Success "System installed successfully.`nThe launcher is active in your system tray."
             }
-        }
-        else {
-            Set-Status "ERROR: Source system files missing." "#FF0000"
         }
     }
 
-    # --- Event Handlers ---
-
-    $dragArea.Add_MouseLeftButtonDown({
-            $window.DragMove()
-        })
-
-    $btnClose.Add_Click({
-            $window.Close()
-        })
-        
+    # Event Handlers
+    $dragArea.Add_MouseLeftButtonDown({ $window.DragMove() })
+    $btnClose.Add_Click({ $window.Close() })
     $btnFinish.Add_Click({
             $window.Close()
-        
-            if ($script:isUninstalling) {
-                # Final Self-Destruct
-                Start-Process cmd.exe -ArgumentList "/c timeout 2 & rmdir /s /q `"$installDir`"" -WindowStyle Hidden
-            }
-            else {
-                # Launch only if we are in install/update mode (standard flow)
-                if ($btnInstall.Visibility -eq "Visible" -or $btnUpdate.Visibility -eq "Visible") {
-                    if (Test-Path "$installDir\system\Run.vbs") {
-                        Start-Process "$installDir\system\Run.vbs"
-                    }
-                }
-            }
+            if ($script:isUninstalling) { Start-Process cmd.exe -ArgumentList "/c timeout 2 & rmdir /s /q `"$installDir`"" -WindowStyle Hidden }
+            else { if (Test-Path "$installDir\system\Run.vbs") { Start-Process "$installDir\system\Run.vbs" } }
         })
-
-    # --- Confirm Dialog Actions ---
     $btnConfirmNo.Add_Click({ Show-Main })
-    
     $btnConfirmYes.Add_Click({
-            # UNINSTALL LOGIC
-            try {
-                Kill-Processes
-                Set-Status "REMOVING REGISTRY..." "#FF3333"
-             
-                # WORKER SCRIPT
-                $sb = {
-                    param($path, $scPath)
-                    
-                    # 1. Registry
-                    try { Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "PhantomLauncher" -ErrorAction SilentlyContinue } catch {}
-                    Start-Sleep -Milliseconds 500
-                
-                    # 2. Shortcut
-                    if (Test-Path $scPath) { Remove-Item $scPath -Force -ErrorAction SilentlyContinue }
-                    Start-Sleep -Milliseconds 500
-                
-                    # 3. Files
-                    if (Test-Path "$path\system") { Remove-Item "$path\system" -Recurse -Force -ErrorAction SilentlyContinue }
-                }
-             
-                # START ASYNC
-                Start-Worker $sb @($installDir, $shortcutPath) {
-                    Set-Status "CLEANING UP..." "#FF3333"
-                    $script:isUninstalling = $true
-                    Show-Success "System has been uninstalled.`n`nStartup entries and services have been removed.`nClick ACKNOWLEDGE to finish."
-                }
-            }
-            catch {
-                Set-Status "ERROR: $_" "#FF0000"
-            }
-        })
-
-    $btnInstall.Add_Click({
-            try {
-                Kill-Processes
-                Set-Status "INITIALIZING INSTALLATION..." "#00FFFF"
-                Start-Install
-            }
-            catch {
-                Set-Status "ERROR: $_" "#FF0000"
-            }
-        })
-        
-    $btnUpdate.Add_Click({
             Kill-Processes
-            Set-Status "UPDATING CORE FILES..." "#00FFFF"
-            Start-Install
+            Set-Status "PURGING SYSTEM..." "#FF4444"
+            $sb = { param($path, $scPath); try { Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "PhantomLauncher" -ErrorAction SilentlyContinue } catch {}
+                if (Test-Path $scPath) { Remove-Item $scPath -Force }; if (Test-Path "$path\system") { Remove-Item "$path\system" -Recurse -Force } }
+            Start-Worker $sb @($installDir, $shortcutPath) { $script:isUninstalling = $true; Show-Success "System successfully purged.`nClick ACKNOWLEDGE to finish." }
         })
+    $btnInstall.Add_Click({ Kill-Processes; Start-Install })
+    $btnUpdate.Add_Click({ Kill-Processes; Start-Install })
+    $btnLaunch.Add_Click({ if (Test-Path "$installDir\system\Run.vbs") { Start-Process "$installDir\system\Run.vbs" }; $window.Close() })
+    $btnUninstall.Add_Click({ Show-Confirm "Completely remove Phantom Launcher?`nSettings and records will be deleted." })
 
-    $btnLaunch.Add_Click({
-            Start-Process "$installDir\system\Run.vbs"
-            $window.Close()
-        })
+    # State
+    if ($isRunningFromInstall) { $txtStatus.Text = "SYSTEM ONLINE"; $btnInstall.Visibility = "Collapsed"; $btnUpdate.Visibility = "Collapsed"; $btnLaunch.Visibility = "Visible" }
+    elseif ($isInstalled) { $txtStatus.Text = "UPDATE AVAILABLE"; $btnInstall.Visibility = "Collapsed"; $btnUpdate.Visibility = "Visible"; $btnLaunch.Visibility = "Collapsed" }
+    else { $txtStatus.Text = "READY TO INITIALIZE"; $btnInstall.Visibility = "Visible"; $btnUpdate.Visibility = "Collapsed"; $btnLaunch.Visibility = "Collapsed"; $btnUninstall.Visibility = "Collapsed" }
 
-    $btnUninstall.Add_Click({
-            Show-Confirm "This will completely remove Phantom Launcher from your system.`n`nFiles and settings will be deleted."
-        })
-
-    # --- State Logic ---
-    # Logic: "Purge" button should ALWAYS be visible if installed.
-
-    if ($isRunningFromInstall) {
-        # Management Mode
-        $txtStatus.Text = "SYSTEM ONLINE :: READY"
-        $btnInstall.Visibility = "Collapsed"
-        $btnUpdate.Visibility = "Collapsed"
-        $btnLaunch.Visibility = "Visible"
-        # Uninstall is already Visible by default in XAML, but let's confirm
-        $btnUninstall.Visibility = "Visible"
-    }
-    elseif ($isInstalled) {
-        # Update Mode
-        $txtStatus.Text = "UPDATE AVAILABLE"
-        $btnInstall.Visibility = "Collapsed"
-        $btnUpdate.Visibility = "Visible"
-        $btnLaunch.Visibility = "Collapsed"
-        $btnUninstall.Visibility = "Visible"
-    }
-    else {
-        # Install Mode
-        $txtStatus.Text = "READY TO INITIALIZE"
-        $btnInstall.Visibility = "Visible"
-        $btnUpdate.Visibility = "Collapsed"
-        $btnLaunch.Visibility = "Collapsed"
-        $btnUninstall.Visibility = "Collapsed"
-    }
-
-    # --- Block Console ---
     $window.ShowDialog() | Out-Null
 }
-catch {
-    Log "FATAL ERROR: $_"
-    try { [System.Windows.MessageBox]::Show("Setup Error: $_", "Phantom Setup", "OK", "Error") } catch {}
-}
+catch { Log "FATAL: $_"; try { [System.Windows.MessageBox]::Show("Setup Error: $_", "Phantom Setup", "OK", "Error") } catch {} }
