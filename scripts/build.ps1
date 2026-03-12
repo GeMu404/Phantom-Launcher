@@ -19,7 +19,7 @@ if (Test-Path "dist") {
 
 # 2. Recreate structure
 Write-Host "[2/5] Initializing directory structure..." -ForegroundColor Yellow
-$dirs = @("phantom_app/system", "phantom_app/system/front")
+$dirs = @("phantom_app", "phantom_app/front")
 foreach ($dir in $dirs) {
     if (-not (Test-Path $dir)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
@@ -50,72 +50,58 @@ if (-not (Test-Path "phantom_app/PhantomServer.exe")) {
 Write-Host "[5/5] Assembling final distribution package..." -ForegroundColor Yellow
 
 # Copy Frontend
-Copy-Item -Path "dist/*" -Destination "phantom_app/system/front/" -Recurse -Force
+Copy-Item -Path "dist/*" -Destination "phantom_app/front/" -Recurse -Force
 
 # Set up Production Modules for Node SEA Runtime
 Write-Host "  -> Installing Production Dependencies..." -ForegroundColor Cyan
-Copy-Item package.json, package-lock.json "phantom_app\system\"
-$sysPath = Join-Path $PWD.Path "phantom_app\system"
+Copy-Item package.json, package-lock.json "phantom_app\"
+$sysPath = Join-Path $PWD.Path "phantom_app"
 $npmArgs = @("ci", "--omit=dev", "--prefix", "`"$sysPath`"")
 Start-Process "npm.cmd" -ArgumentList $npmArgs -Wait -NoNewWindow
-Remove-Item "phantom_app\system\package.json", "phantom_app\system\package-lock.json" -Force
+Remove-Item "phantom_app\package.json", "phantom_app\package-lock.json" -Force
+
+# Compile Native Launcher (Replaces VBS/PowerShell)
+powershell -ExecutionPolicy Bypass -File "./scripts/compile_launcher.ps1"
 
 # Copy Core Assets
 $coreFiles = @(
     "launcher.html",
-    "PhantomTray.ps1",
-    "Run.vbs",
     "phantom.ico"
 )
 
 foreach ($file in $coreFiles) {
     if (Test-Path $file) {
-        Copy-Item -Path $file -Destination "phantom_app/system/" -Force
+        Copy-Item -Path $file -Destination "phantom_app/" -Force
         Write-Host "  Deployed: $file"
     }
 }
 
-# Move Executable to system (Retry Logic)
+# PhantomServer.exe is already generated in phantom_app by npm run build:exe, so we just verify it exists.
 if (Test-Path "phantom_app/PhantomServer.exe") {
-    $dest = "phantom_app/system/PhantomServer.exe"
-    $maxRetries = 5
-    $retryCount = 0
-    $moved = $false
-    
-    while (-not $moved -and $retryCount -lt $maxRetries) {
-        try {
-            if (Test-Path $dest) {
-                Remove-Item -Path $dest -Force -ErrorAction Stop
-            }
-            Move-Item -Path "phantom_app/PhantomServer.exe" -Destination $dest -Force -ErrorAction Stop
-            $moved = $true
-            Write-Host "  Deployed: PhantomServer.exe"
-        }
-        catch {
-            Write-Warning "File locked, retrying in 2s... ($($retryCount+1)/$maxRetries)"
-            Start-Sleep -Seconds 2
-            $retryCount++
-        }
-    }
-    
-    if (-not $moved) {
-        Write-Error "Failed to move PhantomServer.exe after multiple attempts. Please close any programs using it."
-        exit 1
-    }
+    Write-Host "  Deployed: PhantomServer.exe"
+} else {
+    Write-Error "Failed to find PhantomServer.exe in phantom_app. Build likely failed."
+    exit 1
 }
 
-# Copy Setup files to root for the installer
-if (Test-Path "PhantomSetup.ps1") {
-    Copy-Item -Path "PhantomSetup.ps1" -Destination "phantom_app/PhantomSetup.ps1" -Force
-    Write-Host "  Deployed: PhantomSetup.ps1"
-}
+# 5.5 Create Payload Zip
+Write-Host "  -> Compacting Payload into a single archive..." -ForegroundColor Cyan
+if (Test-Path "phantom_app/server.js") { Remove-Item "phantom_app/server.js" -Force }
+if (Test-Path "phantom_app/server.cjs") { Remove-Item "phantom_app/server.cjs" -Force }
+if (Test-Path "phantom_app/sea-prep.blob") { Remove-Item "phantom_app/sea-prep.blob" -Force }
 
-# Compile Setup Wrapper
+node -e "const AdmZip = require('adm-zip'); const zip = new AdmZip(); zip.addLocalFolder('phantom_app'); zip.writeZip('payload.zip');"
+Write-Host "  -> Payload generated." -ForegroundColor Green
+
+# Clean phantom_app so ONLY Setup.exe will remain
+Get-ChildItem -Path "phantom_app" -Exclude ".env" | Remove-Item -Recurse -Force
+
+# Compile Setup Wrapper (This embeds payload.zip)
 if (Test-Path "Build-Wrapper.ps1") {
     powershell -ExecutionPolicy Bypass -File "./Build-Wrapper.ps1"
 }
 
-# Final Cleanup of temp build files
-if (Test-Path "phantom_app/server.js") { Remove-Item "phantom_app/server.js" -Force }
+# Cleanup payload.zip
+if (Test-Path "payload.zip") { Remove-Item "payload.zip" -Force }
 
-Write-Host "--- Build Complete: phantom_app/ is now organized ---" -ForegroundColor Green
+Write-Host "--- Build Complete: phantom_app/Setup.exe is your SINGLE FILE INSTALLER ---" -ForegroundColor Green

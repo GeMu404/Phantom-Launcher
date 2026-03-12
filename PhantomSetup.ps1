@@ -26,7 +26,7 @@ try {
     $currentDir = Split-Path -Parent $script:SetupPath
 
     # Check Status
-    $isInstalled = Test-Path "$installDir\system\PhantomServer.exe"
+    $isInstalled = Test-Path "$installDir\PhantomServer.exe"
     $isRunningFromInstall = ($currentDir.TrimEnd('\') -eq $installDir.TrimEnd('\'))
     
     # --- XAML UI Definition (Sketch-Based Architecture) ---
@@ -39,7 +39,7 @@ try {
     
     <Window.Resources>
         <Style x:Key="AccentText" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#D4FF58"/>
+            <Setter Property="Foreground" Value="#FF0055"/>
             <Setter Property="FontFamily" Value="Consolas"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
@@ -55,7 +55,7 @@ try {
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <Path Name="BtnBorder" Stroke="#D4FF58" StrokeThickness="1.5" Fill="{TemplateBinding Background}" Stretch="Fill">
+                            <Path Name="BtnBorder" Stroke="#FF0055" StrokeThickness="1.5" Fill="{TemplateBinding Background}" Stretch="Fill">
                                 <Path.Data>
                                     <PathGeometry Figures="M 10,0 L 190,0 L 200,10 L 200,35 L 190,45 L 10,45 L 0,35 L 0,10 Z"/>
                                 </Path.Data>
@@ -70,7 +70,7 @@ try {
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="BtnBorder" Property="Fill" Value="#D4FF58"/>
+                                <Setter TargetName="BtnBorder" Property="Fill" Value="#FF0055"/>
                                 <Setter Property="Foreground" Value="Black"/>
                                 <Setter Property="Cursor" Value="Hand"/>
                             </Trigger>
@@ -88,8 +88,8 @@ try {
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border BorderBrush="#D4FF58" BorderThickness="1" Background="Transparent" Padding="8,4">
-                            <TextBlock Text="[X]" Foreground="#D4FF58" FontSize="11" FontFamily="Consolas" FontWeight="Bold"/>
+                        <Border BorderBrush="#FF0055" BorderThickness="1" Background="Transparent" Padding="8,4">
+                            <TextBlock Text="[X]" Foreground="#FF0055" FontSize="11" FontFamily="Consolas" FontWeight="Bold"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -107,9 +107,9 @@ try {
 
     <Grid>
         <!-- Window Frame (Top-Left & Bottom-Right Notches only) -->
-         <Path Stroke="#D4FF58" StrokeThickness="2" Fill="#0A0A0A" Stretch="Fill">
+         <Path Stroke="#FF0055" StrokeThickness="2" Fill="#E60A0A0A" Stretch="Fill">
             <Path.Effect>
-                <DropShadowEffect Color="#D4FF58" BlurRadius="15" ShadowDepth="0" Opacity="0.15"/>
+                <DropShadowEffect Color="#FF0055" BlurRadius="15" ShadowDepth="0" Opacity="0.15"/>
             </Path.Effect>
             <Path.Data>
                 <PathGeometry Figures="M 40,0 L 750,0 L 750,460 L 710,500 L 0,500 L 0,40 Z"/>
@@ -125,14 +125,14 @@ try {
 
             <!-- Header -->
             <Grid Grid.Row="0" Name="DragArea" Background="Transparent" Margin="20,10,10,0">
-                <TextBlock Text="[ MODULAR_SETUP_V0.9 ]" Style="{StaticResource AccentText}" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <TextBlock Text="[ MODULAR_SETUP_V1.0.0 ]" Style="{StaticResource AccentText}" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 <Button Name="BtnClose" HorizontalAlignment="Right" VerticalAlignment="Top" Style="{StaticResource CloseButton}"/>
             </Grid>
 
             <!-- Main Content (Centered) -->
             <Grid Grid.Row="1">
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="Phantom Launcher V 0.9" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" FontFamily="Segoe UI" Margin="0,0,0,40"/>
+                    <TextBlock Text="Phantom Launcher V 1.0.0" FontSize="32" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" FontFamily="Segoe UI" Margin="0,0,0,40"/>
                     
                     <TextBlock Name="TxtStatus" Text="READY_TO_INITIALIZE" Foreground="#666666" FontSize="11" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,30"/>
 
@@ -253,7 +253,8 @@ try {
     }
 
     function Kill-Processes {
-        Set-Status "TERMINATING PROCESSES..." "#D4FF58"
+        Set-Status "TERMINATING PROCESSES..." "#FF0055"
+        Force-Kill-Process "Phantom.exe"
         Force-Kill-Process "PhantomServer.exe"
         Force-Kill-Process "node.exe"
         $psProcs = Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe' OR Name = 'pwsh.exe'"
@@ -265,26 +266,37 @@ try {
         $WshShell = New-Object -ComObject WScript.Shell
         if (Test-Path $shortcutPath) { Remove-Item $shortcutPath -Force }
         $Shortcut = $WshShell.CreateShortcut($shortcutPath)
-        if (Test-Path "$installDir\system\Run.vbs") { $Shortcut.TargetPath = "$installDir\system\Run.vbs" }
-        else { $Shortcut.TargetPath = "powershell.exe"; $Shortcut.Arguments = "-WindowStyle Hidden -Sta -Bypass -File `"$installDir\system\PhantomTray.ps1`"" }
-        $Shortcut.WorkingDirectory = "$installDir\system"; $Shortcut.IconLocation = "$installDir\system\PhantomServer.exe,0"; $Shortcut.Save()
+        if (Test-Path "$installDir\Phantom.exe") { 
+            $Shortcut.TargetPath = "$installDir\Phantom.exe" 
+            $Shortcut.WorkingDirectory = "$installDir"
+            $Shortcut.IconLocation = "$installDir\Phantom.exe,0"
+        }
+        else { 
+            $Shortcut.TargetPath = "powershell.exe"
+            $Shortcut.Arguments = "-WindowStyle Hidden -Sta -Bypass -File `"$installDir\PhantomTray.ps1`"" 
+            $Shortcut.WorkingDirectory = "$installDir"
+            $Shortcut.IconLocation = "$installDir\PhantomServer.exe,0"
+        }
+        $Shortcut.Save()
     }
 
     function Start-Install {
         if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
-        $sourceSystem = Join-Path $currentDir "system"
-        if (-not (Test-Path $sourceSystem)) { $sourceSystem = Join-Path $currentDir "phantom_app\system" }
-        if (Test-Path $sourceSystem) {
-            Set-Status "DEPLOYING SYSTEM CORE..." "#D4FF58"
-            $destSystem = Join-Path $installDir "system"
-            if (-not (Test-Path $destSystem)) { New-Item -ItemType Directory -Path $destSystem -Force | Out-Null }
-            $sb = { param($src, $dst); Copy-Item -Path "$src\*" -Destination $dst -Recurse -Force | Out-Null }
-            Start-Worker $sb @($sourceSystem, $destSystem) {
+        $payloadFile = Join-Path $currentDir "payload.zip"
+        if (Test-Path $payloadFile) {
+            Set-Status "DEPLOYING SYSTEM CORE..." "#FF0055"
+            $destSystem = $installDir
+            $sb = { param($src, $dst); Expand-Archive -Path $src -DestinationPath $dst -Force | Out-Null }
+            Start-Worker $sb @($payloadFile, $destSystem) {
                 Create-Shortcut
-                if ($script:SetupPath -and (Test-Path $script:SetupPath)) { Copy-Item -Path $script:SetupPath -Destination "$installDir\PhantomSetup.ps1" -Force }
                 Set-Status "SUCCESS." "#00FF00"
                 Show-Success "System installed successfully.`nThe launcher is active in your system tray."
             }
+        } else {
+             # fallback for manual running if someone isn't using Setup.exe
+             Copy-Item -Path "$currentDir\*" -Destination $installDir -Recurse -Force -Exclude "Setup.exe" | Out-Null
+             Create-Shortcut
+             Show-Success "System installed without payload.zip fallback."
         }
     }
 
@@ -294,19 +306,26 @@ try {
     $btnFinish.Add_Click({
             $window.Close()
             if ($script:isUninstalling) { Start-Process cmd.exe -ArgumentList "/c timeout 2 & rmdir /s /q `"$installDir`"" -WindowStyle Hidden }
-            else { if (Test-Path "$installDir\system\Run.vbs") { Start-Process "$installDir\system\Run.vbs" } }
+            else { 
+                if (Test-Path "$installDir\Phantom.exe") { Start-Process "$installDir\Phantom.exe" }
+                elseif (Test-Path "$installDir\Run.vbs") { Start-Process "$installDir\Run.vbs" } 
+            }
         })
     $btnConfirmNo.Add_Click({ Show-Main })
     $btnConfirmYes.Add_Click({
             Kill-Processes
             Set-Status "PURGING SYSTEM..." "#FF4444"
             $sb = { param($path, $scPath); try { Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "PhantomLauncher" -ErrorAction SilentlyContinue } catch {}
-                if (Test-Path $scPath) { Remove-Item $scPath -Force }; if (Test-Path "$path\system") { Remove-Item "$path\system" -Recurse -Force } }
+                if (Test-Path $scPath) { Remove-Item $scPath -Force }; if (Test-Path $path) { Remove-Item $path -Recurse -Force } }
             Start-Worker $sb @($installDir, $shortcutPath) { $script:isUninstalling = $true; Show-Success "System successfully purged.`nClick ACKNOWLEDGE to finish." }
         })
     $btnInstall.Add_Click({ Kill-Processes; Start-Install })
     $btnUpdate.Add_Click({ Kill-Processes; Start-Install })
-    $btnLaunch.Add_Click({ if (Test-Path "$installDir\system\Run.vbs") { Start-Process "$installDir\system\Run.vbs" }; $window.Close() })
+    $btnLaunch.Add_Click({ 
+        if (Test-Path "$installDir\Phantom.exe") { Start-Process "$installDir\Phantom.exe" }
+        elseif (Test-Path "$installDir\Run.vbs") { Start-Process "$installDir\Run.vbs" }
+        $window.Close() 
+    })
     $btnUninstall.Add_Click({ Show-Confirm "Completely remove Phantom Launcher?`nSettings and records will be deleted." })
 
     # State

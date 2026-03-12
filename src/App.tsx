@@ -265,19 +265,7 @@ const App: React.FC = () => {
     }
   }, [displayCategories, currentCatIndex, activeGameIndex]);
 
-  useEffect(() => {
-    setActiveCommand(null);
-
-    // Clear everything, including REFS to prevent same-reference bypasses
-    setActiveExecute(undefined);
-    activeExecuteRef.current = undefined;
-    activeExecuteStartRef.current = undefined;
-    activeExecuteEndRef.current = undefined;
-
-    setActiveProgress(0);
-    setActiveIsExecuting(false);
-    setActiveIsReady(false);
-  }, [activeModularModule]);
+  // State cleared explicitly during navigation logic.
 
   // Contextual go-back handler for DISCONNECT button
   const handleModularGoBack = useCallback(() => {
@@ -659,7 +647,7 @@ const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [games.length, displayCategories, currentCatIndex, isSecretUnlocked, switchCategory, handleLaunchRequest, appState, isManagementOpen, playSfx, resetInactivityTimer]);
+  }, [games.length, displayCategories, currentCatIndex, isSecretUnlocked, switchCategory, handleLaunchRequest, appState, isManagementOpen, isModularOpen, playSfx, resetInactivityTimer]);
 
   if (!isDataLoaded) {
     return (
@@ -840,6 +828,7 @@ const App: React.FC = () => {
               outlineEnabled={atmosphereSettings.outlineEnabled}
               cardTransparencyEnabled={atmosphereSettings.cardTransparencyEnabled}
               cardOpacity={atmosphereSettings.cardOpacity}
+              modalOpacity={atmosphereSettings.modalOpacity}
             >
               <ModularHeader
                 title="MODULAR_RECONSTRUCTION_ALPHA"

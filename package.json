@@ -1,6 +1,6 @@
 {
   "name": "phantom-launcher",
-  "version": "0.9.99-pre",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "bin": "phantom_app/server.cjs",
@@ -21,6 +21,7 @@
     "start": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "animejs": "3.2.2",
     "better-sqlite3": "^12.6.2",
     "chokidar": "^5.0.0",

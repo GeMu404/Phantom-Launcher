@@ -2,6 +2,7 @@ import { Router } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { exec, spawnSync } from 'child_process';
+import AdmZip from 'adm-zip';
 import { ServerContext } from '../context.js';
 import { EMU_PLATFORMS, PLATFORM_NAMES, PLATFORM_COLORS, PLATFORM_ICONS, cleanEmuTitle, extractTitleFromSFO } from '../emuUtils.js';
 
@@ -35,6 +36,21 @@ export function createEmuRoutes(ctx: ServerContext): Router {
     return router;
 }
 
+function isZipValidForPlatform(zipPath: string, validExts: string[]): boolean {
+    try {
+        const zip = new AdmZip(zipPath);
+        const entries = zip.getEntries();
+        return entries.some(entry => {
+            const ext = path.extname(entry.entryName).toLowerCase();
+            // We looking for a valid ROM extension that ISN'T a zip (to avoid nested issues)
+            return validExts.includes(ext) && ext !== '.zip' && ext !== '.7z';
+        });
+    } catch (e) {
+        console.error(`[Emu] Failed to peek into ZIP: ${zipPath}`, e);
+        return false;
+    }
+}
+
 async function performEmuScan(ctx: ServerContext, options: { platformId: string, romsDir: string, emuExe: string, execArgs?: string, extension?: string }) {
     const { platformId, romsDir, emuExe, execArgs, extension } = options;
     const config = EMU_PLATFORMS[platformId];
@@ -42,6 +58,9 @@ async function performEmuScan(ctx: ServerContext, options: { platformId: string,
     if (!fs.existsSync(romsDir)) throw new Error('ROMs directory not found');
 
     const games: any[] = [];
+    const shortcutsToCreate: { lnkPath: string, targetPath: string, args: string, workingDir: string }[] = [];
+
+    console.log(`[Emu] Starting scan for ${platformId} in ${romsDir}`);
 
     const scan = (dir: string, depth = 0) => {
         if (!fs.existsSync(dir) || depth > 4) return;
@@ -58,6 +77,15 @@ async function performEmuScan(ctx: ServerContext, options: { platformId: string,
                     : config.extensions;
 
                 if (targetExtensions.includes(ext)) {
+                    // Smart ZIP Verification
+                    if (ext === '.zip') {
+                        // Check if the ZIP really contains what we want
+                        if (!isZipValidForPlatform(fullPath, targetExtensions)) {
+                            console.log(`[Emu] Skipping invalid ZIP: ${file}`);
+                            continue;
+                        }
+                    }
+
                     // Smart Switch Filtering
                     if (platformId === 'nsw') {
                         const lowerFile = file.toLowerCase();
@@ -86,15 +114,13 @@ async function performEmuScan(ctx: ServerContext, options: { platformId: string,
 
                     const lnkPath = path.resolve(path.join(gameDir, 'launch.lnk'));
                     const workingDir = path.resolve(path.dirname(emuExe));
-                    const psScript = `
-                    $s = (New-Object -COM WScript.Shell).CreateShortcut('${lnkPath.replace(/'/g, "''")}')
-                    $s.TargetPath = '${emuExe.replace(/'/g, "''")}'
-                    $s.Arguments = '${finalArgs.replace(/'/g, "''")}'
-                    $s.WorkingDirectory = '${workingDir.replace(/'/g, "''")}'
-                    $s.Save()
-                    `;
-                    const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
-                    spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { windowsHide: true });
+                    
+                    shortcutsToCreate.push({
+                        lnkPath,
+                        targetPath: emuExe,
+                        args: finalArgs,
+                        workingDir
+                    });
 
                     games.push({
                         id: gameId, title: cleanEmuTitle(file), execPath: path.resolve(lnkPath),
@@ -123,15 +149,13 @@ async function performEmuScan(ctx: ServerContext, options: { platformId: string,
                 if (!fs.existsSync(gameDir)) fs.mkdirSync(gameDir, { recursive: true });
                 const lnkPath = path.resolve(path.join(gameDir, 'launch.lnk'));
                 const workingDir = path.resolve(path.dirname(emuExe));
-                const psScript = `
-                    $s = (New-Object -COM WScript.Shell).CreateShortcut('${lnkPath.replace(/'/g, "''")}')
-                    $s.TargetPath = '${emuExe.replace(/'/g, "''")}'
-                    $s.Arguments = '${folderArgs.replace(/'/g, "''")}'
-                    $s.WorkingDirectory = '${workingDir.replace(/'/g, "''")}'
-                    $s.Save()
-                    `;
-                const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
-                spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { windowsHide: true });
+                
+                shortcutsToCreate.push({
+                    lnkPath,
+                    targetPath: emuExe,
+                    args: folderArgs,
+                    workingDir
+                });
 
                 games.push({ id: gameId, title: detectedTitle, execPath: path.resolve(lnkPath), execArgs: '', source: 'emu', platform: platformId, romPath: fullPath });
             } else if (stat.isDirectory()) {
@@ -140,5 +164,25 @@ async function performEmuScan(ctx: ServerContext, options: { platformId: string,
         }
     };
     scan(romsDir, 0);
+
+    // Batch execute shortcut creation to avoid thousands of powershell spawns
+    if (shortcutsToCreate.length > 0) {
+        console.log(`[Emu] Creating ${shortcutsToCreate.length} shortcuts...`);
+        const batchSize = 100;
+        for (let i = 0; i < shortcutsToCreate.length; i += batchSize) {
+            const batch = shortcutsToCreate.slice(i, i + batchSize);
+            const psScript = batch.map(s => `
+                $s = (New-Object -COM WScript.Shell).CreateShortcut('${s.lnkPath.replace(/'/g, "''")}')
+                $s.TargetPath = '${s.targetPath.replace(/'/g, "''")}'
+                $s.Arguments = '${s.args.replace(/'/g, "''")}'
+                $s.WorkingDirectory = '${s.workingDir.replace(/'/g, "''")}'
+                $s.Save()
+            `).join('\n');
+            const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+            spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encoded], { windowsHide: true });
+        }
+    }
+
+    console.log(`[Emu] Scan complete. Found ${games.length} games.`);
     return games;
 }

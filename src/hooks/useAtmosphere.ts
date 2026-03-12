@@ -27,6 +27,7 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
         const globalLowRes = allCat?.lowResWallpaper ?? (allCat?.performanceMode === 'low');
         const globalCardTransparency = allCat?.cardTransparencyEnabled ?? true;
         const globalCardOpacity = allCat?.cardOpacity ?? 0.12;
+        const globalModalOpacity = allCat?.modalOpacity ?? 0.10;
         const globalBgAnim = allCat?.bgAnimationsEnabled ?? true;
         const globalCardBlur = allCat?.cardBlurEnabled ?? true;
         const globalGridEnabled = allCat?.gridEnabled ?? true;
@@ -58,6 +59,7 @@ export const useAtmosphere = (categories: Category[], currentCategory: Category 
             mode: finalMode as any,
             gridOpacity: finalGrid,
             cardOpacity: globalCardOpacity,
+            modalOpacity: globalModalOpacity,
             cardBlurEnabled: globalCardBlur,
             cardTransparencyEnabled: globalCardTransparency,
             lowResWallpaper: globalLowRes,

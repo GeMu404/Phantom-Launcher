@@ -63,7 +63,7 @@ const EmuSync: React.FC<EmuSyncProps> = ({
     onResetFields
 }) => {
     const [customArgs, setCustomArgs] = useState('');
-    const [customExt, setCustomExt] = useState('.iso');
+    const [customExt, setCustomExt] = useState('.zip,.sfc,.iso,.bin');
     const [isExecuting, setIsExecuting] = useState(false);
     const cardRef = React.useRef<HTMLDivElement>(null);
     const { t } = useTranslation();

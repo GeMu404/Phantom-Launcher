@@ -27,6 +27,7 @@ interface ModularModalProps {
     outlineEnabled?: boolean;
     cardTransparencyEnabled?: boolean;
     cardOpacity?: number;
+    modalOpacity?: number;
 }
 
 /**
@@ -57,7 +58,8 @@ const ModularModal: React.FC<ModularModalProps> = ({
     outerGlowEnabled,
     outlineEnabled,
     cardTransparencyEnabled,
-    cardOpacity
+    cardOpacity,
+    modalOpacity
 }) => {
     if (!isOpen) return null;
 
@@ -91,6 +93,7 @@ const ModularModal: React.FC<ModularModalProps> = ({
                 outlineEnabled={outlineEnabled}
                 cardTransparencyEnabled={cardTransparencyEnabled}
                 cardOpacity={cardOpacity}
+                modalOpacity={modalOpacity}
             >
                 {children}
             </ModularFrame>

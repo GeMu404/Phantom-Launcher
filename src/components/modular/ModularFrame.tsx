@@ -23,6 +23,7 @@ interface ModularFrameProps {
     outlineEnabled?: boolean;
     cardTransparencyEnabled?: boolean;
     cardOpacity?: number;
+    modalOpacity?: number;
 }
 
 /**
@@ -52,7 +53,8 @@ const ModularFrame: React.FC<ModularFrameProps> = ({
     outerGlowEnabled = true,
     outlineEnabled = true,
     cardTransparencyEnabled = true,
-    cardOpacity = 0.7
+    cardOpacity = 0.7,
+    modalOpacity = 0.10
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const thumbRef = useRef<SVGRectElement>(null);
@@ -218,7 +220,7 @@ const ModularFrame: React.FC<ModularFrameProps> = ({
                 <path
                     d={framePath}
                     fill="#080808"
-                    fillOpacity={!cardTransparencyEnabled ? 1 : 0.10}
+                    fillOpacity={!cardTransparencyEnabled ? 1 : modalOpacity}
                     className="transition-all duration-500"
                 />
 

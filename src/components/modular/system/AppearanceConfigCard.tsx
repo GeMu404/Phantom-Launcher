@@ -246,6 +246,7 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
     });
 
     const [localCardOpacity, setLocalCardOpacity] = useState(allGamesCategory?.cardOpacity ?? 0.12);
+    const [localModalOpacity, setLocalModalOpacity] = useState(allGamesCategory?.modalOpacity ?? 0.10);
     const [localTaskbarMargin, setLocalTaskbarMargin] = useState(taskbarMargin);
     const [localUiScale, setLocalUiScale] = useState(uiScale);
 
@@ -276,6 +277,7 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
             });
             setLocalColors(nextColors);
             setLocalCardOpacity(allGamesCategory?.cardOpacity ?? 0.12);
+            setLocalModalOpacity(allGamesCategory?.modalOpacity ?? 0.10);
             setLocalTaskbarMargin(taskbarMargin);
             setLocalUiScale(uiScale);
 
@@ -345,6 +347,7 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
     const isModified =
         isModifiedColors ||
         localCardOpacity !== (allGamesCategory.cardOpacity ?? 0.12) ||
+        localModalOpacity !== (allGamesCategory.modalOpacity ?? 0.10) ||
         localTaskbarMargin !== taskbarMargin ||
         localUiScale !== uiScale ||
         localSlimMode !== !!allGamesCategory.slimModeEnabled ||
@@ -388,24 +391,35 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
         setTimeout(() => {
             clearInterval(interval);
 
-            onUpdateCategories(prev => prev.map(c => c.id === 'all' ? {
-                ...c,
-                ...localColors,
-                cardOpacity: localCardOpacity,
-                slimModeEnabled: localSlimMode,
-                monochromeModeEnabled: localMonochrome,
-                outerGlowEnabled: localGlow,
-                innerGlowEnabled: localGlow,
-                outlineEnabled: localOutline,
-                cardTransparencyEnabled: localTransEnabled,
-                vignetteEnabled: localVignette,
-                scanlineEnabled: localScanline,
-                gridEnabled: localGrid,
-                bgAnimationsEnabled: localBgAnim,
-                lowResWallpaper: localLowRes,
-                performanceMode: localPerformanceMode,
-                primingAnimation: localPrimingAnim
-            } : c));
+            onUpdateCategories(prev => {
+                const nextCats = prev.map(c => c.id === 'all' ? {
+                    ...c,
+                    ...localColors,
+                    cardOpacity: localCardOpacity,
+                    modalOpacity: localModalOpacity,
+                    slimModeEnabled: localSlimMode,
+                    monochromeModeEnabled: localMonochrome,
+                    outerGlowEnabled: localGlow,
+                    innerGlowEnabled: localGlow,
+                    outlineEnabled: localOutline,
+                    cardTransparencyEnabled: localTransEnabled,
+                    vignetteEnabled: localVignette,
+                    scanlineEnabled: localScanline,
+                    gridEnabled: localGrid,
+                    bgAnimationsEnabled: localBgAnim,
+                    lowResWallpaper: localLowRes,
+                    performanceMode: localPerformanceMode,
+                    primingAnimation: localPrimingAnim
+                } : c);
+
+                fetch('/api/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(nextCats)
+                }).catch(e => console.error('Failed to save appearance config', e));
+
+                return nextCats;
+            });
 
             onUpdateTaskbarMargin(localTaskbarMargin);
             onUpdateUIScale(localUiScale);
@@ -423,7 +437,7 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
                 onActiveToggle(false);
             }, 800);
         }, 600);
-    }, [isExecuting, onCommandUpdate, onUpdateCategories, localColors, localCardOpacity, localSlimMode, localMonochrome, localGlow, localOutline, localTransEnabled, localVignette, localScanline, localGrid, localBgAnim, localLowRes, localPerformanceMode, localPrimingAnim, onUpdateTaskbarMargin, localTaskbarMargin, onUpdateUIScale, localUiScale, onActiveToggle]);
+    }, [isExecuting, onCommandUpdate, onUpdateCategories, localColors, localCardOpacity, localModalOpacity, localSlimMode, localMonochrome, localGlow, localOutline, localTransEnabled, localVignette, localScanline, localGrid, localBgAnim, localLowRes, localPerformanceMode, localPrimingAnim, onUpdateTaskbarMargin, localTaskbarMargin, onUpdateUIScale, localUiScale, onActiveToggle]);
 
     const executeRef = useRef(handleExecute);
     useEffect(() => { executeRef.current = handleExecute; }, [handleExecute]);
@@ -541,6 +555,17 @@ const AppearanceConfigCard: React.FC<AppearanceConfigCardProps> = ({
                                 min={0.1}
                                 max={1.0}
                                 step={0.1}
+                                unit="%"
+                                accentColor={accentColor}
+                            />
+
+                            <FixedSlider
+                                label="MODAL_TRANSPARENCY"
+                                value={localModalOpacity}
+                                setValue={setLocalModalOpacity}
+                                min={0.05}
+                                max={1.0}
+                                step={0.05}
                                 unit="%"
                                 accentColor={accentColor}
                             />

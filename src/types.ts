@@ -27,6 +27,7 @@ export interface Category {
   wallpaperMode?: 'fill' | 'contain' | 'cover' | 'center';
   gridOpacity?: number;
   cardOpacity?: number; // Global transparency of cards
+  modalOpacity?: number; // Global transparency of the configuration frame
   cardTransparencyEnabled?: boolean;
   cardBlurEnabled?: boolean;
   innerGlowEnabled?: boolean;
