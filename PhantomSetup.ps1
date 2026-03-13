@@ -263,21 +263,44 @@ try {
     }
 
     function Create-Shortcut {
-        $WshShell = New-Object -ComObject WScript.Shell
-        if (Test-Path $shortcutPath) { Remove-Item $shortcutPath -Force }
-        $Shortcut = $WshShell.CreateShortcut($shortcutPath)
-        if (Test-Path "$installDir\Phantom.exe") { 
-            $Shortcut.TargetPath = "$installDir\Phantom.exe" 
+        $oldErrorAction = $ErrorActionPreference
+        $ErrorActionPreference = "SilentlyContinue"
+
+        try {
+            if (Test-Path $shortcutPath) { Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue }
+            
+            $exeTarget = ""
+            $iconTarget = ""
+            if (Test-Path "$installDir\Phantom.exe") { 
+                $exeTarget = "$installDir\Phantom.exe"
+                $iconTarget = "$installDir\Phantom.exe,0"
+            } else { 
+                $exeTarget = "$installDir\PhantomServer.exe"
+                $iconTarget = "$installDir\PhantomServer.exe,0"
+            }
+
+            # Inyectar en el Registro (HKCU:\...\Run) con el prefijo "00_"
+            $RegPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+            Set-ItemProperty -Path $RegPath -Name "00_PhantomLauncher" -Value "`"$exeTarget`"" -ErrorAction SilentlyContinue
+
+        } catch {}
+
+        try {
+            $WshShell = New-Object -ComObject WScript.Shell
+            $desktopPath = Join-Path ([Environment]::GetFolderPath('Desktop')) "Phantom Launcher.lnk"
+            $Shortcut = $WshShell.CreateShortcut($desktopPath)
+            if ($exeTarget -match "Phantom.exe") {
+                $Shortcut.TargetPath = $exeTarget
+            } else {
+                $Shortcut.TargetPath = "powershell.exe"
+                $Shortcut.Arguments = "-WindowStyle Hidden -Sta -Bypass -File `"$installDir\PhantomTray.ps1`"" 
+            }
             $Shortcut.WorkingDirectory = "$installDir"
-            $Shortcut.IconLocation = "$installDir\Phantom.exe,0"
-        }
-        else { 
-            $Shortcut.TargetPath = "powershell.exe"
-            $Shortcut.Arguments = "-WindowStyle Hidden -Sta -Bypass -File `"$installDir\PhantomTray.ps1`"" 
-            $Shortcut.WorkingDirectory = "$installDir"
-            $Shortcut.IconLocation = "$installDir\PhantomServer.exe,0"
-        }
-        $Shortcut.Save()
+            $Shortcut.IconLocation = $iconTarget
+            $Shortcut.Save()
+        } catch {}
+
+        $ErrorActionPreference = $oldErrorAction
     }
 
     function Start-Install {
@@ -315,8 +338,8 @@ try {
     $btnConfirmYes.Add_Click({
             Kill-Processes
             Set-Status "PURGING SYSTEM..." "#FF4444"
-            $sb = { param($path, $scPath); try { Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "PhantomLauncher" -ErrorAction SilentlyContinue } catch {}
-                if (Test-Path $scPath) { Remove-Item $scPath -Force }; if (Test-Path $path) { Remove-Item $path -Recurse -Force } }
+            $sb = { param($path, $scPath); try { Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "00_PhantomLauncher" -ErrorAction SilentlyContinue;  Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "PhantomLauncher" -ErrorAction SilentlyContinue } catch {}
+                if (Test-Path $scPath) { Remove-Item $scPath -Force }; if (Test-Path "$env:USERPROFILE\Desktop\Phantom Launcher.lnk") { Remove-Item "$env:USERPROFILE\Desktop\Phantom Launcher.lnk" -Force }; if (Test-Path $path) { Remove-Item $path -Recurse -Force } }
             Start-Worker $sb @($installDir, $shortcutPath) { $script:isUninstalling = $true; Show-Success "System successfully purged.`nClick ACKNOWLEDGE to finish." }
         })
     $btnInstall.Add_Click({ Kill-Processes; Start-Install })
