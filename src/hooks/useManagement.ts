@@ -323,7 +323,7 @@ export function useManagement({
     ) => {
         const executeDelete = async () => {
             // 1. Delete from Server/SQLite
-            await fetch('/api/games/delete', {
+            await fetch('/api/assets/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gameId })
@@ -569,13 +569,13 @@ export function useManagement({
         }
 
         // Import any staged assets (both HTTP URLs and absolute local paths)
-        const isExternalPath = (p: string) => {
+        const isExternalPath = (p: string, targetId: string) => {
             if (!p) return false;
             if (p.startsWith('http://') || p.startsWith('https://')) return true;
             if (p.startsWith('res/') || p.startsWith('./res/')) return false;
-            // If it's already inside our assets directory, no need to import
-            if (p.includes('Phantom_Data\\assets') || p.includes('Phantom_Data/assets')) return false;
-            // Otherwise, it's a local file elsewhere on disk that needs importing
+            // If it's already inside THIS specific game's assets folder, no need to import
+            if (p.includes(`Phantom_Data\\assets\\${targetId}`) || p.includes(`Phantom_Data/assets/${targetId}`)) return false;
+            // Otherwise, a local file elsewhere on disk (or belonging to another game) MUST be imported/copied
             return true;
         };
 
@@ -584,7 +584,7 @@ export function useManagement({
 
         for (const field of assetFields) {
             const val = gameForm[field] || '';
-            if (isExternalPath(val)) {
+            if (isExternalPath(val, newId)) {
                 try {
                     const res = await fetch('/api/assets/import', {
                         method: 'POST',
@@ -605,7 +605,7 @@ export function useManagement({
         // Process Execution Path as a "launch" asset proxy if needed
         let resolvedExecPath = gameForm.execPath || '';
         // If it's manual, external, and not already pointing to a our internal proxy shortcut
-        if (isManual && resolvedExecPath && isExternalPath(resolvedExecPath) && !resolvedExecPath.includes('launch.lnk') && !resolvedExecPath.includes('launch.url')) {
+        if (isManual && resolvedExecPath && isExternalPath(resolvedExecPath, newId) && !resolvedExecPath.includes('launch.lnk') && !resolvedExecPath.includes('launch.url')) {
             try {
                 const res = await fetch('/api/assets/import', {
                     method: 'POST',
