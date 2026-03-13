@@ -602,13 +602,32 @@ export function useManagement({
             }
         }
 
+        // Process Execution Path as a "launch" asset proxy if needed
+        let resolvedExecPath = gameForm.execPath || '';
+        // If it's manual, external, and not already pointing to a our internal proxy shortcut
+        if (isManual && resolvedExecPath && isExternalPath(resolvedExecPath) && !resolvedExecPath.includes('launch.lnk') && !resolvedExecPath.includes('launch.url')) {
+            try {
+                const res = await fetch('/api/assets/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sourcePath: resolvedExecPath, gameId: newId, assetType: 'launch' })
+                });
+                const data = await res.json();
+                if (data.path) {
+                    resolvedExecPath = data.path;
+                }
+            } catch (e) {
+                console.error(`ExecPath import failed`, e);
+            }
+        }
+
         const gameObj: Game = {
             id: newId!,
             title: gameForm.title,
             cover: resolvedAssets.cover,
             banner: resolvedAssets.banner,
             logo: resolvedAssets.logo,
-            execPath: gameForm.execPath,
+            execPath: resolvedExecPath,
             execArgs: gameForm.execArgs,
             source: existingGame?.source || 'manual',
             sourceId: existingGame?.sourceId,

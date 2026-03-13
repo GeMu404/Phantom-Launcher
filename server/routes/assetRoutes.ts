@@ -34,6 +34,10 @@ export function createAssetRoutes(ctx: ServerContext): Router {
                 if (sourcePath.toLowerCase().endsWith('.lnk')) {
                     fs.copyFileSync(sourcePath, lnkPath);
                     return res.json({ path: path.resolve(lnkPath) });
+                } else if (sourcePath.toLowerCase().endsWith('.url')) {
+                    const targetUrlFile = path.join(gameDir, 'launch.url');
+                    fs.copyFileSync(sourcePath, targetUrlFile);
+                    return res.json({ path: path.resolve(targetUrlFile) });
                 }
 
                 const { spawnSync } = await import('child_process');
